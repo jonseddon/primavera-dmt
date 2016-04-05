@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+{% load staticfiles %}
+
+    {% block contents %}
+        <p>About Files</p>
+
+        {% for record in records %}
+
+            <div class="list-group">
+                <a href="#" class="list-group-item active">
+                    <h4 class="list-group-item-heading">{{ record.name }}</h4>
+                    <p class="list-group-item-text">{{ record.directory }} (Size: {{ record.size }} bytes)</p>
+                </a>
+            </div>
+
+        {% endfor %}
+    {% endblock %}

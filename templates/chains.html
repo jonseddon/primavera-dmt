@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+{% load staticfiles %}
+
+    {% block contents %}
+        <p>About Chains</p>
+
+        {% for record in records %}
+
+            <div class="list-group">
+                <a href="#" class="list-group-item active">
+                    <h4 class="list-group-item-heading">Chain name: {{ record.name }}</h4>
+
+                    {% for psic in record.processstageinchain_set.all %}
+                        <p class="list-group-item-text">Process stage: {{ psic.process_stage.name }}</p>
+                    {% endfor %}
+
+                </a>
+            </div>
+
+        {% endfor %}
+    {% endblock %}

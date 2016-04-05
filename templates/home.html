@@ -1,0 +1,13 @@
+{% extends "base.html" %}
+{% load staticfiles %}
+
+    {% block contents %}
+        <p>HOME</p>
+
+        <p>Welcome to our superb app, it will revolutionise your life. Try some links:</p>
+
+        <ul>
+            <li><a href="{% url 'crepe_app.views.view_files' %}">View Files</a></li>
+            <li><a href="{% url 'crepe_app.views.view_chains' %}">View Chains</a></li>
+        </ul>
+    {% endblock %}

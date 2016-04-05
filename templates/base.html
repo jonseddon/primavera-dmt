@@ -1,0 +1,25 @@
+{% load staticfiles %}
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <link href="http://getbootstrap.com/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="{% static 'css/base.css' %}?v=" rel="stylesheet">
+    <title>{{ page_title }}</title>
+    <style>
+        body {
+             width: 600px;
+             margin: 0 auto;
+        }
+    </style>
+</head>
+<body>
+    <H1>General app header</H1>
+
+    {% block contents %}
+
+    {% endblock %}
+
+</body>
+</html>
