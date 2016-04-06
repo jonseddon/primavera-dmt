@@ -13,6 +13,7 @@ urlpatterns = patterns('',
     url(r'^admin/', include(admin.site.urls)),
     url(r'^files/$', 'crepe_app.views.view_files'),
     url(r'^chains/$', 'crepe_app.views.view_chains'),
+    url(r'^datasets/$', 'crepe_app.views.view_datasets'),
     url(r'.*', 'crepe_app.views.view_home'),
 )
 

@@ -46,6 +46,7 @@ def test_workflow():
 
     # 6. Sleep for 10 seconds
     time.sleep(1)
+    #print dir(pA)
 
     # 7. Analyse results
     print "Remember to run: python clear.py - TO DELETE ALL!"

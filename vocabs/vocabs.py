@@ -9,7 +9,9 @@ PROCESSING_STATUS_VALUES = CodeList(
 STATUS_VALUES = CodeList(
         (('EMPTY', 'EMPTY'),
          ('DONE', 'DONE'),
+         ('PENDING_DO', 'PENDING_DO'),
          ('DOING', 'DOING'),
+         ('PENDING_UNDO', 'PENDING_UNDO'),
          ('UNDOING', 'UNDOING'))
 )
 

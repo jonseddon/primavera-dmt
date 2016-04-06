@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+{% load staticfiles %}
+
+    {% block contents %}
+        <p>About Datasets</p>
+
+        {% for record in records %}
+
+            <div class="list-group">
+                <div class="list-group-item active">
+                    <h4 class="list-group-item-heading">Dataset name: {{ record.name }} (STATUS: {{ record.processing_status }})</h4>
+
+                    <div class="row">
+                        {% for psic in record.chain.processstageinchain_set.all %}
+                            <div class="col-xs-6 col-md-6">
+                                 Process stage: {{ psic.process_stage.name }}
+                            </div>
+                            <div class="col-xs-6 col-md-6">
+                                 Status: {{ psic.status }}
+                            </div>
+                        {% endfor %}
+                    </div>
+                    <div>
+                        <h5>Files:</h5>
+                        {% for file in record.file_set.all %}
+                            <a href="/file/{{ file.id }}" class="list-group-item-text">File: {{ file.directory }}/{{ file.name }}</a><br/>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+
+        {% endfor %}
+    {% endblock %}

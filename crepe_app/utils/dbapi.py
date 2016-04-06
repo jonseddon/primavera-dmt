@@ -1,4 +1,5 @@
 from crepe_app.models import *
+from crepelib.task import Task
 from vocabs import *
 
 
@@ -32,7 +33,7 @@ def count(cls):
 
 
 def get_dataset_files(dataset):
-    return dataset.file_set()
+    return dataset.file_set.all()
 
 
 def create_chain(name, controllers):
@@ -70,78 +71,69 @@ def set_empty(dataset):
 def find_chains_using_controller(controller):
     return Chain.objects.filter(processstageinchain__process_stage__name=controller.__name__)
 
-
 def get_ordered_process_stages(chain):
-    stages = [psic.process_stage for psic in chain.processstageinchain_set.order_by(position)]
+    stages = [psic.process_stage.name for psic in chain.processstageinchain_set.order_by("position")]
     return stages
 
-
-def get_previous_stage(controller, chain):
+def get_previous_stage(stage_name, chain):
     stages = get_ordered_process_stages(chain)
-    if controller == stages[0]:
+    if stage_name == stages[0]:
         return None
-    return chain[stages.index(controller) - 1]
+    return stages[stages.index(stage_name) - 1]
 
-def get_next_stage(controller, chain):
+def get_next_stage(stage_name, chain):
     stages = get_ordered_process_stages(chain)
-    if controller == stages[-1]:
+    if stage_name == stages[-1]:
         return None
-    return chain[stages.index(controller) + 1]
+    return stages[stages.index(stage_name) + 1]
 
 def get_datasets_using_chain(chain):
     return Dataset.objects.filter(chain=chain).order_by("arrival_time")
 
-def get_dataset_status(dataset, controller):
-    return dataset.status_set.get(process_stage__name=controller.__name__).status_value
+def get_dataset_status(dataset, stage_name):
+    return dataset.status_set.get(process_stage__name=stage_name).status_value
 
-def set_dataset_status(dataset, controller, status_value):
-    status = dataset.status_set.get(process_stage__name=controller.__name__)
+def set_dataset_status(dataset, stage_name, status_value):
+    status = dataset.status_set.get(process_stage__name=stage_name)
     status.status_value = status_value
     status.save()
 
-def is_ready_to_do(dataset, controller, chain):
-    previous_controller = get_previous_stage(controller, chain)
-    current_controller = controller
+def is_ready_to_do(dataset, stage_name, chain):
+    previous_stage = get_previous_stage(stage_name, chain)
+    current_stage = stage_name
 
-    if (not previous_controller or (get_dataset_status(previous_controller) == STATUS_VALUES.DONE)) and \
-                    get_dataset_status(current_controller) == STATUS_VALUES.EMPTY:
+    if (not previous_stage or (get_dataset_status(dataset, previous_stage) == STATUS_VALUES.DONE)) and \
+                    get_dataset_status(dataset, current_stage) == STATUS_VALUES.EMPTY:
         return True
 
-def is_ready_to_undo(dataset, controller, chain):
-    next_controller = get_next_stage(controller, chain)
-    current_controller = controller
+def is_ready_to_undo(dataset, stage_name, chain):
+    next_stage = get_next_stage(stage_name, chain)
+    current_stage = stage_name
 
-    if get_dataset_status(next) == STATUS_VALUES.EMPTY and get_dataset_status(current_controller) == STATUS_VALUES.DONE:
-        set_current_status(STATUS_VALUES.UNDOING)
-        undo(current_controller)
+    if (not next_stage or (get_dataset_status(dataset, next_stage) == STATUS_VALUES.EMPTY)) and \
+                    get_dataset_status(dataset, current_stage) == STATUS_VALUES.DONE:
+        return True
 
-class Task(object):
-    ALLOWED_TYPES = ("do", "undo")
-
-    def __init__(self, id, action_type):
-        self.id = id
-        if action_type not in Task.ALLOWED_TYPES:
-            raise Exception("Direction must be one of: %s, not '%s'." % (str(Task.ALLOWED_TYPES), action_type))
-
-        self.action_type = action_type
-
-def get_next_actions(controller):
+def get_next_tasks(controller):
     chains = find_chains_using_controller(controller)
     print "FOUND CHAINS:", chains
-    actions = []
+    tasks = []
 
     for chain in chains:
 
         datasets = get_datasets_using_chain(chain)
+        print "FOUND DATASETS: %s" % str(datasets)
 
         for dataset in datasets:
 
             # If dataset is withdrawn we can ignore it
-            if dataset.is_withdrawn == False:
+            if dataset.is_withdrawn == True:
                 continue
 
             # If ready to "do" or "undo" then add to action list
-            if is_ready_to_do(dataset, controller, chain):
-                actions.append(Task(dataset, "do"))
-            elif is_ready_to_undo(dataset, controller, chain):
-                actions.append(Task(dataset, "undo"))
+            if is_ready_to_do(dataset, controller.__name__, chain):
+                tasks.append(Task(dataset, "do"))
+            elif is_ready_to_undo(dataset, controller.__name__, chain):
+                tasks.append(Task(dataset, "undo"))
+            
+    return tasks

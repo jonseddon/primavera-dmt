@@ -19,72 +19,82 @@ def decwrap(func):
 
     return wrapper
 
+
+
 class BaseController(object):
 
     purpose = "Base class only"
 
     def __init__(self):
-        self.tasks = {"pending": [], "running": None, "completed_cache": []}
+        self.running_task = None
+        self.name = self.__class__.__name__
+#        self.tasks = {"pending": [], "running": None, "completed_cache": []}
 
     def start(self):
         self._run()
 
+    def _map_running_status(self, task):
+        return {"do": STATUS_VALUES.DOING,
+                "undo": STATUS_VALUES.UNDOING}[task.action_type]
+
+    def _map_completed_status(self, task):
+        return {"do": STATUS_VALUES.DONE,
+                "undo": STATUS_VALUES.EMPTY}[task.action_type]
+
+    def _map_method(self, task):
+        return {"do": self.do_task,
+                "undo": self.undo_task}[task.action_type]
+
+    def _set_as_running(self, task):
+        self.running = task
+        api.set_dataset_status(task.dataset, self.name, self._map_running_status(task))
+
+    def _set_as_completed(self, task):
+        self.running = None
+        api.set_dataset_status(task.dataset, self.name, self._map_completed_status(task))
+
     def _run(self):
-        x = 0
-
         while 1:
-            x += 5
-            tasks = self._get_pending_tasks()
-            self.tasks["pending"].extend(tasks)
+            self.load_tasks()
+            log.warn("IIIIIIIIII:%s" % self.tasks)
+            #self.tasks["pending"].extend(tasks)
 
-            for task in tasks:
+            for task in self.tasks:
+                self._set_as_running(task)
+                log.info("Starting task: %s" % task)
+                runner = self._map_method(task)
+                runner(task)
+                self._set_as_completed(task)
+                log.info("Completed task: %s" % task)
 
-                if 1:
-                    self.tasks["running"] = task
-                    self.tasks["pending"].remove(task)
-                    log.info("Beginning to run %d tasks..." % len(tasks))
-
-                    self.do_task(task)
-                    log.info("Completed task: %s" % task)
-
-                    self.tasks["completed_cache"].append(task)
-                    self.tasks["running"] = None
-                else:
-                    self.rollback(task)
-
+            log.info("Sleeping for a while: %s" % self.name)
             time.sleep(5)
 
-    def _get_pending_tasks(self):
-        return self.get_tasks_from_db()
+    def load_tasks(self):
+        self.tasks = self.get_tasks_from_db()
 
     def get_tasks_from_db(self):
-        tasks = api.get_next_actions(self.__class__)
-        # Register tasks as being managed by this controller
+        tasks = api.get_next_tasks(self.__class__)
+        # Register tasks as being managed by this controller and pending
         for task in tasks:
-            status_value = {"do": STATUS_VALUES.DOING,
-                            "undo": STATUS_VALUES.UNDOING}[task.action_type]
-            api.set_dataset_status(task.dataset, self.__class__, status_value)
+            status_value = "PENDING_%s" % task.action_type.upper()
+            api.set_dataset_status(task.dataset, self.name, status_value)
 
+        return tasks
 
     @decwrap
     def do_task(self, task):
         log.info("Running task: %s" % task)
-        if task == "BAD":
-            raise Exception("Failed: %s" % task)
-
-        if 1:
+        try:
             self.run_do(task)
-        else:
+        except:
             raise Exception("Failed: %s" % task)
 
     def undo_task(self, task):
         log.info("Running task: %s" % task)
-        if task == "BAD":
-            raise Exception("Failed: %s" % task)
-
-        if 1:
+        try:
             self.run_undo(task)
-        else:
+        except:
             raise Exception("Failed: %s" % task)
 
     def rollback(self, task):

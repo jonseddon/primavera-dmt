@@ -1,7 +1,14 @@
 from crepelib.controllers.base_controller import BaseController
+from crepe_app.utils.dbapi import *
 
 class AController(BaseController):
-    pass
+
+    def run_do(self, task):
+        get_dataset_files(task.dataset).update(directory="/A")
+
+
 
 class BController(BaseController):
-    pass
+
+    def run_do(self, task):
+        get_dataset_files(task.dataset).update(directory="/B")
