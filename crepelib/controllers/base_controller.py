@@ -23,12 +23,15 @@ def decwrap(func):
 
 class BaseController(object):
 
+    name = "BaseController"
     purpose = "Base class only"
 
     def __init__(self):
-        self.running_task = None
-        self.name = self.__class__.__name__
-#        self.tasks = {"pending": [], "running": None, "completed_cache": []}
+        self._setup_logger()
+
+    def _setup_logger(self):
+        self.log = logging.getLogger(self.name)
+        self.log.setLevel(logging.INFO)
 
     def start(self):
         self._run()
@@ -56,25 +59,26 @@ class BaseController(object):
     def _run(self):
         while 1:
             self.load_tasks()
-            log.warn("IIIIIIIIII:%s" % self.tasks)
-            #self.tasks["pending"].extend(tasks)
+            self.log.warn("Tasks picked up: %s" % self.tasks)
 
             for task in self.tasks:
                 self._set_as_running(task)
-                log.info("Starting task: %s" % task)
+                self.log.info("Starting task: %s" % task)
                 runner = self._map_method(task)
                 runner(task)
                 self._set_as_completed(task)
-                log.info("Completed task: %s" % task)
+                self.log.info("Completed task: %s" % task)
 
-            log.info("Sleeping for a while: %s" % self.name)
+                # Set dataset status
+
+            self.log.info("Sleeping for a while: %s" % self.name)
             time.sleep(5)
 
     def load_tasks(self):
         self.tasks = self.get_tasks_from_db()
 
     def get_tasks_from_db(self):
-        tasks = api.get_next_tasks(self.__class__)
+        tasks = api.get_next_tasks(self.name)
         # Register tasks as being managed by this controller and pending
         for task in tasks:
             status_value = "PENDING_%s" % task.action_type.upper()
@@ -82,48 +86,38 @@ class BaseController(object):
 
         return tasks
 
-    @decwrap
+    #@decwrap
     def do_task(self, task):
-        log.info("Running task: %s" % task)
+        self.log.info("Running task: %s" % task)
         try:
-            self.run_do(task)
-        except:
-            raise Exception("Failed: %s" % task)
+            self._run_do(task)
+            self.log_event("SUCCESS")
+        except Exception, err:
+            self.log.warn("Failed DO: %s" % task)
+            self.log_event("FAILURE")
 
     def undo_task(self, task):
-        log.info("Running task: %s" % task)
+        self.log.info("Running task: %s" % task)
         try:
-            self.run_undo(task)
-        except:
-            raise Exception("Failed: %s" % task)
+            self._run_undo(task)
+            self.log_event("SUCCESS")
+        except Exception, err:
+            self.log.warn("Failed UNDO: %s" % task)
+            self.log_event("FAILURE")
 
-    def rollback(self, task):
-        log.warn("Rolling back...")
-
-        running_task = self.tasks["running"]
-
-        if running_task != task:
-            raise Exception("Inconsistency: requested rollback of task that is different from running task: %s != %s"
-                            % (task, running_task))
-
-        self.tasks["running"] = None
-        self.run_undo(task)
-
-        if task in self.tasks["completed_cache"]:
-            self.tasks["completed_cache"].remove(task)
-
-        self.tasks["pending"].insert(0, task)
-        log.warn("Rolled back: %s" % task)
-
-    def run_do(self, task):
+    def _run_do(self, task):
         raise NotImplementedError("Base class does not implement 'run_do' method.")
 
-    def run_undo(self, task):
+    def _run_undo(self, task):
         raise NotImplementedError("Base class does not implement 'run_undo' method.")
 
     def advance(self, task):
         # Tell database that the task is ready for the next stage
         pass
+
+    def log_event(self, outcome):
+        add_event()
+        self.elog.info("%s")
 
 if __name__ == "__main__":
 

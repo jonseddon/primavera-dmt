@@ -19,12 +19,10 @@ class DatasetForTests(object):
         self.corrupt_index = bad_file
         self.simulate_error = simulate_action
 
-        self._create_test_files()
-
     def _get_var_id(self, fpath):
         return os.path.basename(fpath).split("_")[0]
 
-    def _create_test_files(self):
+    def create_test_files(self):
         "Creates dummy files in incoming."
         if not os.path.isdir(self.INCOMING_DIR):
             os.makedirs(self.INCOMING_DIR)

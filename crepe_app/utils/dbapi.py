@@ -1,3 +1,5 @@
+from django.utils import timezone
+
 from crepe_app.models import *
 from crepelib.task import Task
 from vocabs import *
@@ -21,11 +23,16 @@ def get_or_create(cls, **props):
     return obj
 
 
+
 def exists(cls, **props):
     if cls.objects.filter(**props):
         return True
     else:
         return False
+
+
+def get_checksum(file, checksum_type="MD5"):
+    return file.checksum_set.get(checksum_type=checksum_type).checksum_value
 
 
 def count(cls):
@@ -36,8 +43,8 @@ def get_dataset_files(dataset):
     return dataset.file_set.all()
 
 
-def create_chain(name, controllers):
-    chain, created = Chain.objects.get_or_create(name=name, completed_externally=False)
+def create_chain(name, controllers, completed_externally=False):
+    chain, created = Chain.objects.get_or_create(name=name, completed_externally=completed_externally)
     print controllers
     for (i, controller) in enumerate(controllers):
         process_stage, created = ProcessStage.objects.get_or_create(name=controller.__name__)
@@ -50,6 +57,18 @@ def create_chain(name, controllers):
     return chain
 
 
+def add_event(controller_name, dataset, action_type, outcome):
+    succeeded = {"SUCCESS": True, "FAILURE": False}[outcome]
+    process_stage = ProcessStageInChain.objects.get()
+    STUCK HERE - SHOULD I BE TRYING TO GET THE ProcessStageInChain ??? OR JUST AN ID???
+    Event.objects.create()
+        dataset = models.ForeignKey(Dataset, null=False)
+    process_stage = models.ForeignKey(ProcessStage, null=False)
+    message = models.CharField(max_length=500, null=False, blank=False)
+    action_type = models.CharField(max_length=7, choices=ACTION_TYPES.items(), null=False, blank=False)
+    succeeded = models.BooleanField(default=True, null=False)
+    date_time = models.DateTimeField(default=timezone.now, null=False)
+
 def advance_process_status(dataset):
     # Identify current process stage of dataset
     # Identify next process stage for dataset
@@ -61,15 +80,8 @@ def is_withdrawn(dataset):
     return dataset.is_withdrawn
 
 
-def set_empty(dataset):
-    statuses = dataset.status_set.all()
-    for status in statuses:
-        status.status_value = STATUS_VALUES.EMPTY
-        status.save()
-
-
-def find_chains_using_controller(controller):
-    return Chain.objects.filter(processstageinchain__process_stage__name=controller.__name__)
+def find_chains(stage_name):
+    return Chain.objects.filter(processstageinchain__process_stage__name=stage_name)
 
 def get_ordered_process_stages(chain):
     stages = [psic.process_stage.name for psic in chain.processstageinchain_set.order_by("position")]
@@ -87,6 +99,10 @@ def get_next_stage(stage_name, chain):
         return None
     return stages[stages.index(stage_name) + 1]
 
+def is_final_stage(stage_name, scheme):
+    chain = Chain.objects.get(name=scheme)
+    return get_ordered_process_stages(chain)[-1] == stage_name
+
 def get_datasets_using_chain(chain):
     return Dataset.objects.filter(chain=chain).order_by("arrival_time")
 
@@ -94,6 +110,22 @@ def get_dataset_status(dataset, stage_name):
     return dataset.status_set.get(process_stage__name=stage_name).status_value
 
 def set_dataset_status(dataset, stage_name, status_value):
+    # NOTE: Derives the dataset.processing_status value from the stage status value
+    if dataset.processing_status == PROCESSING_STATUS_VALUES.PAUSED:
+        # Keep paused
+        processing_status = PROCESSING_STATUS_VALUES.PAUSED
+    elif status_value == STATUS_VALUES.EMPTY:
+        processing_status = PROCESSING_STATUS_VALUES.NOT_STARTED
+    elif status_value == STATUS_VALUES.DONE:
+        processing_status = PROCESSING_STATUS_VALUES.COMPLETED
+    else:
+        processing_status = PROCESSING_STATUS_VALUES.IN_PROGRESS
+
+    # Set processing status
+    dataset.processing_status = processing_status
+    dataset.save()
+
+    # Set status for stage name for this dataset
     status = dataset.status_set.get(process_stage__name=stage_name)
     status.status_value = status_value
     status.save()
@@ -102,7 +134,8 @@ def is_ready_to_do(dataset, stage_name, chain):
     previous_stage = get_previous_stage(stage_name, chain)
     current_stage = stage_name
 
-    if (not previous_stage or (get_dataset_status(dataset, previous_stage) == STATUS_VALUES.DONE)) and \
+    if (not previous_stage or
+            (previous_stage and get_dataset_status(dataset, previous_stage) == STATUS_VALUES.DONE)) and \
                     get_dataset_status(dataset, current_stage) == STATUS_VALUES.EMPTY:
         return True
 
@@ -114,26 +147,25 @@ def is_ready_to_undo(dataset, stage_name, chain):
                     get_dataset_status(dataset, current_stage) == STATUS_VALUES.DONE:
         return True
 
-def get_next_tasks(controller):
-    chains = find_chains_using_controller(controller)
-    print "FOUND CHAINS:", chains
+def get_next_tasks(stage_name):
+    chains = find_chains(stage_name)
+    #print "FOUND CHAINS:", chains
     tasks = []
 
     for chain in chains:
 
         datasets = get_datasets_using_chain(chain)
-        print "FOUND DATASETS: %s" % str(datasets)
+        #print "FOUND DATASETS: %s" % str(datasets)
 
         for dataset in datasets:
 
-            # If dataset is withdrawn we can ignore it
-            if dataset.is_withdrawn == True:
-                continue
+            if dataset.is_withdrawn == False:
+                # If ready to "do" or "undo" then add to action list
+                if is_ready_to_do(dataset, stage_name, chain):
+                    tasks.append(Task(chain.name, dataset, "do"))
 
-            # If ready to "do" or "undo" then add to action list
-            if is_ready_to_do(dataset, controller.__name__, chain):
-                tasks.append(Task(dataset, "do"))
-            elif is_ready_to_undo(dataset, controller.__name__, chain):
-                tasks.append(Task(dataset, "undo"))
+            else: # is withdrawn
+                if is_ready_to_undo(dataset, stage_name, chain):
+                    tasks.append(Task(chain.name, dataset, "undo"))
             
     return tasks

@@ -3,6 +3,7 @@ from .base import CodeList
 PROCESSING_STATUS_VALUES = CodeList(
         (('COMPLETED', 'COMPLETED'),
          ('IN_PROGRESS', 'IN_PROGRESS'),
+         ('NOT_STARTED', 'NOT_STARTED'),
          ('PAUSED', 'PAUSED'))
 )
 
@@ -12,7 +13,8 @@ STATUS_VALUES = CodeList(
          ('PENDING_DO', 'PENDING_DO'),
          ('DOING', 'DOING'),
          ('PENDING_UNDO', 'PENDING_UNDO'),
-         ('UNDOING', 'UNDOING'))
+         ('UNDOING', 'UNDOING'),
+         ('FAILED', 'FAILED'))
 )
 
 ACTION_TYPES = CodeList(

@@ -14,26 +14,6 @@ __all__ = ['Chain', 'Dataset', 'ProcessStage', 'Status', 'ProcessStageInChain',
            'File', 'Symlink', 'Event', 'Checksum', 'Settings']
 
 
-"""
-For a given controller:
- 1. Set the Chain
- 2. Set the ProcessStage
- 3. Set the processing status of that ProcessStage
-
- 4. In each controller
-        if is_withdrawn(dataset) == False:
-            if status(previous) == "DONE" and status(current) == "EMPTY":
-                set_current_status("DOING")
-                do(current)
-            else:
-                if status(next) == "EMPTY" and status(current) == "DONE":
-                    set_current_status("UNDOING")
-                    undo(current)
-
-
-
-
-"""
 
 class Chain(models.Model):
     # The "scheme" that is being used, e.g.: "MOHC-MASS", "SPECS", or "CMIP6-General"
@@ -52,7 +32,7 @@ class Dataset(models.Model):
     chain = models.ForeignKey(Chain, null=False)
     arrival_time = models.DateTimeField(blank=False, null=False)
     processing_status = models.CharField(max_length=11, choices=PROCESSING_STATUS_VALUES.items(),
-                                         null=False, blank=False)
+                                         default=PROCESSING_STATUS_VALUES.NOT_STARTED, null=False, blank=False)
     is_withdrawn = models.BooleanField(default=False, null=False)
 
     def __unicode__(self):
@@ -60,7 +40,14 @@ class Dataset(models.Model):
 
     @staticmethod
     def _set_empty_statuses(sender, instance, **kwargs):
+        """
+        Create Status objects for each process stage for this dataset (but only on creation).
+        """
         for psic in instance.chain.processstageinchain_set.all():
+            # Ignore any that exist already
+            if Status.objects.filter(dataset=instance, process_stage=psic.process_stage):
+                continue
+
             print "DETAIL:", instance.name, psic.process_stage, STATUS_VALUES.EMPTY
             status = Status.objects.create(dataset=instance, process_stage=psic.process_stage,
                                            status_value=STATUS_VALUES.EMPTY)
