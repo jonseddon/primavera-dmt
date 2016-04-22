@@ -74,7 +74,26 @@ class CrepeBaseTest(unittest.TestCase):
 
 class TestWorkflows(CrepeBaseTest):
 
-    def _test_ds1(self):
+    def setUp(self):
+        # For each test, run controllers
+        # Invoke controllers to start running
+        self.procs = {}
+        for contr in (QCController, IngestController, PublishController):
+            self.tlog("Starting controller: %s" % contr.name)
+            self.procs[contr.name] = Process(target=_run_controller, args=(contr,))
+            self.procs[contr.name].start()
+            time.sleep(0.4)
+
+    def tearDown(self):
+        # For each test, stop controllers
+        keys = self.procs.keys()
+
+        for contr_name in keys:
+            self.tlog("Closing down controller: %s" % contr_name)
+            self.procs[contr_name].terminate()
+            del self.procs[contr_name]
+
+    def test_ds1(self):
         # Create test files
         ds = datasets.d1
         ds.create_test_files()
@@ -93,15 +112,8 @@ class TestWorkflows(CrepeBaseTest):
         for fname in ds.files:
             insert(File, name=fname, directory=incoming_dir, size=10, dataset=dataset)
 
-        # Invoke controllers to start running
-        procs = {}
-        for contr in (QCController, IngestController, PublishController):
-            procs[contr.name] = Process(target=_run_controller, args=(contr,))
-            procs[contr.name].start()
-            time.sleep(1)
-
         # Sleep and then assert that all are completed
-        time.sleep(5)
+        time.sleep(10)
         self._assert_all_completed(dataset)
 
     def test_ds2(self):
@@ -123,16 +135,9 @@ class TestWorkflows(CrepeBaseTest):
         for fname in ds.files:
             insert(File, name=fname, directory=incoming_dir, size=10, dataset=dataset)
 
-        # Invoke controllers to start running
-        procs = {}
-        for contr in (QCController, IngestController, PublishController):
-            procs[contr.name] = Process(target=_run_controller, args=(contr,))
-            procs[contr.name].start()
-            time.sleep(1)
-
         # Sleep and then assert that all are completed
-        time.sleep(5)
-        #self._assert_all_completed(dataset)
+        time.sleep(10)
+        self._failed_at(dataset, stage=1)
 
     def test_ds3(self):
         pass
@@ -150,12 +155,22 @@ class TestWorkflows(CrepeBaseTest):
             assert dataset.processing_status == PROCESSING_STATUS_VALUES.COMPLETED
 
         for stage_name in get_ordered_process_stages(chain):
+            self.tlog("%s, %s --> %s" % (dataset, stage_name, get_dataset_status(dataset, stage_name)))
             assert get_dataset_status(dataset, stage_name) == STATUS_VALUES.DONE
             self.log.warn("CHECKED PROCESS STATUS: %s, %s" % (dataset.name, stage_name))
 
         self.log.warn("COMPLETED COMPLETION CHECK!")
 
+    def _failed_at(self, dataset, stage):
+        self.log.warn("Checking dataset FAILED at stage %d: %s" % (stage, dataset.name))
+        chain = dataset.chain
+        stages = ["dummy"] + get_ordered_process_stages(chain)
 
+        stage_name = stages[stage]
+        self.tlog("%s, %s --> %s" % (dataset, stage_name, get_dataset_status(dataset, stage_name)))
+        assert get_dataset_status(dataset, stage_name) == STATUS_VALUES.FAILED
+
+        self.log.warn("COMPLETED FAILURE CHECK!")
 
 if __name__ == "__main__":
 

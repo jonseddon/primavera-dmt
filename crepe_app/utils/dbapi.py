@@ -59,15 +59,11 @@ def create_chain(name, controllers, completed_externally=False):
 
 def add_event(controller_name, dataset, action_type, outcome):
     succeeded = {"SUCCESS": True, "FAILURE": False}[outcome]
-    process_stage = ProcessStageInChain.objects.get()
-    STUCK HERE - SHOULD I BE TRYING TO GET THE ProcessStageInChain ??? OR JUST AN ID???
-    Event.objects.create()
-        dataset = models.ForeignKey(Dataset, null=False)
-    process_stage = models.ForeignKey(ProcessStage, null=False)
-    message = models.CharField(max_length=500, null=False, blank=False)
-    action_type = models.CharField(max_length=7, choices=ACTION_TYPES.items(), null=False, blank=False)
-    succeeded = models.BooleanField(default=True, null=False)
-    date_time = models.DateTimeField(default=timezone.now, null=False)
+    process_stage = ProcessStage.objects.get(name=controller_name)
+
+    Event.objects.create(dataset=dataset, process_stage=process_stage, action_type=action_type,
+                         succeeded=succeeded, date_time=timezone.now(), message="")
+
 
 def advance_process_status(dataset):
     # Identify current process stage of dataset
@@ -131,11 +127,15 @@ def set_dataset_status(dataset, stage_name, status_value):
     status.save()
 
 def is_ready_to_do(dataset, stage_name, chain):
-    previous_stage = get_previous_stage(stage_name, chain)
+    if dataset.is_withdrawn: return False
+
+    previous = get_previous_stage(stage_name, chain)
     current_stage = stage_name
 
-    if (not previous_stage or
-            (previous_stage and get_dataset_status(dataset, previous_stage) == STATUS_VALUES.DONE)) and \
+    if previous:
+        print "OOO:", get_dataset_status(dataset, previous), dataset, stage_name
+
+    if (not previous or (previous and get_dataset_status(dataset, previous) == STATUS_VALUES.DONE)) and \
                     get_dataset_status(dataset, current_stage) == STATUS_VALUES.EMPTY:
         return True
 
@@ -143,29 +143,31 @@ def is_ready_to_undo(dataset, stage_name, chain):
     next_stage = get_next_stage(stage_name, chain)
     current_stage = stage_name
 
-    if (not next_stage or (get_dataset_status(dataset, next_stage) == STATUS_VALUES.EMPTY)) and \
-                    get_dataset_status(dataset, current_stage) == STATUS_VALUES.DONE:
-        return True
+    if dataset.is_withdrawn:
+        if (get_dataset_status(dataset, current_stage) == STATUS_VALUES.DONE) and \
+                (not next_stage or (get_dataset_status(dataset, next_stage) == STATUS_VALUES.EMPTY)):
+            return True
+
+#    if ((not next_stage and dataset.is_withdrawn) or
+#                (get_dataset_status(dataset, next_stage) == STATUS_VALUES.EMPTY)) and \
+#                    get_dataset_status(dataset, current_stage) == STATUS_VALUES.DONE:
+#        return True
 
 def get_next_tasks(stage_name):
     chains = find_chains(stage_name)
-    #print "FOUND CHAINS:", chains
     tasks = []
 
     for chain in chains:
 
         datasets = get_datasets_using_chain(chain)
-        #print "FOUND DATASETS: %s" % str(datasets)
 
         for dataset in datasets:
 
-            if dataset.is_withdrawn == False:
-                # If ready to "do" or "undo" then add to action list
-                if is_ready_to_do(dataset, stage_name, chain):
-                    tasks.append(Task(chain.name, dataset, "do"))
+            # Add tasks to list
+            # If ready to "do" or "undo" then add to action list
+            if is_ready_to_do(dataset, stage_name, chain):
+                tasks.append(Task(chain.name, dataset, "do"))
+            elif is_ready_to_undo(dataset, stage_name, chain):
+                tasks.append(Task(chain.name, dataset, "undo"))
 
-            else: # is withdrawn
-                if is_ready_to_undo(dataset, stage_name, chain):
-                    tasks.append(Task(chain.name, dataset, "undo"))
-            
     return tasks

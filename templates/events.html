@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+{% load staticfiles %}
+
+    {% block contents %}
+        <h4>About Events</h4>
+
+        <table class="table table-striped">
+            <thead class="thead-default">
+                <tr>
+                    {% for heading in headings %}
+                        <th style="min-width: {{ heading.1 }}px">{{ heading.0 }}</th>
+                    {% endfor %}
+                </tr>
+            </thead>
+            <tbody>
+                {% for record in records %}
+                <tr scope="row">
+                    {% for item in record.content %}
+                        <td style="color: {{ record.style }};">{{ item }}</td>
+                    {% endfor %}
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% for record in records %}
+
+
+
+        {% endfor %}
+    {% endblock %}

@@ -33,5 +33,21 @@ def view_datasets(request):
                                                 'records': records})
 
 
+def view_events(request):
+    events = Event.objects.order_by("date_time").reverse()
+    records = []
+    success_map = {True: "SUCCEEDED", False: "FAILED"}
+    font_map = {True: "black", False: "red"}
+
+    headings = [("Time", 100), ("Dataset", 200), ("Process Stage", 100), ("Message", 50),
+                ("Action Type", 80), ("Succeeded?", 80)]
+    for e in events:
+        records.append({"content": (e.date_time, e.dataset, e.process_stage.name.replace("Controller", ""),
+                        e.message, e.action_type, success_map[e.succeeded]),
+                        "style": font_map[e.succeeded]})
+
+    return render_to_response('events.html', {'request': request, 'headings': headings, 'records': records})
+
+
 def view_home(request):
     return render_to_response('home.html', {'request': request})

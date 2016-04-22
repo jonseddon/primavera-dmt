@@ -56,6 +56,10 @@ class BaseController(object):
         self.running = None
         api.set_dataset_status(task.dataset, self.name, self._map_completed_status(task))
 
+    def _set_as_failed(self, task):
+        self.running = None
+        api.set_dataset_status(task.dataset, self.name, STATUS_VALUES.FAILED)
+
     def _run(self):
         while 1:
             self.load_tasks()
@@ -63,13 +67,13 @@ class BaseController(object):
 
             for task in self.tasks:
                 self._set_as_running(task)
-                self.log.info("Starting task: %s" % task)
                 runner = self._map_method(task)
-                runner(task)
-                self._set_as_completed(task)
-                self.log.info("Completed task: %s" % task)
+                result = runner(task)
 
-                # Set dataset status
+                if result:
+                    self._set_as_completed(task)
+                else:
+                    self._set_as_failed(task)
 
             self.log.info("Sleeping for a while: %s" % self.name)
             time.sleep(5)
@@ -91,19 +95,24 @@ class BaseController(object):
         self.log.info("Running task: %s" % task)
         try:
             self._run_do(task)
-            self.log_event("SUCCESS")
+            self.log.info("Completed DO: %s" % task)
+            self.log_event(task.dataset, "DO", "SUCCESS")
+            return True
         except Exception, err:
             self.log.warn("Failed DO: %s" % task)
-            self.log_event("FAILURE")
+            self.log_event(task.dataset, "DO", "FAILURE")
+            return False
 
     def undo_task(self, task):
         self.log.info("Running task: %s" % task)
         try:
             self._run_undo(task)
-            self.log_event("SUCCESS")
+            self.log_event(task.dataset, "UNDO", "SUCCESS")
+            return True
         except Exception, err:
             self.log.warn("Failed UNDO: %s" % task)
-            self.log_event("FAILURE")
+            self.log_event(task.dataset, "UNDO", "FAILURE")
+            return False
 
     def _run_do(self, task):
         raise NotImplementedError("Base class does not implement 'run_do' method.")
@@ -115,9 +124,8 @@ class BaseController(object):
         # Tell database that the task is ready for the next stage
         pass
 
-    def log_event(self, outcome):
-        add_event()
-        self.elog.info("%s")
+    def log_event(self, dataset, action_type, outcome):
+        api.add_event(self.name, dataset, action_type, outcome)
 
 if __name__ == "__main__":
 
