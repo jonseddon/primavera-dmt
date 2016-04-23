@@ -53,7 +53,7 @@ d2 = DatasetForTests("cmip5.output1.IPSL.IPSL-CM5A-LR.historical.day.atmos.day.r
                       "tas_day_IPSL-CM5A-LR_historical_r1i1p1_18610101-18611230.nc"),
                      bad_file=1)
 
-# d3 - 3 good files, but file system error
+# d3 - 3 good files, but IOError raised during Ingest process
 d3 = DatasetForTests("cmip5.output1.IPSL.IPSL-CM5A-LR.amip4K.day.atmos.day.r1i1p1.v20140430",
                      ("tasmax_day_IPSL-CM5A-LR_amip4K_r1i1p1_18590101-18591230.nc",
                       "tasmax_day_IPSL-CM5A-LR_amip4K_r1i1p1_18600101-18601230.nc",

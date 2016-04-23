@@ -111,6 +111,11 @@ class IngestController(BaseController):
             target = os_path_join(archive_dir, os.path.basename(fpath))
 
             try:
+                self.log.info("Trying to move: %s" % fpath)
+                # Set special error to raise on particular file (test 3)
+                if f.name == "tasmax_day_IPSL-CM5A-LR_amip4K_r1i1p1_18600101-18601230.nc":
+                    raise IOError("Cannot move file: %s" % fpath)
+
                 self._move_file(fpath, target)
                 move_actions.append((fpath, target))
             except Exception, err:

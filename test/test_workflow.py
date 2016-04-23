@@ -12,48 +12,21 @@ from vocabs import *
 from config import config
 
 
+from crepe_app.models import *
+from crepe_app.models import __all__ as all_class_names
+
+classes = [eval(cls_name) for cls_name in all_class_names]
+
+def _clear_db():
+    for cls in classes:
+        print cls.__name__
+        cls.objects.all().delete()
+
+    print "Deleted all!"
+
 def _run_controller(controller):
     cont = controller()
     cont.start()
-
-def test_workflow():
-    # 1. Create a Chain consisting of two controller ("A" and "B")
-    chain1 = create_chain("TestChain1", [AController, BController])
-    chain2 = create_chain("TestChain2", [BController])
-
-    dir1 = "/inc1"
-    dir2 = "/inc2"
-
-    # 2. Add 2 Datasets that use that chain
-    d1 = get_or_create(Dataset, incoming_dir=dir1, name="A.a1.v1", chain=chain1,
-                       arrival_time=timezone.now(), processing_status=PROCESSING_STATUS_VALUES.IN_PROGRESS,
-                       is_withdrawn=False)
-    d2 = get_or_create(Dataset, incoming_dir=dir2, name="B.a2.v1", chain=chain2,
-                       arrival_time=timezone.now(), processing_status=PROCESSING_STATUS_VALUES.IN_PROGRESS,
-                       is_withdrawn=False)
-
-    # 3. Set the Status for each dataset
-    #set_empty(d1)
-    #set_empty(d2)
-
-    # 4. Add some files to each
-    insert(File, name="A_f1", directory=dir1, size=10, dataset=d1)
-    insert(File, name="A_f2", directory=dir1, size=10, dataset=d1)
-    insert(File, name="B_f1", directory=dir2, size=10, dataset=d2)
-
-    # 5. Invoke controllers to start running
-    pA = Process(target=_run_controller, args=(AController,))
-    pA.start()
-    time.sleep(10)
-    pB = Process(target=_run_controller, args=(BController,))
-    pB.start()
-
-    # 6. Sleep for 10 seconds
-    time.sleep(1)
-    #print dir(pA)
-
-    # 7. Analyse results
-    print "Remember to run: python clear.py - TO DELETE ALL!"
 
 class CrepeBaseTest(unittest.TestCase):
 
@@ -64,6 +37,7 @@ class CrepeBaseTest(unittest.TestCase):
 
     @classmethod
     def setUpClass(self):
+        _clear_db()
         self.log = logging.getLogger(self.__class__.__name__)
         self.log.setLevel(getattr(logging, config["log_level"]))
         self.tlog("Setting up...", "INFO")
@@ -93,15 +67,15 @@ class TestWorkflows(CrepeBaseTest):
             self.procs[contr_name].terminate()
             del self.procs[contr_name]
 
-    def test_ds1(self):
+    def _test_ds1(self):
+        # d1 - 3 good files
         # Create test files
         ds = datasets.d1
         ds.create_test_files()
 
         # Create a Chain consisting of three controllers
         scheme = "CMIP6-MOHC"
-        chain = create_chain(scheme, [QCController, IngestController, PublishController],
-                             completed_externally=False)
+        chain = create_chain(scheme, [QCController, IngestController, PublishController], completed_externally=False)
         incoming_dir = get_dir_from_scheme(scheme, "incoming_dir")
 
         # Add the dataset to the db
@@ -116,15 +90,15 @@ class TestWorkflows(CrepeBaseTest):
         time.sleep(10)
         self._assert_all_completed(dataset)
 
-    def test_ds2(self):
+    def _test_ds2(self):
         # Create test files
+        # d2 - 2 good files, 1 bad file
         ds = datasets.d2
         ds.create_test_files()
 
         # Create a Chain consisting of three controllers
         scheme = "CMIP6-MOHC"
-        chain = create_chain(scheme, [QCController, IngestController, PublishController],
-                             completed_externally=False)
+        chain = create_chain(scheme, [QCController, IngestController, PublishController], completed_externally=False)
         incoming_dir = get_dir_from_scheme(scheme, "incoming_dir")
 
         # Add the dataset to the db
@@ -137,15 +111,61 @@ class TestWorkflows(CrepeBaseTest):
 
         # Sleep and then assert that all are completed
         time.sleep(10)
-        self._failed_at(dataset, stage=1)
+        self._assert_failed_at(dataset, stage=1)
 
-    def test_ds3(self):
-        pass
+    def _test_ds3(self):
+        # d3 - 3 good files, but IOError raised during Ingest process
+        ds = datasets.d3
+        ds.create_test_files()
+
+        # Create a Chain consisting of three controllers
+        scheme = "CMIP6-MOHC"
+        chain = create_chain(scheme, [QCController, IngestController, PublishController], completed_externally=False)
+        incoming_dir = get_dir_from_scheme(scheme, "incoming_dir")
+
+        # Add the dataset to the db
+        dataset = get_or_create(Dataset, incoming_dir=incoming_dir, name=ds.id,
+                                chain=chain, arrival_time=timezone.now())
+
+        # Add files
+        for fname in ds.files:
+            insert(File, name=fname, directory=incoming_dir, size=10, dataset=dataset)
+
+        # Sleep and then assert that all are completed
+        time.sleep(10)
+        self._assert_failed_at(dataset, stage=2)
 
     def test_ds4(self):
-        pass
+        # d4 - 3 good files, but withdraw afterwards
+        # Create test files
+        ds = datasets.d4
+        ds.create_test_files()
+
+        # Create a Chain consisting of three controllers
+        scheme = "CMIP6-MOHC"
+        chain = create_chain(scheme, [QCController, IngestController, PublishController], completed_externally=False)
+        incoming_dir = get_dir_from_scheme(scheme, "incoming_dir")
+
+        # Add the dataset to the db
+        dataset = get_or_create(Dataset, incoming_dir=incoming_dir, name=ds.id,
+                                chain=chain, arrival_time=timezone.now())
+
+        # Add files
+        for fname in ds.files:
+            insert(File, name=fname, directory=incoming_dir, size=10, dataset=dataset)
+
+        # Sleep and then assert that all are completed
+        time.sleep(10)
+        self._assert_all_completed(dataset)
+
+        # Now withdraw and check all undo actions work
+        dataset.is_withdrawn = True
+
+        time.sleep(10)
+        self._assert_empty(dataset)
 
     def test_ds5(self):
+        # d5 - 3 good files, but withdraw during ingest
         pass
 
     def _assert_all_completed(self, dataset):
@@ -161,7 +181,7 @@ class TestWorkflows(CrepeBaseTest):
 
         self.log.warn("COMPLETED COMPLETION CHECK!")
 
-    def _failed_at(self, dataset, stage):
+    def _assert_failed_at(self, dataset, stage):
         self.log.warn("Checking dataset FAILED at stage %d: %s" % (stage, dataset.name))
         chain = dataset.chain
         stages = ["dummy"] + get_ordered_process_stages(chain)
@@ -171,6 +191,17 @@ class TestWorkflows(CrepeBaseTest):
         assert get_dataset_status(dataset, stage_name) == STATUS_VALUES.FAILED
 
         self.log.warn("COMPLETED FAILURE CHECK!")
+
+    def _assert_empty(self, dataset):
+        self.log.warn("Checking dataset is EMPTY: %s" % dataset.name)
+        chain = dataset.chain
+
+        for stage_name in get_ordered_process_stages(chain):
+            self.tlog("%s, %s --> %s" % (dataset, stage_name, get_dataset_status(dataset, stage_name)))
+            assert get_dataset_status(dataset, stage_name) == STATUS_VALUES.EMPTY
+            self.log.warn("CHECKED PROCESS STATUS: %s, %s" % (dataset.name, stage_name))
+
+        self.log.warn("COMPLETED EMPTY CHECK!")
 
 if __name__ == "__main__":
 
