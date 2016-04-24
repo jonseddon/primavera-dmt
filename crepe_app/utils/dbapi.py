@@ -45,7 +45,7 @@ def get_dataset_files(dataset):
 
 def create_chain(name, controllers, completed_externally=False):
     chain, created = Chain.objects.get_or_create(name=name, completed_externally=completed_externally)
-    print controllers
+
     for (i, controller) in enumerate(controllers):
         process_stage, created = ProcessStage.objects.get_or_create(name=controller.__name__)
         print process_stage, created
@@ -103,7 +103,12 @@ def get_datasets_using_chain(chain):
     return Dataset.objects.filter(chain=chain).order_by("arrival_time")
 
 def get_dataset_status(dataset, stage_name):
-    return dataset.status_set.get(process_stage__name=stage_name).status_value
+    "Return dataset status if it can be read; or return None."
+    try:
+        status = dataset.status_set.get(process_stage__name=stage_name).status_value
+        return status
+    except:
+        return None
 
 def set_dataset_status(dataset, stage_name, status_value):
     # NOTE: Derives the dataset.processing_status value from the stage status value
@@ -132,9 +137,6 @@ def is_ready_to_do(dataset, stage_name, chain):
     previous = get_previous_stage(stage_name, chain)
     current_stage = stage_name
 
-    if previous:
-        print "OOO:", get_dataset_status(dataset, previous), dataset, stage_name
-
     if (not previous or (previous and get_dataset_status(dataset, previous) == STATUS_VALUES.DONE)) and \
                     get_dataset_status(dataset, current_stage) == STATUS_VALUES.EMPTY:
         return True
@@ -144,7 +146,7 @@ def is_ready_to_undo(dataset, stage_name, chain):
     current_stage = stage_name
 
     if dataset.is_withdrawn:
-        if (get_dataset_status(dataset, current_stage) == STATUS_VALUES.DONE) and \
+        if (get_dataset_status(dataset, current_stage) in (STATUS_VALUES.DONE, STATUS_VALUES.FAILED)) and \
                 (not next_stage or (get_dataset_status(dataset, next_stage) == STATUS_VALUES.EMPTY)):
             return True
 
@@ -162,7 +164,7 @@ def get_next_tasks(stage_name):
         datasets = get_datasets_using_chain(chain)
 
         for dataset in datasets:
-
+            print "Checking:", dataset.name
             # Add tasks to list
             # If ready to "do" or "undo" then add to action list
             if is_ready_to_do(dataset, stage_name, chain):

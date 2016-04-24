@@ -18,11 +18,11 @@ from crepe_app.models import __all__ as all_class_names
 classes = [eval(cls_name) for cls_name in all_class_names]
 
 def _clear_db():
+    print "Clearing out database at start..."
     for cls in classes:
-        print cls.__name__
         cls.objects.all().delete()
 
-    print "Deleted all!"
+    print "Deleted all!\n"
 
 def _run_controller(controller):
     cont = controller()
@@ -37,7 +37,6 @@ class CrepeBaseTest(unittest.TestCase):
 
     @classmethod
     def setUpClass(self):
-        _clear_db()
         self.log = logging.getLogger(self.__class__.__name__)
         self.log.setLevel(getattr(logging, config["log_level"]))
         self.tlog("Setting up...", "INFO")
@@ -49,7 +48,9 @@ class CrepeBaseTest(unittest.TestCase):
 class TestWorkflows(CrepeBaseTest):
 
     def setUp(self):
-        # For each test, run controllers
+        # For each test: clear db; run controllers
+        _clear_db()
+
         # Invoke controllers to start running
         self.procs = {}
         for contr in (QCController, IngestController, PublishController):
@@ -67,10 +68,9 @@ class TestWorkflows(CrepeBaseTest):
             self.procs[contr_name].terminate()
             del self.procs[contr_name]
 
-    def _test_ds1(self):
-        # d1 - 3 good files
+    def _common_dataset_setup(self, ds):
+        "Common setup for all workflow tests - depending on dataset provided as ``ds``."
         # Create test files
-        ds = datasets.d1
         ds.create_test_files()
 
         # Create a Chain consisting of three controllers
@@ -85,51 +85,31 @@ class TestWorkflows(CrepeBaseTest):
         # Add files
         for fname in ds.files:
             insert(File, name=fname, directory=incoming_dir, size=10, dataset=dataset)
+
+        return dataset
+
+    def test_ds1(self):
+        # d1 - 3 good files
+        ds = datasets.d1
+        dataset = self._common_dataset_setup(ds)
 
         # Sleep and then assert that all are completed
         time.sleep(10)
         self._assert_all_completed(dataset)
 
-    def _test_ds2(self):
-        # Create test files
+    def test_ds2(self):
         # d2 - 2 good files, 1 bad file
         ds = datasets.d2
-        ds.create_test_files()
-
-        # Create a Chain consisting of three controllers
-        scheme = "CMIP6-MOHC"
-        chain = create_chain(scheme, [QCController, IngestController, PublishController], completed_externally=False)
-        incoming_dir = get_dir_from_scheme(scheme, "incoming_dir")
-
-        # Add the dataset to the db
-        dataset = get_or_create(Dataset, incoming_dir=incoming_dir, name=ds.id,
-                                chain=chain, arrival_time=timezone.now())
-
-        # Add files
-        for fname in ds.files:
-            insert(File, name=fname, directory=incoming_dir, size=10, dataset=dataset)
+        dataset = self._common_dataset_setup(ds)
 
         # Sleep and then assert that all are completed
         time.sleep(10)
         self._assert_failed_at(dataset, stage=1)
 
-    def _test_ds3(self):
+    def test_ds3(self):
         # d3 - 3 good files, but IOError raised during Ingest process
         ds = datasets.d3
-        ds.create_test_files()
-
-        # Create a Chain consisting of three controllers
-        scheme = "CMIP6-MOHC"
-        chain = create_chain(scheme, [QCController, IngestController, PublishController], completed_externally=False)
-        incoming_dir = get_dir_from_scheme(scheme, "incoming_dir")
-
-        # Add the dataset to the db
-        dataset = get_or_create(Dataset, incoming_dir=incoming_dir, name=ds.id,
-                                chain=chain, arrival_time=timezone.now())
-
-        # Add files
-        for fname in ds.files:
-            insert(File, name=fname, directory=incoming_dir, size=10, dataset=dataset)
+        dataset = self._common_dataset_setup(ds)
 
         # Sleep and then assert that all are completed
         time.sleep(10)
@@ -137,22 +117,8 @@ class TestWorkflows(CrepeBaseTest):
 
     def test_ds4(self):
         # d4 - 3 good files, but withdraw afterwards
-        # Create test files
         ds = datasets.d4
-        ds.create_test_files()
-
-        # Create a Chain consisting of three controllers
-        scheme = "CMIP6-MOHC"
-        chain = create_chain(scheme, [QCController, IngestController, PublishController], completed_externally=False)
-        incoming_dir = get_dir_from_scheme(scheme, "incoming_dir")
-
-        # Add the dataset to the db
-        dataset = get_or_create(Dataset, incoming_dir=incoming_dir, name=ds.id,
-                                chain=chain, arrival_time=timezone.now())
-
-        # Add files
-        for fname in ds.files:
-            insert(File, name=fname, directory=incoming_dir, size=10, dataset=dataset)
+        dataset = self._common_dataset_setup(ds)
 
         # Sleep and then assert that all are completed
         time.sleep(10)
@@ -160,13 +126,77 @@ class TestWorkflows(CrepeBaseTest):
 
         # Now withdraw and check all undo actions work
         dataset.is_withdrawn = True
+        dataset.save()
 
         time.sleep(10)
         self._assert_empty(dataset)
 
     def test_ds5(self):
-        # d5 - 3 good files, but withdraw during ingest
-        pass
+        # d5 - 3 good files, but withdraw during QC
+        ds = datasets.d5
+        dataset = self._common_dataset_setup(ds)
+
+        # Sleep briefly so that it is part through running and then withdraw mid-transaction
+        while 1:
+            if get_dataset_status(dataset, "QCController") in \
+                    (STATUS_VALUES.PENDING_DO, STATUS_VALUES.DOING, STATUS_VALUES.DONE):
+                break
+            time.sleep(1)
+
+        dataset.is_withdrawn = True
+        dataset.save()
+
+        time.sleep(20)
+        self._assert_empty(dataset)
+
+    def test_ds6(self):
+        # d6 - 3 good files, but withdraw during Ingest
+        ds = datasets.d5
+        dataset = self._common_dataset_setup(ds)
+
+        # Sleep briefly so that it is part through running and then withdraw mid-transaction
+        while 1:
+            if get_dataset_status(dataset, "IngestController") in \
+                    (STATUS_VALUES.PENDING_DO, STATUS_VALUES.DOING, STATUS_VALUES.DONE):
+                break
+            time.sleep(1)
+
+        dataset.is_withdrawn = True
+        dataset.save()
+
+        time.sleep(20)
+        self._assert_empty(dataset)
+
+    def test_ds7(self):
+        # d7 - 3 good files, but withdraw during Publish
+        ds = datasets.d5
+        dataset = self._common_dataset_setup(ds)
+
+        # Sleep briefly so that it is part through running and then withdraw mid-transaction
+        while 1:
+            if get_dataset_status(dataset, "PublishController") in \
+                    (STATUS_VALUES.PENDING_DO, STATUS_VALUES.DOING, STATUS_VALUES.DONE):
+                break
+            time.sleep(1)
+
+        dataset.is_withdrawn = True
+        dataset.save()
+
+        time.sleep(20)
+        self._assert_empty(dataset)
+
+    def test_ds8(self):
+        # d8 - 2 good files, 1 bad file - withdraw after failure
+        ds = datasets.d2
+        dataset = self._common_dataset_setup(ds)
+
+        # Sleep briefly so that it is part through running and then withdraw mid-transaction
+        time.sleep(10)
+        dataset.is_withdrawn = True
+        dataset.save()
+
+        time.sleep(10)
+        self._assert_empty(dataset)
 
     def _assert_all_completed(self, dataset):
         self.log.warn("Checking dataset is COMPLETED: %s" % dataset.name)

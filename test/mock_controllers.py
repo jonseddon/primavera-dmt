@@ -71,7 +71,7 @@ class QCController(BaseController):
 
         self.log.info("QC completed for: %s" % ds.name)
 
-    def undo(self, task):
+    def _run_undo(self, task):
         # undo: do nothing
         self.log.warn("No UNDO actions required for controller: %s" % self.name)
 
@@ -143,7 +143,7 @@ class IngestController(BaseController):
         for source, target in move_actions:
             self._move_file(target, source)
 
-    def undo(self, task):
+    def _run_undo(self, task):
         # undo: if nextController.status is empty: delete files in: archive dir
         ds = task.dataset
         incoming_dir = get_dir_from_scheme(ds.chain.name, "incoming_dir")
@@ -226,7 +226,7 @@ class PublishController(BaseController):
             fpath = os_path_join(target_dir, os.path.basename(source_path))
             self._remove_if_exists(fpath)
 
-    def undo(self, task):
+    def _run_undo(self, task):
         # undo: if undo is required: delete files in: esgf dir
         ds = task.dataset
         esgf_dir = get_dir_from_scheme(ds.chain.name, "esgf_dir")

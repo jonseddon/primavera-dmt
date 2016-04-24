@@ -40,10 +40,10 @@ def view_events(request):
     font_map = {True: "black", False: "red"}
 
     headings = [("Time", 100), ("Dataset", 200), ("Process Stage", 100), ("Message", 50),
-                ("Action Type", 80), ("Succeeded?", 80)]
+                ("Action Type", 80), ("Succeeded?", 80), ("Withdrawn?", 80)]
     for e in events:
         records.append({"content": (e.date_time, e.dataset, e.process_stage.name.replace("Controller", ""),
-                        e.message, e.action_type, success_map[e.succeeded]),
+                        e.message, e.action_type, success_map[e.succeeded], e.dataset.is_withdrawn),
                         "style": font_map[e.succeeded]})
 
     return render_to_response('events.html', {'request': request, 'headings': headings, 'records': records})
