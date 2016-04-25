@@ -10,6 +10,7 @@ import test.test_datasets as datasets
 from test.mock_controllers import *
 from vocabs import *
 from config import config
+from config import get_dir_from_scheme
 
 
 from crepe_app.models import *
@@ -23,6 +24,17 @@ def _clear_db():
         cls.objects.all().delete()
 
     print "Deleted all!\n"
+
+def _empty_test_data_dirs():
+    dir_types = ("incoming", "archive", "esgf")
+
+    for dir_type in dir_types:
+        dr = get_dir_from_scheme("CMIP6-MOHC", "%s_dir" % dir_type)
+        for fname in os.listdir(dr):
+            os.remove(os.path.join(dr, fname))
+
+_empty_test_data_dirs()
+sdfsd
 
 def _run_controller(controller):
     cont = controller()
@@ -44,6 +56,8 @@ class CrepeBaseTest(unittest.TestCase):
     @classmethod
     def tearDownClass(self):
         self.log.info("Removing all content after running tests.")
+        # Empty data dirs
+        _empty_test_data_dirs()
 
 class TestWorkflows(CrepeBaseTest):
 
@@ -131,14 +145,12 @@ class TestWorkflows(CrepeBaseTest):
         time.sleep(10)
         self._assert_empty(dataset)
 
-    def test_ds5(self):
-        # d5 - 3 good files, but withdraw during QC
-        ds = datasets.d5
+    def _common_withdraw_test(self, controller_name, ds):
         dataset = self._common_dataset_setup(ds)
 
         # Sleep briefly so that it is part through running and then withdraw mid-transaction
         while 1:
-            if get_dataset_status(dataset, "QCController") in \
+            if get_dataset_status(dataset, controller_name) in \
                     (STATUS_VALUES.PENDING_DO, STATUS_VALUES.DOING, STATUS_VALUES.DONE):
                 break
             time.sleep(1)
@@ -148,42 +160,21 @@ class TestWorkflows(CrepeBaseTest):
 
         time.sleep(20)
         self._assert_empty(dataset)
+
+    def test_ds5(self):
+        # d5 - 3 good files, but withdraw during QC
+        ds = datasets.d5
+        self._common_withdraw_test("QCController", ds)
 
     def test_ds6(self):
         # d6 - 3 good files, but withdraw during Ingest
         ds = datasets.d5
-        dataset = self._common_dataset_setup(ds)
-
-        # Sleep briefly so that it is part through running and then withdraw mid-transaction
-        while 1:
-            if get_dataset_status(dataset, "IngestController") in \
-                    (STATUS_VALUES.PENDING_DO, STATUS_VALUES.DOING, STATUS_VALUES.DONE):
-                break
-            time.sleep(1)
-
-        dataset.is_withdrawn = True
-        dataset.save()
-
-        time.sleep(20)
-        self._assert_empty(dataset)
+        self._common_withdraw_test("IngestController", ds)
 
     def test_ds7(self):
         # d7 - 3 good files, but withdraw during Publish
         ds = datasets.d5
-        dataset = self._common_dataset_setup(ds)
-
-        # Sleep briefly so that it is part through running and then withdraw mid-transaction
-        while 1:
-            if get_dataset_status(dataset, "PublishController") in \
-                    (STATUS_VALUES.PENDING_DO, STATUS_VALUES.DOING, STATUS_VALUES.DONE):
-                break
-            time.sleep(1)
-
-        dataset.is_withdrawn = True
-        dataset.save()
-
-        time.sleep(20)
-        self._assert_empty(dataset)
+        self._common_withdraw_test("PublishController", ds)
 
     def test_ds8(self):
         # d8 - 2 good files, 1 bad file - withdraw after failure
@@ -235,6 +226,4 @@ class TestWorkflows(CrepeBaseTest):
 
 if __name__ == "__main__":
 
-    #tester = TestWorkflows()
-    #tester.test_ds1()
     unittest.main()
