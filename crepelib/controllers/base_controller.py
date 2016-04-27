@@ -70,6 +70,10 @@ class BaseController(object):
                 runner = self._map_method(task)
                 result = runner(task)
 
+                while api.is_paused():
+                    print "...............PAUSED................"
+                    time.sleep(5)
+
                 if result:
                     self._set_as_completed(task)
                 else:

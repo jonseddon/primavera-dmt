@@ -33,8 +33,12 @@ def _empty_test_data_dirs():
         for fname in os.listdir(dr):
             os.remove(os.path.join(dr, fname))
 
-_empty_test_data_dirs()
-sdfsd
+def _create_test_data_dirs():
+    dir_types = ("incoming", "archive", "esgf")
+
+    for dir_type in dir_types:
+        dr = get_dir_from_scheme("CMIP6-MOHC", "%s_dir" % dir_type)
+        if not os.path.isdir(dr): os.makedirs(dr)
 
 def _run_controller(controller):
     cont = controller()
@@ -52,6 +56,7 @@ class CrepeBaseTest(unittest.TestCase):
         self.log = logging.getLogger(self.__class__.__name__)
         self.log.setLevel(getattr(logging, config["log_level"]))
         self.tlog("Setting up...", "INFO")
+        _create_test_data_dirs()
 
     @classmethod
     def tearDownClass(self):
@@ -64,6 +69,9 @@ class TestWorkflows(CrepeBaseTest):
     def setUp(self):
         # For each test: clear db; run controllers
         _clear_db()
+
+        # Set up global settings
+        self.settings = Settings.objects.create(is_paused=False)
 
         # Invoke controllers to start running
         self.procs = {}
@@ -81,6 +89,9 @@ class TestWorkflows(CrepeBaseTest):
             self.tlog("Closing down controller: %s" % contr_name)
             self.procs[contr_name].terminate()
             del self.procs[contr_name]
+
+        # Set up global settings
+        self.settings = Settings.objects.create(is_paused=False)
 
     def _common_dataset_setup(self, ds):
         "Common setup for all workflow tests - depending on dataset provided as ``ds``."
@@ -102,7 +113,7 @@ class TestWorkflows(CrepeBaseTest):
 
         return dataset
 
-    def test_ds1(self):
+    def test_01(self):
         # d1 - 3 good files
         ds = datasets.d1
         dataset = self._common_dataset_setup(ds)
@@ -111,7 +122,7 @@ class TestWorkflows(CrepeBaseTest):
         time.sleep(10)
         self._assert_all_completed(dataset)
 
-    def test_ds2(self):
+    def test_02(self):
         # d2 - 2 good files, 1 bad file
         ds = datasets.d2
         dataset = self._common_dataset_setup(ds)
@@ -120,7 +131,7 @@ class TestWorkflows(CrepeBaseTest):
         time.sleep(10)
         self._assert_failed_at(dataset, stage=1)
 
-    def test_ds3(self):
+    def test_03(self):
         # d3 - 3 good files, but IOError raised during Ingest process
         ds = datasets.d3
         dataset = self._common_dataset_setup(ds)
@@ -129,7 +140,7 @@ class TestWorkflows(CrepeBaseTest):
         time.sleep(10)
         self._assert_failed_at(dataset, stage=2)
 
-    def test_ds4(self):
+    def test_04(self):
         # d4 - 3 good files, but withdraw afterwards
         ds = datasets.d4
         dataset = self._common_dataset_setup(ds)
@@ -161,22 +172,22 @@ class TestWorkflows(CrepeBaseTest):
         time.sleep(20)
         self._assert_empty(dataset)
 
-    def test_ds5(self):
+    def test_05(self):
         # d5 - 3 good files, but withdraw during QC
         ds = datasets.d5
         self._common_withdraw_test("QCController", ds)
 
-    def test_ds6(self):
+    def test_06(self):
         # d6 - 3 good files, but withdraw during Ingest
         ds = datasets.d5
         self._common_withdraw_test("IngestController", ds)
 
-    def test_ds7(self):
+    def test_07(self):
         # d7 - 3 good files, but withdraw during Publish
         ds = datasets.d5
         self._common_withdraw_test("PublishController", ds)
 
-    def test_ds8(self):
+    def test_08(self):
         # d8 - 2 good files, 1 bad file - withdraw after failure
         ds = datasets.d2
         dataset = self._common_dataset_setup(ds)
@@ -188,6 +199,25 @@ class TestWorkflows(CrepeBaseTest):
 
         time.sleep(10)
         self._assert_empty(dataset)
+        
+    def test_09(self):
+        # 09 - during ingest put on hold, check stuck in Publish stage
+        ds = datasets.d1
+        dataset = self._common_dataset_setup(ds)
+        controller_name = "PublishController"
+
+        # Sleep briefly so that it is part through running and then withdraw mid-transaction
+        expected_statuses = (STATUS_VALUES.PENDING_DO, STATUS_VALUES.DOING)
+        while 1:
+            if get_dataset_status(dataset, controller_name) in expected_statuses:
+                break
+            time.sleep(0.05)
+
+        self.settings.is_paused = True
+        self.settings.save()
+
+        time.sleep(20)
+        assert get_dataset_status(dataset, controller_name) in expected_statuses
 
     def _assert_all_completed(self, dataset):
         self.log.warn("Checking dataset is COMPLETED: %s" % dataset.name)

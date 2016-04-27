@@ -4,6 +4,8 @@ from crepe_app.models import *
 from crepelib.task import Task
 from vocabs import *
 
+def is_paused():
+    return Settings.objects.first().is_paused
 
 def insert(cls, **props):
     obj = cls(**props)
