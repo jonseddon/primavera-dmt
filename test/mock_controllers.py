@@ -1,30 +1,10 @@
-import shutil, logging
+import shutil
 
 from crepelib.controllers.base_controller import BaseController
 from crepe_app.utils.dbapi import *
 from crepe_app.utils.common import *
 from crepe_app.crepe_exceptions import CrepeQCError, CrepeNotifyError
 from config import get_dir_from_scheme
-
-
-class AController(BaseController):
-
-    name = "AController"
-
-    def _run_do(self, task):
-        dr = "/A"
-        get_dataset_files(task.dataset).update(directory=dr)
-        self.log.info("Updating directory: %s" % dr)
-
-
-class BController(BaseController):
-
-    name = "BController"
-
-    def _run_do(self, task):
-        dr = "/B"
-        get_dataset_files(task.dataset).update(directory=dr)
-        self.log.info("Updating directory: %s" % dr)
 
 
 class QCController(BaseController):

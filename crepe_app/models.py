@@ -1,8 +1,9 @@
 import os
-from datetime import datetime
+
 from django.utils import timezone
 from django.db import models
 from django.db.models.signals import post_save
+from solo.models import SingletonModel
 
 from vocabs import PROCESSING_STATUS_VALUES, STATUS_VALUES, ACTION_TYPES, CHECKSUM_TYPES
 
@@ -146,9 +147,12 @@ class Event(models.Model):
                                self.process_stage.name)
 
 
-class Settings(models.Model):
-    # NOTE: THIS IS NOT A GOOD WAY TO STORE A SINGLE FIELD
+class Settings(SingletonModel):
     is_paused = models.BooleanField(default=False, null=False)
 
+    def __unicode__(self):
+        return u"CREPE Settings"
+
     class Meta:
-        verbose_name_plural = "Settings"
+        verbose_name = "Settings"
+

@@ -90,9 +90,6 @@ class TestWorkflows(CrepeBaseTest):
             self.procs[contr_name].terminate()
             del self.procs[contr_name]
 
-        # Set up global settings
-        self.settings = Settings.objects.create(is_paused=False)
-
     def _common_dataset_setup(self, ds):
         "Common setup for all workflow tests - depending on dataset provided as ``ds``."
         # Create test files
@@ -210,13 +207,12 @@ class TestWorkflows(CrepeBaseTest):
         expected_statuses = (STATUS_VALUES.PENDING_DO, STATUS_VALUES.DOING)
         while 1:
             if get_dataset_status(dataset, controller_name) in expected_statuses:
+                self.settings.is_paused = True
+                self.settings.save()
                 break
-            time.sleep(0.05)
+            time.sleep(0.01)
 
-        self.settings.is_paused = True
-        self.settings.save()
-
-        time.sleep(20)
+        time.sleep(10)
         assert get_dataset_status(dataset, controller_name) in expected_statuses
 
     def _assert_all_completed(self, dataset):
