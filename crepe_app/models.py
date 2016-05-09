@@ -155,4 +155,3 @@ class Settings(SingletonModel):
 
     class Meta:
         verbose_name = "Settings"
-

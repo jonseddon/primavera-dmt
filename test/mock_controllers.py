@@ -1,4 +1,5 @@
 import shutil
+import time
 
 from crepelib.controllers.base_controller import BaseController
 from crepe_app.utils.dbapi import *
@@ -95,6 +96,9 @@ class IngestController(BaseController):
                 # Set special error to raise on particular file (test 3)
                 if f.name == "tasmax_day_IPSL-CM5A-LR_amip4K_r1i1p1_18600101-18601230.nc":
                     raise IOError("Cannot move file: %s" % fpath)
+                elif f.name == "rsds_cfDay_IPSL-CM5A-LR_abrupt4xCO2_r1i1p1_19920101-19921230.nc":
+                    # Wait here so that we can simulate the controller being switched off in test workflow
+                    time.sleep(5)
 
                 self._move_file(fpath, target)
                 move_actions.append((fpath, target))
@@ -119,11 +123,16 @@ class IngestController(BaseController):
             self._move_file(target, source)
 
     def _rollback_successful_move_actions(self, move_actions):
-        "Move files back that have been successfully moved to the archive."
+        "Move files back that have been successfully moved to the ."
         for source, target in move_actions:
             self._move_file(target, source)
 
     def _run_undo(self, task):
+        """Does undo but is also used for clean-up after re-start of the controller.
+        Hence the design needs to account for the fact that we only care about the
+        outcome and not how we got there. If we discover things are in order without
+        fully running the undo actions then we accept that.
+        """
         # undo: if nextController.status is empty: delete files in: archive dir
         ds = task.dataset
         incoming_dir = get_dir_from_scheme(ds.chain.name, "incoming_dir")
@@ -131,19 +140,29 @@ class IngestController(BaseController):
 
         # undo: move files back to: incoming dir
         archive_dir = get_dir_from_scheme(ds.chain.name, "archive_dir")
-        move_actions = []
+#        move_actions = []
 
         for f in files:
             fpath = os_path_join(archive_dir, f.name)
-            try:
+            if 1: #try:
                 target = os_path_join(incoming_dir, os.path.basename(fpath))
-                self._move_file(fpath, target)
-                move_actions.append((fpath, target))
-            except Exception, err:
+
+                # This is an undo so do not care if target already exists and
+                # the source doesn't exist.
+                if os.path.isfile(fpath):
+                    self._move_file(fpath, target)
+
+                # Now test that target exists and raise Exception if not
+                if not os.path.isfile(target):
+                    raise Exception
+#                move_actions.append((fpath, target))
+            else: #except Exception, err:
                 raise CrepeNotifyError("Cannot complete UNDO move actions for: %s." % ds.name)
 
         files.update(directory=incoming_dir)
         self.log.warn("UNDO: Files removed from archive for controller: %s" % self.name)
+        self.log.warn("Archive contains:" + str(os.listdir(archive_dir)))
+        self.log.warn("Incoming contains:" + str(os.listdir(incoming_dir)))
 
 
 class PublishController(BaseController):

@@ -4,8 +4,10 @@ from crepe_app.models import *
 from crepelib.task import Task
 from vocabs import *
 
+
 def is_paused():
     return Settings.objects.get().is_paused
+
 
 def insert(cls, **props):
     obj = cls(**props)
@@ -23,7 +25,6 @@ def match_one(cls, **props):
 def get_or_create(cls, **props):
     obj, created = cls.objects.get_or_create(**props)
     return obj
-
 
 
 def exists(cls, **props):
@@ -81,9 +82,11 @@ def is_withdrawn(dataset):
 def find_chains(stage_name):
     return Chain.objects.filter(processstageinchain__process_stage__name=stage_name)
 
+
 def get_ordered_process_stages(chain):
     stages = [psic.process_stage.name for psic in chain.processstageinchain_set.order_by("position")]
     return stages
+
 
 def get_previous_stage(stage_name, chain):
     stages = get_ordered_process_stages(chain)
@@ -91,18 +94,22 @@ def get_previous_stage(stage_name, chain):
         return None
     return stages[stages.index(stage_name) - 1]
 
+
 def get_next_stage(stage_name, chain):
     stages = get_ordered_process_stages(chain)
     if stage_name == stages[-1]:
         return None
     return stages[stages.index(stage_name) + 1]
 
+
 def is_final_stage(stage_name, scheme):
     chain = Chain.objects.get(name=scheme)
     return get_ordered_process_stages(chain)[-1] == stage_name
 
+
 def get_datasets_using_chain(chain):
     return Dataset.objects.filter(chain=chain).order_by("arrival_time")
+
 
 def get_dataset_status(dataset, stage_name):
     "Return dataset status if it can be read; or return None."
@@ -111,6 +118,7 @@ def get_dataset_status(dataset, stage_name):
         return status
     except:
         return None
+
 
 def set_dataset_status(dataset, stage_name, status_value):
     # NOTE: Derives the dataset.processing_status value from the stage status value
@@ -133,6 +141,7 @@ def set_dataset_status(dataset, stage_name, status_value):
     status.status_value = status_value
     status.save()
 
+
 def is_ready_to_do(dataset, stage_name, chain):
     if dataset.is_withdrawn: return False
 
@@ -143,6 +152,7 @@ def is_ready_to_do(dataset, stage_name, chain):
                     get_dataset_status(dataset, current_stage) == STATUS_VALUES.EMPTY:
         return True
 
+
 def is_ready_to_undo(dataset, stage_name, chain):
     next_stage = get_next_stage(stage_name, chain)
     current_stage = stage_name
@@ -152,12 +162,26 @@ def is_ready_to_undo(dataset, stage_name, chain):
                 (not next_stage or (get_dataset_status(dataset, next_stage) == STATUS_VALUES.EMPTY)):
             return True
 
-#    if ((not next_stage and dataset.is_withdrawn) or
-#                (get_dataset_status(dataset, next_stage) == STATUS_VALUES.EMPTY)) and \
-#                    get_dataset_status(dataset, current_stage) == STATUS_VALUES.DONE:
-#        return True
 
-def get_next_tasks(stage_name):
+def is_ready_to_undo_on_restart(dataset, stage_name):
+    # Note: it doesn't matter if a dataset is withdrawn in this context
+    # because they all need cleaning up after restart.
+    if (get_dataset_status(dataset, stage_name) in (STATUS_VALUES.DOING, STATUS_VALUES.PENDING_UNDO,
+                                                    STATUS_VALUES.UNDOING)):
+            return True
+
+
+def get_next_tasks(stage_name, initial=False):
+    """
+    If initial is True then:
+     - Assume the controller has just started and we need to clean up.
+     - Only return a list of UNDO tasks.
+     - Do the following:
+       - reset PENDING_DO tasks to EMPTY
+       - return any tasks labelled as DOING - the controller will fix their status
+       - return any tasks labelled as PENDING_UNDO - the controller will fix their status
+       - return any tasks labelled as UNDOING - the controller will fix their status
+    """
     chains = find_chains(stage_name)
     tasks = []
 
@@ -166,12 +190,22 @@ def get_next_tasks(stage_name):
         datasets = get_datasets_using_chain(chain)
 
         for dataset in datasets:
-            print "Checking:", dataset.name
-            # Add tasks to list
-            # If ready to "do" or "undo" then add to action list
-            if is_ready_to_do(dataset, stage_name, chain):
-                tasks.append(Task(chain.name, dataset, "do"))
-            elif is_ready_to_undo(dataset, stage_name, chain):
-                tasks.append(Task(chain.name, dataset, "undo"))
+            # Add tasks to list for this dataset
+
+            if initial:
+                # If PENDING_DO then just reset the status to EMPTY
+                if get_dataset_status(dataset, stage_name) == STATUS_VALUES.PENDING_DO:
+                    set_dataset_status(dataset, stage_name, STATUS_VALUES.EMPTY)
+                # If it needs undoing after restart then add to tasks list.
+                # Collect up tasks that are stuck in states "DOING" or "PENDING_UNDO" or "UNDOING".
+                elif is_ready_to_undo_on_restart(dataset, stage_name):
+                    tasks.append(Task(chain.name, dataset, "undo"))
+            else:
+                # If ready to "do" or "undo" then add to action list
+                if is_ready_to_do(dataset, stage_name, chain):
+                    tasks.append(Task(chain.name, dataset, "do"))
+                elif is_ready_to_undo(dataset, stage_name, chain):
+                    tasks.append(Task(chain.name, dataset, "undo"))
 
     return tasks
+

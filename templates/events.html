@@ -14,7 +14,7 @@
             </thead>
             <tbody>
                 {% for record in records %}
-                <tr scope="row">
+                <tr scope="row" style="font-size: 12px;">
                     {% for item in record.content %}
                         <td style="color: {{ record.style }};">{{ item }}</td>
                     {% endfor %}

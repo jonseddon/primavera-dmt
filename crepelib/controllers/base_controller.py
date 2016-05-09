@@ -61,8 +61,11 @@ class BaseController(object):
         api.set_dataset_status(task.dataset, self.name, STATUS_VALUES.FAILED)
 
     def _run(self):
+        "Main runner that loads tasks and then processes them."
+        initial = True
+
         while 1:
-            self.load_tasks()
+            self.load_tasks(initial=initial)
             self.log.warn("Tasks picked up: %s" % self.tasks)
 
             for task in self.tasks:
@@ -71,7 +74,7 @@ class BaseController(object):
                 result = runner(task)
 
                 while api.is_paused():
-                    print "...............PAUSED................"
+                    self.log.info("...............PAUSED................")
                     time.sleep(5)
 
                 if result:
@@ -81,12 +84,16 @@ class BaseController(object):
 
             self.log.info("Sleeping for a while: %s" % self.name)
             time.sleep(5)
+            initial = False
 
-    def load_tasks(self):
-        self.tasks = self.get_tasks_from_db()
+    def load_tasks(self, initial=False):
+        self.tasks = self.get_tasks_from_db(initial=initial)
 
-    def get_tasks_from_db(self):
-        tasks = api.get_next_tasks(self.name)
+    def get_tasks_from_db(self, initial=False):
+        # Get tasks, if initial is True then we only want to get a list
+        # tasks to undo that need to be rolled back before we proceed.
+        tasks = api.get_next_tasks(self.name, initial=initial)
+
         # Register tasks as being managed by this controller and pending
         for task in tasks:
             status_value = "PENDING_%s" % task.action_type.upper()
@@ -109,11 +116,11 @@ class BaseController(object):
 
     def undo_task(self, task):
         self.log.info("Running task: %s" % task)
-        try:
+        if 1: #try:
             self._run_undo(task)
             self.log_event(task.dataset, "UNDO", "SUCCESS")
             return True
-        except Exception, err:
+        else: #except Exception, err:
             self.log.warn("Failed UNDO: %s" % task)
             self.log_event(task.dataset, "UNDO", "FAILURE")
             return False

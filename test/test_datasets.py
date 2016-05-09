@@ -73,3 +73,8 @@ d5 = DatasetForTests("cmip5.output1.MOHC.HadGEM2-ES.rcp45.day.atmos.cfDay.r1i1p1
                       "zos_cfDay_HadGEM2-ES_rcp45_r1i1p1_19920101-19921230.nc",
                       "zos_cfDay_HadGEM2-ES_rcp45_r1i1p1_19930101-19931230.nc"),
                      simulate_action="WITHDRAW DURING INGEST")
+
+d6 = DatasetForTests("cmip5.output1.IPSL.IPSL-CM5A-LR.abrupt4xCO2.day.atmos.cfDay.r1i1p1.v20120114",
+                     ("rsds_cfDay_IPSL-CM5A-LR_abrupt4xCO2_r1i1p1_19910101-19911230.nc",
+                      "rsds_cfDay_IPSL-CM5A-LR_abrupt4xCO2_r1i1p1_19920101-19921230.nc",
+                      "rsds_cfDay_IPSL-CM5A-LR_abrupt4xCO2_r1i1p1_19930101-19931230.nc"))

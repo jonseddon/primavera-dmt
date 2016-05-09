@@ -215,6 +215,39 @@ class TestWorkflows(CrepeBaseTest):
         time.sleep(10)
         assert get_dataset_status(dataset, controller_name) in expected_statuses
 
+
+    def test_10(self):
+        # 10 - during the ingest stage the Ingest controller is killed.
+        # It then gets re-started and it needs to detect that it is supposed to be
+        # currently processing something and needs to resolve that before continuing.
+
+        # d6 - 3 normal files - 1 to be detected by mock ingest controller and to slow
+        # down so that we can simulate the controller switching off.
+        ds = datasets.d6
+        dataset = self._common_dataset_setup(ds)
+
+        contr = IngestController
+
+        # Sleep briefly so that the ingestion is underway - then kill the Ingest
+        expected_status = STATUS_VALUES.DOING
+        while 1:
+            self.tlog("Waiting for task to be 'DOING'...")
+            if get_dataset_status(dataset, contr.name) == expected_status:
+                self.tlog("Terminating %s" % contr.name, "WARN")
+                self.procs[contr.name].terminate()
+                break
+            time.sleep(1)
+
+        # Sleep for a while and then re-start the controller
+        time.sleep(3)
+        self.tlog("Re-starting %s" % contr.name, "WARN")
+        self.procs[contr.name] = Process(target=_run_controller, args=(contr,))
+        self.procs[contr.name].start()
+
+        # Sleep and then assert that all are completed
+        time.sleep(30)
+        self._assert_all_completed(dataset)
+
     def _assert_all_completed(self, dataset):
         self.log.warn("Checking dataset is COMPLETED: %s" % dataset.name)
         chain = dataset.chain
