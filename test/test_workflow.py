@@ -150,7 +150,7 @@ class TestWorkflows(CrepeBaseTest):
         dataset.is_withdrawn = True
         dataset.save()
 
-        time.sleep(10)
+        time.sleep(20)
         self._assert_empty(dataset)
 
     def _common_withdraw_test(self, controller_name, ds):
@@ -166,7 +166,7 @@ class TestWorkflows(CrepeBaseTest):
         dataset.is_withdrawn = True
         dataset.save()
 
-        time.sleep(20)
+        time.sleep(30)
         self._assert_empty(dataset)
 
     def test_05(self):
