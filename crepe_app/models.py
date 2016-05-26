@@ -11,8 +11,8 @@ from vocabs import PROCESSING_STATUS_VALUES, STATUS_VALUES, ACTION_TYPES, CHECKS
 # - We'll need to use: on_delete=models.SET_NULL in some cases
 #   to avoid cascading deletion of objects.
 
-__all__ = ['Chain', 'Dataset', 'ProcessStage', 'Status', 'ProcessStageInChain',
-           'File', 'Symlink', 'Event', 'Checksum', 'Settings']
+model_names = ['Chain', 'Dataset', 'ProcessStage', 'Status', 'ProcessStageInChain',
+               'File', 'Symlink', 'Event', 'Checksum', 'Settings']
 
 
 

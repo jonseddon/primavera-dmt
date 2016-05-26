@@ -2,11 +2,64 @@
 {% load staticfiles %}
 
     {% block contents %}
-        <p>About Chains</p>
+        <p>Some blurb here...</p>
+
+        <script>
+            $(function() {
+                $( "#datasets_input" ).autocomplete({
+                    source: "/api/autocomplete/file/"
+                });
+            });
+        </script>
+
+        <div id="filter-show-hide" style="position: relative;" class="btn btn-default" onclick="toggle_filter_div();"></div>
+        <div id="filter-div" style="border: 1px;">
+            <div class="container">
+                <form name="filter" onSubmit="">
+                    <div class="row">
+
+                        <div class="col-lg-5 col-md-5 col-sm-5">Records per page: </div>
+                        <div class="col-lg-5 col-md-5 col-sm-5">
+                            <input type="text" name="records_per_page" id="records_per_page" value="25"></input>
+                        </div>
+
+                    </div>
+                    <div class="row">
+
+                        <div class="col-lg-5 col-md-5 col-sm-5">Records per page: </div>
+                        <div class="col-lg-5 col-md-5 col-sm-5">
+                            <input type="text" name="records_per_page" id="records_per_page" value="25"></input>
+                        </div>
+
+                    </div>
+                    <div class="ui-widget">
+                        <label for="datasets_input">Dataset search: </label>
+                        <input id="datasets_input" style="width: 300px;" class="form-control" placeholder="Search">
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <script>
+        var filter_div_status = false;
+
+        function toggle_filter_div() {
+            if (filter_div_status) {
+                $("#filter-div").hide("blind", {direction: "up"}, "fast");
+                $("#filter-show-hide").text("Show Filters");
+            } else {
+                $("#filter-div").show("blind", {direction: "up"}, "fast");
+                $("#filter-show-hide").text("Hide Filters");
+            }
+            filter_div_status = ! filter_div_status;
+        }
+
+        toggle_filter_div();
+        </script>
 
         {% for record in records %}
 
-            <div class="list-group">
+            <div class="list-group" style="margin-top: 10px;">
                 <a href="#" class="list-group-item active">
                     <h4 class="list-group-item-heading">Chain name: {{ record.name }}</h4>
 

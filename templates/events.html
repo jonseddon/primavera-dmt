@@ -2,18 +2,138 @@
 {% load staticfiles %}
 
     {% block contents %}
-        <h4>About Events</h4>
+        <p>
+            An Event is logged each time a Controller has completed (i.e. succeeded or failed to process) a
+            <a href="#" data-toggle="tooltip" title="A Dataset is a collection of files that share a common ID">
+                Dataset</a>.
+            This page allows you to view Events in the system based on a set of search criteria.
+        </p>
+
+        <script>
+            $(function() {
+                $( "#dataset" ).autocomplete({source: "/api/autocomplete/dataset/"});
+                $( "#process_stage" ).autocomplete({source: "/api/autocomplete/processstage/"});
+            });
+        </script>
+
+        <div id="filter-show-hide" style="width: 200px;" class="btn btn-sm btn-primary"
+             onclick="toggle_filter_div();"></div>
+
+        <div id="filter-div" style="margin-top: 10px;" class="panel panel-default">
+          <div class="panel-body">
+            <div class="container">
+                <form id="filter" name="filter" class="form-horizontal" role="form">
+                       <div class="form-group">
+                        <label class="control-label col-sm-2" for="dataset">Dataset:</label>
+                        <div class="col-sm-6">
+                          <input type="text" class="form-control" id="dataset"
+                                 placeholder="Start typing dataset ID...">
+                        </div>
+                        <div class="col-sm-2">
+                          <button type="button" onclick="reload_records();" class="btn btn-primary">Apply Filters</button>
+                        </div>
+                      </div>
+                      <div class="form-group">
+                        <label class="control-label col-sm-2" for="process_stage">Process Stage:</label>
+                        <div class="col-sm-6">
+                          <input type="text" class="form-control" id="process_stage" placeholder="Enter Process Stage">
+                        </div>
+                      </div>
+                      <div class="form-group">
+                        <label class="control-label col-sm-2" for="message">Message:</label>
+                        <div class="col-sm-6">
+                          <input type="text" class="form-control" id="message" placeholder="Enter Message">
+                        </div>
+                      </div>
+                      <div class="form-group">
+                        <label class="control-label col-sm-2" for="action_type">Action Type:</label>
+                        <div class="col-sm-6">
+                          <select class="form-control" id="action_type">
+                            <option></option>
+                            <option>DO</option>
+                            <option>UNDO</option>
+                          </select>
+                        </div>
+                      </div>
+                      <div class="form-group">
+                        <label class="control-label col-sm-2" for="succeeded">Succeeded?</label>
+                        <div class="col-sm-6">
+                          <select class="form-control" id="succeeded">
+                            <option></option>
+                            <option>TRUE</option>
+                            <option>FALSE</option>
+                          </select>
+                        </div>
+                      </div>
+                      <div class="form-group">
+                        <label class="control-label col-sm-2" for="withdrawn">Is withdrawn?</label>
+                        <div class="col-sm-6">
+                          <select class="form-control" id="withdrawn">
+                            <option></option>
+                            <option>TRUE</option>
+                            <option>FALSE</option>
+                          </select>
+                        </div>
+                      </div>
+                      <div class="form-group">
+                        <label class="control-label col-sm-2" for="order_by">Order by:</label>
+                        <div class="col-sm-6">
+                          <select class="form-control" id="order_by">
+                            <option value="date_time">Time</option>
+                            <option value="dataset__name">Dataset</option>
+                            <option value="process_stage__name">Process Stage</option>
+                            <option value="message">Message</option>
+                            <option value="-date_time">Time (reversed)</option>
+                            <option value="-dataset__name">Dataset (reversed)</option>
+                            <option value="-process_stage__name">Process Stage (reversed)</option>
+                            <option value="-message">Message (reversed)</option>
+                          </select>
+                        </div>
+                      </div>
+                      <div class="form-group">
+                        <label class="control-label col-sm-2" for="recs_per_page">Records per page:</label>
+                        <div class="col-sm-6">
+                          <input type="text" class="form-control" id="recs_per_page" value="25">
+                        </div>
+                        <div class="col-sm-2">
+                          <button type="button" onclick="reload_records();" class="btn btn-primary">Apply Filters</button>
+                        </div>
+                      </div>
+                </form>
+            </div>
+          </div>
+        </div>
+
+        <script>
+        var filter_div_status = false;
+
+        function toggle_filter_div() {
+            if (filter_div_status) {
+                $("#filter-div").hide("blind", {direction: "up"}, "fast");
+                $("#filter-show-hide").text("Show Search Filters");
+            } else {
+                $("#filter-div").show("blind", {direction: "up"}, "fast");
+                $("#filter-show-hide").text("Hide Search Filters");
+            }
+            filter_div_status = ! filter_div_status;
+        }
+
+        toggle_filter_div();
+        </script>
 
         <table class="table table-striped">
             <thead class="thead-default">
                 <tr>
-                    {% for heading in headings %}
-                        <th style="min-width: {{ heading.1 }}px">{{ heading.0 }}</th>
+                    {% for field in fields %}
+                        <th style="min-width: {{ field.2 }}px">{{ field.0 }}
+<!--                            <span id="{{ field.1 }}-sort" onclick="reload_records('{{ field.1 }}');"
+                                  class="glyphicon glyphicon-triangle-bottom"</span>  -->
+                        </th>
                     {% endfor %}
                 </tr>
             </thead>
-            <tbody>
-                {% for record in records %}
+            <tbody id="table-body">
+                {% for record in records2 %}
                 <tr scope="row" style="font-size: 12px;">
                     {% for item in record.content %}
                         <td style="color: {{ record.style }};">{{ item }}</td>
@@ -22,9 +142,5 @@
                 {% endfor %}
             </tbody>
         </table>
-        {% for record in records %}
 
-
-
-        {% endfor %}
     {% endblock %}

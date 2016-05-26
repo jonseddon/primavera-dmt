@@ -1,3 +1,4 @@
 django
 pysqlite
 django-solo
+djangorestframework
