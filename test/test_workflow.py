@@ -283,6 +283,21 @@ class TestWorkflows(CrepeBaseTest):
 
         self.log.warn("COMPLETED EMPTY CHECK!")
 
+def get_suite(tests):
+    suite = unittest.TestSuite()
+    for test in tests:
+        suite.addTest(TestWorkflows(test))
+
+    return suite
+
 if __name__ == "__main__":
 
-    unittest.main()
+    limited_suite = False
+    limited_suite = True
+
+    if limited_suite:
+        tests = ['test_03']
+        suite = get_suite(tests)
+        unittest.TextTestRunner(verbosity=2).run(suite)
+    else:
+        unittest.main()

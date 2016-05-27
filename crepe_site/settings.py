@@ -1,5 +1,5 @@
 """
-Django settings for crepe2 project.
+Django settings for crepe project.
 
 For more information on this file, see
 https://docs.djangoproject.com/en/1.6/topics/settings/
@@ -33,6 +33,7 @@ INSTALLED_APPS = (
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'solo',
     'crepe_app',
     'rest_framework'
 )

@@ -1,8 +1,11 @@
 from django.contrib import admin
+from solo.admin import SingletonModelAdmin
 
-# Register your models here.
 from crepe_app.models import *
 
+# Register your models here.
+admin.site.register(Settings, SingletonModelAdmin)
+
 for mymodel in (Chain, Dataset, ProcessStage, Status, ProcessStageInChain,
-           File, Symlink, Event, Checksum, Settings):
+           File, Symlink, Event, Checksum):
     admin.site.register(mymodel)

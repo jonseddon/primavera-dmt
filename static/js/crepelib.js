@@ -58,7 +58,7 @@ function create_table_row(content) {
     var keys = ['date_time', 'dataset.name', 'process_stage.name', 'message', 'action_type', 'succeeded', 'withdrawn'];
     var font_color = 'black';
 
-    if (content[succeeded]) {
+    if (content['succeeded'] == false) {
         font_color = 'red';
     }
 
@@ -67,7 +67,7 @@ function create_table_row(content) {
                  content.message, content.action_type, content.succeeded, content.dataset.is_withdrawn];
 
     for (var i=0; i < items.length; i++) {
-        row += '<td color="' + font_color + '">' + items[i] + '</td>\n';
+        row += '<td style="color: ' + font_color + ';">' + items[i] + '</td>\n';
     }
 
     return row;

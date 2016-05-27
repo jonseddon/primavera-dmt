@@ -13,7 +13,7 @@ from vocabs import PROCESSING_STATUS_VALUES, STATUS_VALUES, ACTION_TYPES, CHECKS
 
 model_names = ['Chain', 'Dataset', 'ProcessStage', 'Status', 'ProcessStageInChain',
                'File', 'Symlink', 'Event', 'Checksum', 'Settings']
-
+__all__ = model_names
 
 
 class Chain(models.Model):
