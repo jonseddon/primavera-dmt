@@ -69,7 +69,7 @@ class Status(models.Model):
     # Connects Dataset and ProcessStage
     dataset = models.ForeignKey(Dataset, null=False)
     process_stage = models.ForeignKey(ProcessStage, null=False)
-    status_value = models.CharField(max_length=7, choices=STATUS_VALUES.items(),
+    status_value = models.CharField(max_length=20, choices=STATUS_VALUES.items(),
                                     null=False, blank=False)
     start_time = models.DateTimeField(default=timezone.now, null=False)
     end_time = models.DateTimeField(default=timezone.now, null=False)

@@ -112,6 +112,7 @@ class TestWorkflows(CrepeBaseTest):
 
     def test_01(self):
         # d1 - 3 good files
+        self.tlog("STARTING: test_01")
         ds = datasets.d1
         dataset = self._common_dataset_setup(ds)
 
@@ -121,6 +122,7 @@ class TestWorkflows(CrepeBaseTest):
 
     def test_02(self):
         # d2 - 2 good files, 1 bad file
+        self.tlog("STARTING: test_02")
         ds = datasets.d2
         dataset = self._common_dataset_setup(ds)
 
@@ -130,6 +132,7 @@ class TestWorkflows(CrepeBaseTest):
 
     def test_03(self):
         # d3 - 3 good files, but IOError raised during Ingest process
+        self.tlog("STARTING: test_03")
         ds = datasets.d3
         dataset = self._common_dataset_setup(ds)
 
@@ -139,6 +142,7 @@ class TestWorkflows(CrepeBaseTest):
 
     def test_04(self):
         # d4 - 3 good files, but withdraw afterwards
+        self.tlog("STARTING: test_04")
         ds = datasets.d4
         dataset = self._common_dataset_setup(ds)
 
@@ -171,21 +175,25 @@ class TestWorkflows(CrepeBaseTest):
 
     def test_05(self):
         # d5 - 3 good files, but withdraw during QC
+        self.tlog("STARTING: test_05")
         ds = datasets.d5
         self._common_withdraw_test("QCController", ds)
 
     def test_06(self):
         # d6 - 3 good files, but withdraw during Ingest
+        self.tlog("STARTING: test_06")
         ds = datasets.d5
         self._common_withdraw_test("IngestController", ds)
 
     def test_07(self):
         # d7 - 3 good files, but withdraw during Publish
+        self.tlog("STARTING: test_07")
         ds = datasets.d5
         self._common_withdraw_test("PublishController", ds)
 
     def test_08(self):
         # d8 - 2 good files, 1 bad file - withdraw after failure
+        self.tlog("STARTING: test_08")
         ds = datasets.d2
         dataset = self._common_dataset_setup(ds)
 
@@ -199,6 +207,7 @@ class TestWorkflows(CrepeBaseTest):
         
     def test_09(self):
         # 09 - during ingest put on hold, check stuck in Publish stage
+        self.tlog("STARTING: test_09")
         ds = datasets.d1
         dataset = self._common_dataset_setup(ds)
         controller_name = "PublishController"
@@ -223,6 +232,7 @@ class TestWorkflows(CrepeBaseTest):
 
         # d6 - 3 normal files - 1 to be detected by mock ingest controller and to slow
         # down so that we can simulate the controller switching off.
+        self.tlog("STARTING: test_10")
         ds = datasets.d6
         dataset = self._common_dataset_setup(ds)
 
@@ -293,7 +303,7 @@ def get_suite(tests):
 if __name__ == "__main__":
 
     limited_suite = False
-    limited_suite = True
+#    limited_suite = True
 
     if limited_suite:
         tests = ['test_03']

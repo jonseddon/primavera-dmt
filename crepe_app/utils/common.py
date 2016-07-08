@@ -2,6 +2,7 @@ import os
 import commands
 
 from apps import all_controllers
+from crepe_app.models import model_names
 from crepe_app.models import *
 
 def get_controller_class(name):
