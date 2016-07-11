@@ -19,10 +19,12 @@
         <div id="filter-show-hide" style="width: 200px;" class="btn btn-sm btn-primary"
              onclick="toggle_filter_div();"></div>
 
-        <div id="filter-div" style="margin-top: 10px;" class="panel panel-default">
+        <div id="filter-form" style="margin-top: 10px;" class="panel panel-default">
           <div class="panel-body">
             <div class="container">
                 <form id="filter" name="filter" class="form-horizontal" role="form">
+
+                    <div id="form-basic">
                        <div class="form-group">
                         <label class="control-label col-sm-2" for="dataset">Dataset:</label>
                         <div class="col-sm-6">
@@ -33,6 +35,9 @@
                           <button type="button" onclick="reload_records();" class="btn btn-primary">Apply Filters</button>
                         </div>
                       </div>
+                    </div>
+
+                    <div id="form-extended">
                       <div class="form-group">
                         <label class="control-label col-sm-2" for="process_stage">Process Stage:</label>
                         <div class="col-sm-6">
@@ -99,6 +104,8 @@
                           <button type="button" onclick="reload_records();" class="btn btn-primary">Apply Filters</button>
                         </div>
                       </div>
+                    </div>
+
                 </form>
             </div>
           </div>
@@ -108,11 +115,13 @@
         var filter_div_status = false;
 
         function toggle_filter_div() {
+            var form_ext = $("#form-extended");
+
             if (filter_div_status) {
-                $("#filter-div").hide("blind", {direction: "up"}, "fast");
+                form_ext.hide("blind", {direction: "up"}, "fast");
                 $("#filter-show-hide").text("Show Search Filters");
             } else {
-                $("#filter-div").show("blind", {direction: "up"}, "fast");
+                form_ext.show("blind", {direction: "up"}, "fast");
                 $("#filter-show-hide").text("Hide Search Filters");
             }
             filter_div_status = ! filter_div_status;
