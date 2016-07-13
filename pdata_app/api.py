@@ -1,6 +1,6 @@
-from crepe_app.models import *
-from crepe_app.utils.common import as_bool
-from crepe_app.serializers import EventSerializer
+from pdata_app.models import *
+from pdata_app.utils.common import as_bool
+from pdata_app.serializers import EventSerializer
 
 from django.http import Http404
 

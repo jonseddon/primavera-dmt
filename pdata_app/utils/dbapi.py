@@ -1,7 +1,7 @@
 from django.utils import timezone
 
-from crepe_app.models import *
-from crepelib.task import Task
+from pdata_app.models import *
+from pdatalib.task import Task
 from vocabs import *
 
 

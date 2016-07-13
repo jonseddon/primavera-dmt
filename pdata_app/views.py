@@ -4,9 +4,9 @@ from django.shortcuts import render
 from django.shortcuts import render_to_response
 from django.http import JsonResponse, HttpResponseNotFound
 
-from crepe_app.models import *
-from crepe_app.utils import dbapi
-from crepe_app.utils.common import get_class_by_name
+from pdata_app.models import *
+from pdata_app.utils import dbapi
+from pdata_app.utils.common import get_class_by_name
 
 
 def view_files(request):

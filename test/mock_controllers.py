@@ -1,10 +1,10 @@
 import shutil
 import time
 
-from crepelib.controllers.base_controller import BaseController
-from crepe_app.utils.dbapi import *
-from crepe_app.utils.common import *
-from crepe_app.crepe_exceptions import CrepeQCError, CrepeNotifyError
+from pdatalib.controllers.base_controller import BaseController
+from pdata_app.utils.dbapi import *
+from pdata_app.utils.common import *
+from pdata_app.pdata_exceptions import PdataQCError, PdataNotifyError
 from config import get_dir_from_scheme
 
 
@@ -22,7 +22,7 @@ class QCController(BaseController):
         expected_var_id = os.path.basename(fpath).split("_")[0]
         with open(fpath) as f:
             if f.read() != expected_var_id:
-                raise CrepeQCError("File: %s failed QC with contents error." % fpath)
+                raise PdataQCError("File: %s failed QC with contents error." % fpath)
 
     def _run_do(self, task):
         ds = task.dataset
@@ -42,13 +42,13 @@ class QCController(BaseController):
         for fpath in fpaths:
             try:
                 self._run_qc(fpath)
-            except CrepeQCError, err:
+            except PdataQCError, err:
                 qc_failures.append(err)
             # Does not catch other exceptions
 
         if qc_failures:
             set_dataset_status(ds, self.name, STATUS_VALUES.FAILED)
-            raise CrepeQCError("%d files failed QC for dataset: %s" % (len(qc_failures), ds.name))
+            raise PdataQCError("%d files failed QC for dataset: %s" % (len(qc_failures), ds.name))
 
         self.log.info("QC completed for: %s" % ds.name)
 
@@ -106,12 +106,12 @@ class IngestController(BaseController):
                 try:
                     self._clean_up_failed_move(f, fpath, target)
                 except:
-                    raise CrepeNotifyError("Cannot move or clean up file move actions: %s -> %s for dataset: %s" % \
-                                      (fpath, target, ds.name))
+                    raise PdataNotifyError("Cannot move or clean up file move actions: %s -> %s for dataset: %s" % \
+                                           (fpath, target, ds.name))
                 try:
                     self._rollback_successful_move_actions(move_actions)
                 except:
-                    raise CrepeNotifyError("Cannot rollback move actions for: %s." % ds.name)
+                    raise PdataNotifyError("Cannot rollback move actions for: %s." % ds.name)
 
         files.update(directory=archive_dir)
         self.log.info("DO: Ingestion completed for: %s" % ds.name)
@@ -157,7 +157,7 @@ class IngestController(BaseController):
                     raise Exception
 #                move_actions.append((fpath, target))
             else: #except Exception, err:
-                raise CrepeNotifyError("Cannot complete UNDO move actions for: %s." % ds.name)
+                raise PdataNotifyError("Cannot complete UNDO move actions for: %s." % ds.name)
 
         files.update(directory=incoming_dir)
         self.log.warn("UNDO: Files removed from archive for controller: %s" % self.name)
@@ -203,12 +203,12 @@ class PublishController(BaseController):
                 try:
                     self._remove_if_exists(os_path_join(esgf_dir, os.path.basename(fpath)))
                 except:
-                    raise CrepeNotifyError("Cannot move or clean up file copy actions: %s -> %s for dataset: %s" % \
-                                      (fpath, esgf_dir, ds.name))
+                    raise PdataNotifyError("Cannot move or clean up file copy actions: %s -> %s for dataset: %s" % \
+                                           (fpath, esgf_dir, ds.name))
                 try:
                     self._rollback_successful_copy_action(copy_actions)
                 except:
-                    raise CrepeNotifyError("Cannot rollback copy actions for: %s." % ds.name)
+                    raise PdataNotifyError("Cannot rollback copy actions for: %s." % ds.name)
 
         self.log.info("DO: Publishing completed for: %s" % ds.name)
 
@@ -237,6 +237,6 @@ class PublishController(BaseController):
             try:
                 self._remove_if_exists(fpath)
             except Exception, err:
-                raise CrepeNotifyError("Cannot complete UNDO copy actions for: %s." % ds.name)
+                raise PdataNotifyError("Cannot complete UNDO copy actions for: %s." % ds.name)
 
         self.log.warn("UNDO: Files removed from esgf dir for controller: %s" % self.name)

@@ -1,8 +1,8 @@
 import django
 django.setup()
 
-from crepe_app.models import *
-from crepe_app.models import __all__ as all_class_names
+from pdata_app.models import *
+from pdata_app.models import __all__ as all_class_names
 
 classes = [eval(cls_name) for cls_name in all_class_names]
  

@@ -4,7 +4,7 @@ logging.basicConfig()
 log = logging.getLogger(__name__)
 log.setLevel(logging.INFO)
 
-import crepe_app.utils.dbapi as api
+import pdata_app.utils.dbapi as api
 from vocabs import *
 
 # Decorators

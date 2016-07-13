@@ -10,11 +10,11 @@ import sys
 
 import django
 
-os.environ["DJANGO_SETTINGS_MODULE"] = "crepe_site.settings"
+os.environ["DJANGO_SETTINGS_MODULE"] = "pdata_site.settings"
 django.setup()
 
-from crepe_app.utils.dbapi import create_chain
-from crepe_app.utils.common import get_controller_class
+from pdata_app.utils.dbapi import create_chain
+from pdata_app.utils.common import get_controller_class
 
 
 def make_chain(name, *steps):

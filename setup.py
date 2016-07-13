@@ -10,10 +10,10 @@ import sys, os
 
 version = '0.1.0'
 
-setup(name='crepe_site',
+setup(name='pdata_site',
       version=version,
-      description='CEDA Dataset Pipeline App',
-      url='https://github.com/cedadev/crepe',
+      description='PRIMAVERA Data Management Tool',
+      url='https://github.com/agstephens/primavera-dmt',
       packages=find_packages(),
       include_package_data=True,
       )

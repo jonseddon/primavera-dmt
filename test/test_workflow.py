@@ -13,8 +13,8 @@ from config import config
 from config import get_dir_from_scheme
 
 
-from crepe_app.models import *
-from crepe_app.models import __all__ as all_class_names
+from pdata_app.models import *
+from pdata_app.models import __all__ as all_class_names
 
 classes = [eval(cls_name) for cls_name in all_class_names]
 
@@ -44,7 +44,7 @@ def _run_controller(controller):
     cont = controller()
     cont.start()
 
-class CrepeBaseTest(unittest.TestCase):
+class PdataBaseTest(unittest.TestCase):
 
     @classmethod
     def tlog(self, msg, log_level="info"):
@@ -64,7 +64,7 @@ class CrepeBaseTest(unittest.TestCase):
         # Empty data dirs
         _empty_test_data_dirs()
 
-class TestWorkflows(CrepeBaseTest):
+class TestWorkflows(PdataBaseTest):
 
     def setUp(self):
         # For each test: clear db; run controllers

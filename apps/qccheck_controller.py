@@ -1,10 +1,10 @@
 import glob, os
 from datetime import datetime
 
-from crepelib.controllers.base_controller import BaseController
-from crepe_app.crepe_exceptions.crepe_exceptions import *
-from crepe_app.models import *
-import crepe_app.utils.dbapi as api
+from pdatalib.controllers.base_controller import BaseController
+from pdata_app.pdata_exceptions.pdata_exceptions import *
+from pdata_app.models import *
+import pdata_app.utils.dbapi as api
 
 class QCCheckController(BaseController):
 
@@ -19,7 +19,7 @@ Check that each file in a dataset is valid:
         ds_id = task
         dataset = api.match_one(Dataset, name=ds_id)
         if not dataset:
-            raise CrepeDatasetError("Must tell people about this error...cannot find dataset.")
+            raise PdataDatasetError("Must tell people about this error...cannot find dataset.")
 
         files = api.get_dataset_files(dataset)
 
@@ -43,4 +43,4 @@ Check that each file in a dataset is valid:
         var_id_fname = file.name.split("_")[0]
 
         if var_id_content != var_id_fname:
-            raise CrepeFileContentsError(loc)
+            raise PdataFileContentsError(loc)

@@ -1,5 +1,5 @@
-# crepe
-CEDA REceive-to-publish PipelinE
+# primavera-dmt
+PRIMAVERA Data Management Tool
 
 Quick set-up
 
@@ -9,13 +9,13 @@ Quick set-up
 
 
  2. Install dependencies:
+ `$ pip install -r requirements.txt`
 
-
- 2. Create local settings:
-   crepe_site/settings_local.py
+ 3. Create local settings:
+ `$ cp pdata_site/settings_local.py
 
  1. Django setup:
-  python manage.py makemigrations crepe_app
+  python manage.py makemigrations pdata_app
   python manage.py migrate
 
 

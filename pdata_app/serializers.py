@@ -1,4 +1,4 @@
-from crepe_app.models import *
+from pdata_app.models import *
 
 from rest_framework import serializers
 

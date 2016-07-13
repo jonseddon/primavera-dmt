@@ -1,5 +1,5 @@
 """
-WSGI config for crepe2 project.
+WSGI config for pdata project.
 
 It exposes the WSGI callable as a module-level variable named ``application``.
 
@@ -8,7 +8,7 @@ https://docs.djangoproject.com/en/1.6/howto/deployment/wsgi/
 """
 
 import os
-os.environ.setdefault("DJANGO_SETTINGS_MODULE", "crepe_site.settings")
+os.environ.setdefault("DJANGO_SETTINGS_MODULE", "pdata_site.settings")
 
 from django.core.wsgi import get_wsgi_application
 application = get_wsgi_application()

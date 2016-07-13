@@ -1,9 +1,9 @@
 import glob, os
 from datetime import datetime
 
-from crepelib.controllers.base_controller import BaseController
-from crepe_app.models import *
-import crepe_app.utils.dbapi as api
+from pdatalib.controllers.base_controller import BaseController
+from pdata_app.models import *
+import pdata_app.utils.dbapi as api
 
 class LocateController(BaseController):
 

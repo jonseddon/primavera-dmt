@@ -1,7 +1,7 @@
 from django.contrib import admin
 from solo.admin import SingletonModelAdmin
 
-from crepe_app.models import *
+from pdata_app.models import *
 
 # Register your models here.
 admin.site.register(Settings, SingletonModelAdmin)

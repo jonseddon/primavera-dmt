@@ -5,10 +5,10 @@ import sys
 
 import django
 
-os.environ["DJANGO_SETTINGS_MODULE"] = "crepe_site.settings"
+os.environ["DJANGO_SETTINGS_MODULE"] = "pdata_site.settings"
 django.setup()
 
-from crepe_app.utils.common import get_controller_class
+from pdata_app.utils.common import get_controller_class
 
 
 def run_controller(name):

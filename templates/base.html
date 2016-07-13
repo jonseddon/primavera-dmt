@@ -4,13 +4,12 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <!--<link href="http://getbootstrap.com/dist/css/bootstrap.min.css" rel="stylesheet">-->
     <link rel="stylesheet" href="//code.jquery.com/ui/1.11.4/themes/smoothness/jquery-ui.css">
 
     <link href="{% static 'css/base.css' %}?v=" rel="stylesheet">
     <script language="JavaScript" src="{% static 'ext/jquery-1.12.4.min.js' %}"></script>
     <script language="JavaScript" src="{% static 'ext/bootstrap-3.3.6-dist/js/bootstrap.min.js' %}"></script>
-    <script language="JavaScript" src="{% static 'js/crepelib.js' %}"></script>
+    <script language="JavaScript" src="{% static 'js/pdatalib.js' %}"></script>
 
     <link href="{% static 'ext/bootstrap-3.3.6-dist/css/bootstrap.min.css' %}" rel="stylesheet">
     <script src="//code.jquery.com/ui/1.11.4/jquery-ui.js"></script>
@@ -57,15 +56,15 @@
                 <li class="dropdown">
                   <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false">Views <span class="caret"></span></a>
                   <ul class="dropdown-menu">
-                    <li><a href="{% url 'crepe_app.views.view_datasets' %}">Datasets</a></li>
-                    <li><a href="{% url 'crepe_app.views.view_files' %}">Files</a></li>
-                    <li><a href="{% url 'crepe_app.views.view_chains' %}">Chains</a></li>
-                    <li><a href="{% url 'crepe_app.views.view_events' %}">Events</a></li>
-                    <li><a href="{% url 'crepe_app.views.view_datasets' %}">Process Stages</a></li>
-                    <li><a href="{% url 'crepe_app.views.view_datasets' %}">Symlinks</a></li>
-                    <li><a href="{% url 'crepe_app.views.view_datasets' %}">Checksums</a></li>
+                    <li><a href="{% url 'pdata_app.views.view_datasets' %}">Datasets</a></li>
+                    <li><a href="{% url 'pdata_app.views.view_files' %}">Files</a></li>
+                    <li><a href="{% url 'pdata_app.views.view_chains' %}">Chains</a></li>
+                    <li><a href="{% url 'pdata_app.views.view_events' %}">Events</a></li>
+                    <li><a href="{% url 'pdata_app.views.view_datasets' %}">Process Stages</a></li>
+                    <li><a href="{% url 'pdata_app.views.view_datasets' %}">Symlinks</a></li>
+                    <li><a href="{% url 'pdata_app.views.view_datasets' %}">Checksums</a></li>
                     <li role="separator" class="divider"></li>
-                    <li><a href="{% url 'crepe_app.views.view_datasets' %}">Global Settings</a></li>
+                    <li><a href="{% url 'pdata_app.views.view_datasets' %}">Global Settings</a></li>
                   </ul>
                 </li>
               </ul>

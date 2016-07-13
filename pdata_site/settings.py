@@ -1,5 +1,5 @@
 """
-Django settings for crepe project.
+Django settings for pdata project.
 
 For more information on this file, see
 https://docs.djangoproject.com/en/1.6/topics/settings/
@@ -34,7 +34,7 @@ INSTALLED_APPS = (
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'solo',
-    'crepe_app',
+    'pdata_app',
     'rest_framework'
 )
 
@@ -47,9 +47,9 @@ MIDDLEWARE_CLASSES = (
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 )
 
-ROOT_URLCONF = 'crepe_site.urls'
+ROOT_URLCONF = 'pdata_site.urls'
 
-WSGI_APPLICATION = 'crepe_site.wsgi.application'
+WSGI_APPLICATION = 'pdata_site.wsgi.application'
 
 # Internationalization
 # https://docs.djangoproject.com/en/1.6/topics/i18n/
