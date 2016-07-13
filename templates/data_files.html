@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+{% load staticfiles %}
+
+    {% block contents %}
+        <p>This is info about NetCDF files we know about...</p>
+
+        {% for record in records %}
+
+            <div class="list-group">
+                <div class="list-group-item active">
+                    <h4 class="list-group-item-heading">{{ record.name }} <span style="background-color: blue; color: cyan; padding: 2px;">({{ record.directory }})</span></h4>
+                </div>
+            </div>
+
+        {% endfor %}
+    {% endblock %}

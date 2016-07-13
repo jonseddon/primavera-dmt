@@ -40,7 +40,7 @@
                 <span class="icon-bar"></span>
                 <span class="icon-bar"></span>
               </button>
-              <a class="navbar-brand" href="/">CEDA Dataset Pipeline App</a>
+              <a class="navbar-brand" href="/">PRIMAVERA Data Management Tool</a>
             </div>
 
             <!-- Collect the nav links, forms, and other content for toggling -->
@@ -56,15 +56,12 @@
                 <li class="dropdown">
                   <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false">Views <span class="caret"></span></a>
                   <ul class="dropdown-menu">
-                    <li><a href="{% url 'pdata_app.views.view_datasets' %}">Datasets</a></li>
-                    <li><a href="{% url 'pdata_app.views.view_files' %}">Files</a></li>
-                    <li><a href="{% url 'pdata_app.views.view_chains' %}">Chains</a></li>
-                    <li><a href="{% url 'pdata_app.views.view_events' %}">Events</a></li>
-                    <li><a href="{% url 'pdata_app.views.view_datasets' %}">Process Stages</a></li>
-                    <li><a href="{% url 'pdata_app.views.view_datasets' %}">Symlinks</a></li>
-                    <li><a href="{% url 'pdata_app.views.view_datasets' %}">Checksums</a></li>
+                    <li><a href="{% url 'pdata_app.views.view_data_files' %}">Data Submissions</a></li>
+                    <li><a href="{% url 'pdata_app.views.view_data_files' %}">Files</a></li>
+                    <li><a href="{% url 'pdata_app.views.view_data_files' %}">ESGF Datasets</a></li>
+                    <li><a href="{% url 'pdata_app.views.view_data_files' %}">CEDA Datasets</a></li>
                     <li role="separator" class="divider"></li>
-                    <li><a href="{% url 'pdata_app.views.view_datasets' %}">Global Settings</a></li>
+                    <li><a href="{% url 'pdata_app.views.view_data_files' %}">Global Settings</a></li>
                   </ul>
                 </li>
               </ul>

@@ -34,3 +34,6 @@ def safe_strftime(dt, format):
 
 def md5(fpath):
     return commands.getoutput("md5sum %s" % fpath).split()[0]
+
+def sha256(fpath):
+    return commands.getoutput("sha256sum %s" % fpath).split()[0]

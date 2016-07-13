@@ -1,23 +1,21 @@
-import time
-from multiprocessing import Process
+import os
+import datetime
 import unittest
 import logging
 import inspect
 
-from django.utils import timezone
-
 import test.test_datasets as datasets
-from test.mock_controllers import *
 from vocabs import *
 from config import config
 from config import get_dir_from_scheme
 
-
+from pdata_app.utils.dbapi import *
 from pdata_app.models import *
 from pdata_app.models import __all__ as all_class_names
 
 classes = [eval(cls_name) for cls_name in all_class_names]
 
+# Utility functions for test workflow
 def _clear_db():
     print "Clearing out database at start..."
     for cls in classes:
@@ -40,9 +38,28 @@ def _create_test_data_dirs():
         dr = get_dir_from_scheme("CMIP6-MOHC", "%s_dir" % dir_type)
         if not os.path.isdir(dr): os.makedirs(dr)
 
-def _run_controller(controller):
-    cont = controller()
-    cont.start()
+
+def _extract_file_metadata(file_path):
+    "Extracts metadata from file name and returns dictionary."
+    # e.g. tasmax_day_IPSL-CM5A-LR_amip4K_r1i1p1_18590101-18591230.nc
+    keys = ("var_id", "frequency", "climate_model", "experiment", "ensemble", "time_range")
+
+    items = os.path.splitext(os.path.basename(file_path))[0].split("_")
+    data = {}
+
+    for i in range(len(items)):
+        key = keys[i]
+        value = items[i]
+
+        if key == "time_range":
+            start_time, end_time = value.split("-")
+            data["start_time"] = datetime.datetime.strptime(start_time, "%Y%m%d")
+            data["end_time"] = datetime.datetime.strptime(end_time, "%Y%m%d")
+        else:
+            data[key] = value
+
+    return data
+
 
 class PdataBaseTest(unittest.TestCase):
 
@@ -64,31 +81,18 @@ class PdataBaseTest(unittest.TestCase):
         # Empty data dirs
         _empty_test_data_dirs()
 
+
 class TestWorkflows(PdataBaseTest):
 
     def setUp(self):
-        # For each test: clear db; run controllers
+        # For each test: clear db
         _clear_db()
 
         # Set up global settings
         self.settings = Settings.objects.create(is_paused=False)
 
-        # Invoke controllers to start running
-        self.procs = {}
-        for contr in (QCController, IngestController, PublishController):
-            self.tlog("Starting controller: %s" % contr.name)
-            self.procs[contr.name] = Process(target=_run_controller, args=(contr,))
-            self.procs[contr.name].start()
-            time.sleep(0.4)
-
     def tearDown(self):
-        # For each test, stop controllers
-        keys = self.procs.keys()
-
-        for contr_name in keys:
-            self.tlog("Closing down controller: %s" % contr_name)
-            self.procs[contr_name].terminate()
-            del self.procs[contr_name]
+        pass
 
     def _common_dataset_setup(self, ds):
         "Common setup for all workflow tests - depending on dataset provided as ``ds``."
@@ -109,6 +113,36 @@ class TestWorkflows(PdataBaseTest):
             insert(File, name=fname, directory=incoming_dir, size=10, dataset=dataset)
 
         return dataset
+
+    def test_00(self):
+        # Create a Data Submission and add files to it
+        self.tlog("STARTING: test_00")
+        test_dsub = datasets.test_data_submission
+        test_dsub.create_test_files()
+
+        dsub = get_or_create(DataSubmission, status=STATUS_VALUES.ARRIVED,
+                   incoming_directory=test_dsub.INCOMING_DIR,
+                   directory=test_dsub.INCOMING_DIR)
+
+        for dfile_name in test_dsub.files:
+            path = os.path.join(test_dsub.INCOMING_DIR, dfile_name)
+            m = metadata = _extract_file_metadata(path)
+
+            proj = get_or_create(Project, short_name="CMIP6", full_name="6th Coupled Model Intercomparison Project")
+            var = get_or_create(Variable, var_id=m["var_id"], long_name="Really good variable", units="1")
+            climate_model = get_or_create(ClimateModel, short_name=m["climate_model"], full_name="Really good model")
+            experiment = get_or_create(Experiment, short_name=m["experiment"], full_name="Really good experiment")
+
+            dfile = DataFile.objects.create(name=dfile_name, incoming_directory=test_dsub.INCOMING_DIR,
+                                            directory=test_dsub.INCOMING_DIR, size=os.path.getsize(path),
+                                            project=proj, climate_model=climate_model,
+                                            experiment=experiment, variable=var, frequency=m["frequency"],
+                                            start_time=m["start_time"], end_time=m["end_time"],
+                                            data_submission=dsub, online=True)
+
+        # Make some assertions
+        for dfile_name in test_dsub.files:
+            self.assertEqual(dfile_name, DataFile.objects.filter(name=dfile_name).first().name)
 
     def test_01(self):
         # d1 - 3 good files
@@ -185,78 +219,6 @@ class TestWorkflows(PdataBaseTest):
         ds = datasets.d5
         self._common_withdraw_test("IngestController", ds)
 
-    def test_07(self):
-        # d7 - 3 good files, but withdraw during Publish
-        self.tlog("STARTING: test_07")
-        ds = datasets.d5
-        self._common_withdraw_test("PublishController", ds)
-
-    def test_08(self):
-        # d8 - 2 good files, 1 bad file - withdraw after failure
-        self.tlog("STARTING: test_08")
-        ds = datasets.d2
-        dataset = self._common_dataset_setup(ds)
-
-        # Sleep briefly so that it is part through running and then withdraw mid-transaction
-        time.sleep(10)
-        dataset.is_withdrawn = True
-        dataset.save()
-
-        time.sleep(10)
-        self._assert_empty(dataset)
-        
-    def test_09(self):
-        # 09 - during ingest put on hold, check stuck in Publish stage
-        self.tlog("STARTING: test_09")
-        ds = datasets.d1
-        dataset = self._common_dataset_setup(ds)
-        controller_name = "PublishController"
-
-        # Sleep briefly so that it is part through running and then withdraw mid-transaction
-        expected_statuses = (STATUS_VALUES.PENDING_DO, STATUS_VALUES.DOING)
-        while 1:
-            if get_dataset_status(dataset, controller_name) in expected_statuses:
-                self.settings.is_paused = True
-                self.settings.save()
-                break
-            time.sleep(0.01)
-
-        time.sleep(10)
-        assert get_dataset_status(dataset, controller_name) in expected_statuses
-
-
-    def test_10(self):
-        # 10 - during the ingest stage the Ingest controller is killed.
-        # It then gets re-started and it needs to detect that it is supposed to be
-        # currently processing something and needs to resolve that before continuing.
-
-        # d6 - 3 normal files - 1 to be detected by mock ingest controller and to slow
-        # down so that we can simulate the controller switching off.
-        self.tlog("STARTING: test_10")
-        ds = datasets.d6
-        dataset = self._common_dataset_setup(ds)
-
-        contr = IngestController
-
-        # Sleep briefly so that the ingestion is underway - then kill the Ingest
-        expected_status = STATUS_VALUES.DOING
-        while 1:
-            self.tlog("Waiting for task to be 'DOING'...")
-            if get_dataset_status(dataset, contr.name) == expected_status:
-                self.tlog("Terminating %s" % contr.name, "WARN")
-                self.procs[contr.name].terminate()
-                break
-            time.sleep(1)
-
-        # Sleep for a while and then re-start the controller
-        time.sleep(3)
-        self.tlog("Re-starting %s" % contr.name, "WARN")
-        self.procs[contr.name] = Process(target=_run_controller, args=(contr,))
-        self.procs[contr.name].start()
-
-        # Sleep and then assert that all are completed
-        time.sleep(30)
-        self._assert_all_completed(dataset)
 
     def _assert_all_completed(self, dataset):
         self.log.warn("Checking dataset is COMPLETED: %s" % dataset.name)
@@ -293,6 +255,7 @@ class TestWorkflows(PdataBaseTest):
 
         self.log.warn("COMPLETED EMPTY CHECK!")
 
+
 def get_suite(tests):
     suite = unittest.TestSuite()
     for test in tests:
@@ -303,10 +266,10 @@ def get_suite(tests):
 if __name__ == "__main__":
 
     limited_suite = False
-#    limited_suite = True
+    limited_suite = True
 
     if limited_suite:
-        tests = ['test_03']
+        tests = ['test_00']
         suite = get_suite(tests)
         unittest.TextTestRunner(verbosity=2).run(suite)
     else:

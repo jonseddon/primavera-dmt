@@ -2,6 +2,7 @@ from .base import CodeList
 
 STATUS_VALUES = CodeList(
         (('EXPECTED', 'EXPECTED'),
+         ('ARRIVED', 'ARRIVED'),
          ('VALIDATED', 'VALIDATED'),
          ('ARCHIVED', 'ARCHIVED'),
          ('PUBLISHED', 'PUBLISHED'))

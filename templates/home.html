@@ -3,25 +3,16 @@
 
     {% block contents %}
         <p>
-            Many datasets have an ingest "pipeline" that requires multiple processing stages that run on various
-            servers under different user IDs.This app provides a front-end to manage and monitor the processes as each
-            dataset travels through the
-            system.
+            This is the amazing PRIMAVERA Data Management Tool (DMT).
         </p>
 
         <p>
-            The first project to test this system is "CMIP6-MOHC" (Met Office Hadley Centre climate simulations for the
-            6th Coupled Model Intercomparison Project). Select listings from the Views menu above to monitor existing
-            datasets being processed. If you log in you will also be able to pause or resume the system and run other
-            management functions.
+            More to come in future...
         </p>
 
         <p>Welcome to our superb app, it will revolutionise your life. Try some links:</p>
 
         <ul>
-            <li><a href="{% url 'pdata_app.views.view_datasets' %}">View Datasets</a></li>
-            <li><a href="{% url 'pdata_app.views.view_files' %}">View Files</a></li>
-            <li><a href="{% url 'pdata_app.views.view_chains' %}">View Chains</a></li>
-            <li><a href="{% url 'pdata_app.views.view_events' %}">View Events</a></li>
+            <li><a href="{% url 'pdata_app.views.view_data_files' %}">View Data Files</a></li>
         </ul>
     {% endblock %}

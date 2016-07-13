@@ -78,3 +78,12 @@ d6 = DatasetForTests("cmip5.output1.IPSL.IPSL-CM5A-LR.abrupt4xCO2.day.atmos.cfDa
                      ("rsds_cfDay_IPSL-CM5A-LR_abrupt4xCO2_r1i1p1_19910101-19911230.nc",
                       "rsds_cfDay_IPSL-CM5A-LR_abrupt4xCO2_r1i1p1_19920101-19921230.nc",
                       "rsds_cfDay_IPSL-CM5A-LR_abrupt4xCO2_r1i1p1_19930101-19931230.nc"))
+
+
+class DataSubmissionForTests(DatasetForTests):
+
+    INCOMING_DIR = "./test_data/submission"
+
+test_data_submission = DataSubmissionForTests(None,
+                        tuple(list(d3.files) + list(d5.files) + list(d6.files))
+                   )

@@ -1,6 +1,12 @@
+import datetime
+import re
+import pytz
+
 from django.db import models
+from django.utils import timezone
 from solo.models import SingletonModel
 from django.db.models import Min, Max
+from django.core.exceptions import ValidationError
 
 from vocabs import STATUS_VALUES, FREQUENCY_VALUES, ONLINE_STATUS, CHECKSUM_TYPES
 
@@ -8,8 +14,10 @@ from vocabs import STATUS_VALUES, FREQUENCY_VALUES, ONLINE_STATUS, CHECKSUM_TYPE
 # - We'll need to use: on_delete=models.SET_NULL in some cases
 #   to avoid cascading deletion of objects.
 
+print "REMEMBER: Add in the DREQUEST identifiers"
+
 model_names = ['Project', 'Institute', 'ClimateModel', 'Experiment', 'Variable',
-               'DataSubmission', 'File', 'ESGFDataset', 'CEDADataset',
+               'DataSubmission', 'DataFile', 'ESGFDataset', 'CEDADataset',
                'DataRequest', 'DataIssue', 'Checksum', 'Settings']
 __all__ = model_names
 
@@ -63,7 +71,7 @@ class Variable(models.Model):
         return self.var_id
 
 
-class FileAggregationBase(models.Models):
+class DataFileAggregationBase(models.Model):
     """
     An abstract base class for datasets containing many files.
 
@@ -74,9 +82,12 @@ class FileAggregationBase(models.Models):
         abstract = True
 
     def _file_aggregation(self, field_name):
-        records = [getattr(file, field_name) for file in self.file_set.all()]
+        records = [getattr(file, field_name) for datafile in self.get_data_files()]
         # Return unique sorted set of records
         return sorted(set(records))
+
+    def get_data_files(self):
+        return self.datafile_set.all()
 
     def project(self):
         return self._file_aggregation("project")
@@ -91,37 +102,37 @@ class FileAggregationBase(models.Models):
         return self._file_aggregation("variables")
 
     def get_data_issues(self):
-        records = [file.data_issues_set.all().sort_by('date_time').reverse() for file in self.file_set.all()]
+        records = [datafile.dataissues_set.all().sort_by('date_time').reverse() for datafile in self.get_data_files()]
         return sorted(set(records))
 
     def assign_data_issue(self, issue_text, reporter, date_time=None):
         """
-        Creates a DataIssue and attaches it to all related File records.
+        Creates a DataIssue and attaches it to all related DataFile records.
         """
-        date_time = date_time or datetime.datetime.now()
-        files = self.file_set.all()
+        date_time = date_time or timezone.now()
+        data_files = self.get_data_files()
         data_issue = DataIssue.objects.get_or_create(issue=issue_text, reporter=reporter, datetime=date_time)
-        data_issue.files.extend(files)
+        data_issue.files.extend(data_files)
         data_issue.save()
 
-# TOFIX: currently ManyToMany is wrong
+# TOFIX: currently ManyToMany is not working here...
 
     def start_time(self):
-        return self.file_set.objects.aggregate(Min('start_time'))['start_time__min']
+        return self.datafile_set.aggregate(Min('start_time'))['start_time__min']
 
     def end_time(self):
-        return self.file_set.objects.aggregate(Max('end_time'))['end_time__max']
+        return self.datafile_set.objects.aggregate(Max('end_time'))['end_time__max']
 
     def online_status(self):
         """
-        Checks aggregation of online status of all Files.
+        Checks aggregation of online status of all DataFiles.
         Returns one of:
             ONLINE_STATUS.online
             ONLINE_STATUS.offline
             ONLINE_STATUS.partial
         """
-        files_online = self.file_set.objects.filter(online=True).count()
-        files_offline = self.file_set.objects.filter(online=False).count()
+        files_online = self.datafile_set.objects.filter(online=True).count()
+        files_offline = self.datafile_set.objects.filter(online=False).count()
 
         if files_offline:
             if files_online:
@@ -131,12 +142,135 @@ class FileAggregationBase(models.Models):
         else:
             return ONLINE_STATUS.online
 
-class File(models.Model):
-    # A data file
 
+class DataSubmission(DataFileAggregationBase):
+    # A directory containing a directory tree of data files copied to the platform
+
+    # RFK relationships:
+    # ESGFDatasets: ESGFDataset
+    # DataFiles:        DataFile
+
+    # Dynamically aggregated from DataFile information:
+    # project
+    # climate_model
+    # frequency
+    # variables
+    # data_issues
+    # start_time
+    # end_time
+
+    status = models.CharField(max_length=20, choices=STATUS_VALUES.items(), verbose_name='Status',
+                              default=STATUS_VALUES.EXPECTED, blank=False, null=False)
+    incoming_directory = models.CharField(max_length=500, verbose_name='Incoming Directory', blank=False, null=False)
+    # Current directory
+    directory = models.CharField(max_length=500, verbose_name='Main Directory', blank=False, null=False)
+
+
+    def __unicode__(self):
+        return "Data Submission: %s" % self.directory
+
+
+class CEDADataset(DataFileAggregationBase):
+    """
+    A CEDA Dataset - a collection of ESGF Datasets that are held in the
+    CEDA Data catalogue (http://catalogue.ceda.ac.uk) with their own metadata
+    records.
+    """
+    # RFK relationships:
+    # ESGFDataset
+
+    # Dynamically aggregated from DataFile information:
+    # project
+    # climate_model
+    # frequency
+    # variables
+    # data_issues
+    # start_time
+    # end_time
+
+    catalogue_url = models.URLField(verbose_name="CEDA Catalogue URL", blank=False, null=False)
+    directory = models.CharField(max_length=500, verbose_name="Directory", blank=False, null=False)
+
+    # The CEDA Dataset might have a DOI
+    doi = models.URLField(verbose_name="DOI", blank=True, null=True)
+
+    def __unicode__(self):
+        return "CEDA Dataset: %s" % self.catalogue_url
+
+
+
+class ESGFDataset(DataFileAggregationBase):
+    """
+    An ESGF Dataset - a collection of files with an identifier.
+
+    This model uses the Directory Reference Syntax (DRS) dataset which consists of:
+        * drs_id - string representing facets of the DRS, e.g. "a.b.c.d"
+        * version - string representing the version, e.g. "v20160312"
+        * directory - string representing the directory containing the actual data files.
+    And a method:
+        * get_full_id: Returns full DRS Id made up of drsId version as: `self.drs_id`.`self.version`.
+    """
     class Meta:
-        unique_together = ('name', 'directory')
-        verbose_name = "Size (in bytes)"
+        unique_together = ('drs_id', 'version')
+        verbose_name = "ESGF Dataset"
+
+    # RFK relationships:
+    # files: DataFile
+
+    # Dynamically aggregated from DataFile information:
+    # project
+    # climate_model
+    # frequency
+    # variables
+    # data_issues
+    # start_time
+    # end_time
+
+    drs_id = models.CharField(max_length=500, verbose_name='DRS Dataset Identifier', blank=False, null=False)
+    version = models.CharField(max_length=20, verbose_name='Version', blank=False, null=False)
+    directory = models.CharField(max_length=500, verbose_name='Directory', blank=False, null=False)
+
+    thredds_url = models.URLField(verbose_name="THREDDS Download URL", blank=True, null=True)
+
+    # Each ESGF Dataset will be part of one CEDADataset
+    ceda_dataset = models.ForeignKey(CEDADataset, blank=True, null=True)
+
+    def get_full_id(self):
+        "Return full DRS Id made up of drsId version as: `self.drs_id`.`self.version`."
+        return "ESGF Dataset: %s.%s" % (self.drs_id, self.version)
+
+    def clean(self, *args, **kwargs):
+        if not re.match("^v\d+$", self.version):
+            raise ValidationError('Version must begin with letter "v" followed by a number (date).')
+
+        if not self.directory.startswith("/"):
+            raise ValidationError('Directory must begin with "/" because it is a full directory path.')
+
+        if self.directory.endswith("/"): self.directory = self.directory.rstrip("/")
+
+        super(ESGFDataset, self).save(*args, **kwargs)
+
+    def __unicode__(self):
+        "Returns full DRS Id."
+        return self.get_full_id()
+
+
+class DataRequest(models.Model):
+    # A Data Request for a given set of inputs
+
+    institute = models.ForeignKey(Institute, null=False)
+    climate_model = models.ForeignKey(ClimateModel, null=False)
+    experiment = models.ForeignKey(Experiment, null=False)
+    variable = models.ForeignKey(Variable, null=False)
+    frequency = models.CharField(max_length=20, choices=FREQUENCY_VALUES.items(), verbose_name="Time frequency",
+                                 null=False, blank=False)
+    start_time = models.DateTimeField(verbose_name="Start time", null=False, blank=False)
+    end_time = models.DateTimeField(verbose_name="End time", null=False, blank=False)
+# OTHER? - what else is needed here?
+
+
+class DataFile(models.Model):
+    # A data file
 
     # RFK relationships:
     # checksums: Checksum - multiple is OK
@@ -147,13 +281,14 @@ class File(models.Model):
     name = models.CharField(max_length=200, verbose_name="File name", null=False, blank=False)
     incoming_directory = models.CharField(max_length=500, verbose_name="Incoming directory", null=False, blank=False)
 
-    # This is where the file is now
+    # This is where the datafile is now
     directory = models.CharField(max_length=500, verbose_name="Current directory", null=False, blank=False)
     size = models.BigIntegerField(null=False, verbose_name="File size (bytes)")
 
     # Scientific metadata
     project = models.ForeignKey(Project)
     climate_model = models.ForeignKey(ClimateModel)
+    experiment = models.ForeignKey(Experiment)
     variable = models.ForeignKey(Variable)
     frequency = models.CharField(max_length=20, choices=FREQUENCY_VALUES.items(), verbose_name="Time frequency",
                                  null=False, blank=False)
@@ -180,143 +315,26 @@ class File(models.Model):
     online = models.BooleanField(default=True, verbose_name="Is the file online?", null=False, blank=False)
     tape_url = models.URLField(verbose_name="Tape URL", null=True, blank=True)
 
-
-class DataSubmission(FileAggregationBase):
-    # A directory containing a directory tree of data files copied to the platform
-
-    # RFK relationships:
-    # ESGFDatasets: ESGFDataset
-    # Files:        File
-
-    # Dynamically aggregated from File information:
-    # project
-    # climate_model
-    # frequency
-    # variables
-    # data_issues
-    # start_time
-    # end_time
-
-    status = models.CharField(max_length=20, choices=STATUS_VALUES.items(), verbose_name='Status',
-                              default=STATUS_VALUES.EXPECTED, blank=False, null=False)
-    incoming_directory = models.CharField(max_length=500, verbose_name='Incoming Directory', blank=False, null=False)
-    main_directory = models.CharField(max_length=500, verbose_name='Main Directory', blank=False, null=False)
-
-
     def __unicode__(self):
-        return "Data Submission: %s" % self.directory
+        return "%s (Directory: %s)" % (self.name, self.directory)
 
-
-class ESGFDataset(FileAggregationBase):
-    """
-    An ESGF Dataset - a collection of files with an identifier.
-
-    This model uses the Directory Reference Syntax (DRS) dataset which consists of:
-        * drs_id - string representing facets of the DRS, e.g. "a.b.c.d"
-        * version - string representing the version, e.g. "v20160312"
-        * directory - string representing the directory containing the actual data files.
-    And a method:
-        * getFullId: Returns full DRS Id made up of drsId version as: `self.drs_id`.`self.version`.
-    """
     class Meta:
-        unique_together = ('drs_id', 'version')
-        verbose_name = "ESGF Dataset"
-
-    # RFK relationships:
-    # files: File
-
-    # Dynamically aggregated from File information:
-    # project
-    # climate_model
-    # frequency
-    # variables
-    # data_issues
-    # start_time
-    # end_time
-
-    drs_id = models.CharField(max_length=500, verbose_name='DRS Dataset Identifier', blank=False, null=False)
-    version = models.CharField(max_length=20, verbose_name='Version', blank=False, null=False)
-    directory = models.CharField(max_length=500, verbose_name='Directory', blank=False, null=False)
-
-    thredds_url = models.URLField(verbose_name="THREDDS Download URL", blank=True, null=True)
-
-    # Each ESGF Dataset will be part of one CEDADataset
-    ceda_dataset = models.ForeignKey(CEDADataset, blank=True, null=True)
-
-    def getFullId(self):
-        "Return full DRS Id made up of drsId version as: `self.drs_id`.`self.version`."
-        return "ESGF Dataset: %s.%s" % (self.drs_id, self.version)
-
-    def clean(self, *args, **kwargs):
-        if not re.match("^v\d+$", self.version):
-            raise ValidationError('Version must begin with letter "v" followed by a number (date).')
-
-        if not self.directory.startswith("/"):
-            raise ValidationError('Directory must begin with "/" because it is a full directory path.')
-
-        if self.directory.endswith("/"): self.directory = self.directory.rstrip("/")
-
-        super(DRSDataset, self).save(*args, **kwargs)
-
-    def __unicode__(self):
-        "Returns full DRS Id."
-        return self.getFullId()
-
-
-class CEDADataset(FileAggregationBase):
-    """
-    A CEDA Dataset - a collection of ESGF Datasets that are held in the
-    CEDA Data catalogue (http://catalogue.ceda.ac.uk) with their own metadata
-    records.
-    """
-    # RFK relationships:
-    # ESGFDataset
-
-    # Dynamically aggregated from File information:
-    # project
-    # climate_model
-    # frequency
-    # variables
-    # data_issues
-    # start_time
-    # end_time
-
-    catalogue_url = models.URLField(verbose_name="CEDA Catalogue URL", blank=False, null=False
-    directory = models.CharField(max_length=500, verbose_name='Directory', blank=False, null=False)
-
-    # The CEDA Dataset might have a DOI
-    doi = models.URLField(verbose_name="DOI", blank=True, null=True)
-
-    def __unicode__(self):
-        return "CEDA Dataset: %s" % self.catalogue_url
-
-
-class DataRequest(models.Model):
-    # A Data Request for a given set of inputs
-
-    institute = models.ForeignKey(Institute, null=False)
-    climate_model = models.ForeignKey(ClimateModel, null=False)
-    experiment = models.ForeignKey(Experiment, null=False)
-    variable = models.ForeignKey(Variable, null=False)
-    frequency = models.CharField(max_length=20, choices=FREQUENCY_VALUES.items(), verbose_name="Time frequency",
-                                 null=False, blank=False)
-    start_time = models.DateTimeField(verbose_name="Start time", null=False, blank=False)
-    end_time = models.DateTimeField(verbose_name="End time", null=False, blank=False)
-# OTHER? - what else is needed here?
+        unique_together = ('name', 'directory')
+        verbose_name = "Data File"
 
 
 class DataIssue(models.Model):
-    # A recorded issue with a File
-    # NOTE: You can have multiple data issues related to a single File
+    # A recorded issue with a DataFile
+    # NOTE: You can have multiple data issues related to a single DataFile
     # NOTE: Aggregation is used to associate a DataIssue with an ESGFDataset, CEDADataset or DataSubmission
 
     issue = models.CharField(max_length=500, verbose_name="Issue reported", null=False, blank=False)
     reporter = models.CharField(max_length=60, verbose_name="Reporter", null=False, blank=False)
-    date_time = models.DateTimeField(verbose_name="Date and time of report", default=datetime.datetime.now,
+    date_time = models.DateTimeField(verbose_name="Date and time of report", default=timezone.now,
                                      null=False, blank=False)
 
-    # File that the Data Issue corresponds to
-    file = models.ManyToManyField(File)
+    # DataFile that the Data Issue corresponds to
+    data_file = models.ManyToManyField(DataFile)
 
     def __unicode__(self):
         return "Data Issue (%s): %s (%s)" % (self.date_time, self.issue, self.reporter)
@@ -325,7 +343,7 @@ class DataIssue(models.Model):
 class Checksum(models.Model):
     # A checksum
     id = models.IntegerField(primary_key=True)
-    file = models.ForeignKey(File, null=False, blank=False)
+    data_file = models.ForeignKey(DataFile, null=False, blank=False)
     checksum_value = models.CharField(max_length=200, null=False, blank=False)
     checksum_type = models.CharField(max_length=6, choices=CHECKSUM_TYPES.items(), null=False,
                                      blank=False)
@@ -337,10 +355,11 @@ class Checksum(models.Model):
 
 class Settings(SingletonModel):
     # Global settings for the app (that can be changed within the app
-    class Meta:
-        verbose_name = "Settings"
 
     is_paused = models.BooleanField(default=False, null=False)
+
+    class Meta:
+        verbose_name = "Settings"
 
     def __unicode__(self):
         return u"App Settings"
