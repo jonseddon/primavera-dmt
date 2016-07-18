@@ -4,6 +4,8 @@ import unittest
 import logging
 import inspect
 
+from django.test import TestCase
+
 import test.test_datasets as datasets
 from vocabs import *
 from config import config
@@ -61,7 +63,7 @@ def _extract_file_metadata(file_path):
     return data
 
 
-class PdataBaseTest(unittest.TestCase):
+class PdataBaseTest(TestCase):
 
     @classmethod
     def tlog(self, msg, log_level="info"):
@@ -85,9 +87,6 @@ class PdataBaseTest(unittest.TestCase):
 class TestWorkflows(PdataBaseTest):
 
     def setUp(self):
-        # For each test: clear db
-        _clear_db()
-
         # Set up global settings
         self.settings = Settings.objects.create(is_paused=False)
 
