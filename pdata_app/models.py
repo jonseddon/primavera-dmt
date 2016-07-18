@@ -82,7 +82,7 @@ class DataFileAggregationBase(models.Model):
         abstract = True
 
     def _file_aggregation(self, field_name):
-        records = [getattr(file, field_name) for datafile in self.get_data_files()]
+        records = [getattr(datafile, field_name) for datafile in self.get_data_files()]
         # Return unique sorted set of records
         return sorted(set(records))
 
@@ -99,29 +99,34 @@ class DataFileAggregationBase(models.Model):
         return self._file_aggregation("frequency")
 
     def variables(self):
-        return self._file_aggregation("variables")
+        return self._file_aggregation("variable")
 
     def get_data_issues(self):
-        records = [datafile.dataissues_set.all().sort_by('date_time').reverse() for datafile in self.get_data_files()]
-        return sorted(set(records))
+        records = []
+        for datafile in self.get_data_files():
+            records.extend(datafile.dataissue_set.all())
+
+        records = list(set(records))
+        records.sort(key=lambda di: di.date_time, reverse=True)
+        return records
 
     def assign_data_issue(self, issue_text, reporter, date_time=None):
         """
         Creates a DataIssue and attaches it to all related DataFile records.
         """
         date_time = date_time or timezone.now()
-        data_files = self.get_data_files()
-        data_issue = DataIssue.objects.get_or_create(issue=issue_text, reporter=reporter, datetime=date_time)
-        data_issue.files.extend(data_files)
+        data_issue, _tf = DataIssue.objects.get_or_create(issue=issue_text,
+            reporter=reporter, date_time=date_time)
         data_issue.save()
 
-# TOFIX: currently ManyToMany is not working here...
+        data_files = self.get_data_files()
+        data_issue.data_file.add(*data_files)
 
     def start_time(self):
         return self.datafile_set.aggregate(Min('start_time'))['start_time__min']
 
     def end_time(self):
-        return self.datafile_set.objects.aggregate(Max('end_time'))['end_time__max']
+        return self.datafile_set.aggregate(Max('end_time'))['end_time__max']
 
     def online_status(self):
         """
@@ -131,8 +136,8 @@ class DataFileAggregationBase(models.Model):
             ONLINE_STATUS.offline
             ONLINE_STATUS.partial
         """
-        files_online = self.datafile_set.objects.filter(online=True).count()
-        files_offline = self.datafile_set.objects.filter(online=False).count()
+        files_online = self.datafile_set.filter(online=True).count()
+        files_offline = self.datafile_set.filter(online=False).count()
 
         if files_offline:
             if files_online:
@@ -144,7 +149,9 @@ class DataFileAggregationBase(models.Model):
 
 
 class DataSubmission(DataFileAggregationBase):
-    # A directory containing a directory tree of data files copied to the platform
+    """ A directory containing a directory tree of data files copied to the
+    platform.
+    """
 
     # RFK relationships:
     # ESGFDatasets: ESGFDataset
@@ -235,6 +242,9 @@ class ESGFDataset(DataFileAggregationBase):
     # Each ESGF Dataset will be part of one CEDADataset
     ceda_dataset = models.ForeignKey(CEDADataset, blank=True, null=True)
 
+    # Each ESGF Dataset will be part of one submission
+    data_submission = models.ForeignKey(DataSubmission, blank=True, null=True)
+
     def get_full_id(self):
         "Return full DRS Id made up of drsId version as: `self.drs_id`.`self.version`."
         return "ESGF Dataset: %s.%s" % (self.drs_id, self.version)
@@ -270,7 +280,8 @@ class DataRequest(models.Model):
 
 
 class DataFile(models.Model):
-    # A data file
+    """ A data file
+    """
 
     # RFK relationships:
     # checksums: Checksum - multiple is OK
