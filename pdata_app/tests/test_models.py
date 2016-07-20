@@ -6,7 +6,7 @@ import datetime
 import pytz
 
 from django.test import TestCase
-from django.test import runner
+from django.core.exceptions import ValidationError
 
 from pdata_app import models
 from vocabs import STATUS_VALUES, ONLINE_STATUS
@@ -36,6 +36,38 @@ def _extract_file_metadata(file_path):
     return data
 
 
+def _create_data_submission(self):
+    """
+    Creates an example data submission. No files should be created on disk, but
+    the database will be altered.
+    """
+    self.example_files = test_data_submission
+    self.dsub = get_or_create(models.DataSubmission, status=STATUS_VALUES.ARRIVED,
+        incoming_directory=test_data_submission.INCOMING_DIR,
+        directory=test_data_submission.INCOMING_DIR)
+
+    for dfile_name in self.example_files.files:
+        metadata = _extract_file_metadata(os.path.join(
+            test_data_submission.INCOMING_DIR, dfile_name))
+        self.proj = get_or_create(models.Project, short_name="CMIP6", full_name="6th "
+            "Coupled Model Intercomparison Project")
+        climate_model = get_or_create(models.ClimateModel,
+            short_name=metadata["climate_model"], full_name="Really good model")
+        experiment = get_or_create(models.Experiment, short_name="experiment",
+            full_name="Really good experiment")
+        var = get_or_create(models.Variable, var_id=metadata["var_id"],
+            long_name="Really good variable", units="1")
+
+        dfile = models.DataFile.objects.create(name=dfile_name,
+            incoming_directory=self.example_files.INCOMING_DIR,
+            directory=self.example_files.INCOMING_DIR, size=1, project=self.proj,
+            climate_model=climate_model, experiment=experiment,
+            variable=var, frequency=metadata["frequency"], online=True,
+            start_time=metadata["start_time"], end_time=metadata["end_time"],
+            data_submission=self.dsub)
+
+
+
 class TestDataFileAggregationBaseMethods(TestCase):
     """
     The tests in this class test the methods in the models.FileAggregationBase
@@ -43,30 +75,7 @@ class TestDataFileAggregationBaseMethods(TestCase):
     the base.
     """
     def setUp(self):
-        self.example_files = test_data_submission
-        self.dsub = get_or_create(models.DataSubmission, status=STATUS_VALUES.ARRIVED,
-            incoming_directory=test_data_submission.INCOMING_DIR,
-            directory=test_data_submission.INCOMING_DIR)
-
-        for dfile_name in self.example_files.files:
-            metadata = _extract_file_metadata(os.path.join(
-                test_data_submission.INCOMING_DIR, dfile_name))
-            self.proj = get_or_create(models.Project, short_name="CMIP6", full_name="6th "
-                "Coupled Model Intercomparison Project")
-            climate_model = get_or_create(models.ClimateModel,
-                short_name=metadata["climate_model"], full_name="Really good model")
-            experiment = get_or_create(models.Experiment, short_name="experiment",
-                full_name="Really good experiment")
-            var = get_or_create(models.Variable, var_id=metadata["var_id"],
-                long_name="Really good variable", units="1")
-
-            dfile = models.DataFile.objects.create(name=dfile_name,
-                incoming_directory=self.example_files.INCOMING_DIR,
-                directory=self.example_files.INCOMING_DIR, size=1, project=self.proj,
-                climate_model=climate_model, experiment=experiment,
-                variable=var, frequency=metadata["frequency"], online=True,
-                start_time=metadata["start_time"], end_time=metadata["end_time"],
-                data_submission=self.dsub)
+        _create_data_submission(self)
 
     def test_get_data_files(self):
         files = self.dsub.get_data_files()
@@ -195,3 +204,43 @@ class TestDataFileAggregationBaseMethods(TestCase):
         for df in self.dsub.get_data_files():
             di = df.dataissue_set.filter(issue='all files')[0]
             self.assertEqual(di.reporter, 'Lewis')
+
+class TestESGFDatasetMethods(TestCase):
+    """
+    Test the additional methods in the ESGFDataset class
+    """
+    def setUp(self):
+        self.esgf_ds = get_or_create(models.ESGFDataset,
+            drs_id='a.b.c.d', version='v20160720',
+            directory='/some/dir')
+
+    def test_get_full_id(self):
+        full_id = self.esgf_ds.get_full_id()
+
+        expected = 'ESGF Dataset: a.b.c.d.v20160720'
+
+        self.assertEqual(full_id, expected)
+
+    def test_clean_version(self):
+        self.esgf_ds.version = '20160720'
+        self.assertRaises(ValidationError, self.esgf_ds.clean)
+
+    def test_clean_directory_initial_slash(self):
+        self.esgf_ds.directory = '~rfitz/his_dir'
+        self.assertRaises(ValidationError, self.esgf_ds.clean)
+
+    def test_clean_directory_final_slash(self):
+        self.esgf_ds.directory = '/some/dir/'
+        self.esgf_ds.save()
+        self.assertEqual(self.esgf_ds.directory, '/some/dir/')
+
+        self.esgf_ds.clean()
+        self.assertEqual(self.esgf_ds.directory, '/some/dir')
+
+    def test_unicode(self):
+        unicode_drs = unicode(self.esgf_ds)
+
+        expected = 'ESGF Dataset: a.b.c.d.v20160720'
+
+        self.assertEqual(unicode_drs, expected)
+        self.assertIsInstance(unicode_drs, unicode)
