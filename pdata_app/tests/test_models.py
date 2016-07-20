@@ -15,7 +15,9 @@ from test.test_datasets import test_data_submission
 
 
 def _extract_file_metadata(file_path):
-    "Extracts metadata from file name and returns dictionary."
+    """
+    Extracts metadata from file name and returns dictionary.
+    """
     # e.g. tasmax_day_IPSL-CM5A-LR_amip4K_r1i1p1_18590101-18591230.nc
     keys = ("var_id", "frequency", "climate_model", "experiment", "ensemble", "time_range")
 
@@ -36,38 +38,6 @@ def _extract_file_metadata(file_path):
     return data
 
 
-def _create_data_submission(self):
-    """
-    Creates an example data submission. No files should be created on disk, but
-    the database will be altered.
-    """
-    self.example_files = test_data_submission
-    self.dsub = get_or_create(models.DataSubmission, status=STATUS_VALUES.ARRIVED,
-        incoming_directory=test_data_submission.INCOMING_DIR,
-        directory=test_data_submission.INCOMING_DIR)
-
-    for dfile_name in self.example_files.files:
-        metadata = _extract_file_metadata(os.path.join(
-            test_data_submission.INCOMING_DIR, dfile_name))
-        self.proj = get_or_create(models.Project, short_name="CMIP6", full_name="6th "
-            "Coupled Model Intercomparison Project")
-        climate_model = get_or_create(models.ClimateModel,
-            short_name=metadata["climate_model"], full_name="Really good model")
-        experiment = get_or_create(models.Experiment, short_name="experiment",
-            full_name="Really good experiment")
-        var = get_or_create(models.Variable, var_id=metadata["var_id"],
-            long_name="Really good variable", units="1")
-
-        dfile = models.DataFile.objects.create(name=dfile_name,
-            incoming_directory=self.example_files.INCOMING_DIR,
-            directory=self.example_files.INCOMING_DIR, size=1, project=self.proj,
-            climate_model=climate_model, experiment=experiment,
-            variable=var, frequency=metadata["frequency"], online=True,
-            start_time=metadata["start_time"], end_time=metadata["end_time"],
-            data_submission=self.dsub)
-
-
-
 class TestDataFileAggregationBaseMethods(TestCase):
     """
     The tests in this class test the methods in the models.FileAggregationBase
@@ -75,7 +45,32 @@ class TestDataFileAggregationBaseMethods(TestCase):
     the base.
     """
     def setUp(self):
-        _create_data_submission(self)
+        # Creates an example data submission. No files should be created on disk,
+        # but the database will be altered.
+        self.example_files = test_data_submission
+        self.dsub = get_or_create(models.DataSubmission, status=STATUS_VALUES.ARRIVED,
+            incoming_directory=test_data_submission.INCOMING_DIR,
+            directory=test_data_submission.INCOMING_DIR)
+
+        for dfile_name in self.example_files.files:
+            metadata = _extract_file_metadata(os.path.join(
+                test_data_submission.INCOMING_DIR, dfile_name))
+            self.proj = get_or_create(models.Project, short_name="CMIP6", full_name="6th "
+                "Coupled Model Intercomparison Project")
+            climate_model = get_or_create(models.ClimateModel,
+                short_name=metadata["climate_model"], full_name="Really good model")
+            experiment = get_or_create(models.Experiment, short_name="experiment",
+                full_name="Really good experiment")
+            var = get_or_create(models.Variable, var_id=metadata["var_id"],
+                long_name="Really good variable", units="1")
+
+            models.DataFile.objects.create(name=dfile_name,
+                incoming_directory=self.example_files.INCOMING_DIR,
+                directory=self.example_files.INCOMING_DIR, size=1, project=self.proj,
+                climate_model=climate_model, experiment=experiment,
+                variable=var, frequency=metadata["frequency"], online=True,
+                start_time=metadata["start_time"], end_time=metadata["end_time"],
+                data_submission=self.dsub)
 
     def test_get_data_files(self):
         files = self.dsub.get_data_files()
@@ -106,8 +101,8 @@ class TestDataFileAggregationBaseMethods(TestCase):
         self.assertEqual(frequencies, expected)
 
     def test_variables(self):
-        vars = self.dsub.variables()
-        var_names = [v.var_id for v in vars]
+        variables = self.dsub.variables()
+        var_names = [v.var_id for v in variables]
         var_names.sort()
 
         expected = ['rsds', 'tasmax', 'zos']
@@ -192,7 +187,6 @@ class TestDataFileAggregationBaseMethods(TestCase):
         datafile = self.dsub.get_data_files()[1]
         datafile.dataissue_set.add(di1)
 
-
         issues = self.dsub.get_data_issues()
 
         self.assertEqual(issues, [di2, di1])
@@ -204,6 +198,7 @@ class TestDataFileAggregationBaseMethods(TestCase):
         for df in self.dsub.get_data_files():
             di = df.dataissue_set.filter(issue='all files')[0]
             self.assertEqual(di.reporter, 'Lewis')
+
 
 class TestESGFDatasetMethods(TestCase):
     """

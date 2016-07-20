@@ -1,6 +1,4 @@
-import datetime
 import re
-import pytz
 
 from django.db import models
 from django.utils import timezone
@@ -58,6 +56,7 @@ class Experiment(models.Model):
 
     def __unicode__(self):
         return self.short_name
+
 
 class Variable(models.Model):
     # A variable
@@ -149,7 +148,8 @@ class DataFileAggregationBase(models.Model):
 
 
 class DataSubmission(DataFileAggregationBase):
-    """ A directory containing a directory tree of data files copied to the
+    """
+    A directory containing a directory tree of data files copied to the
     platform.
     """
 
@@ -171,7 +171,6 @@ class DataSubmission(DataFileAggregationBase):
     incoming_directory = models.CharField(max_length=500, verbose_name='Incoming Directory', blank=False, null=False)
     # Current directory
     directory = models.CharField(max_length=500, verbose_name='Main Directory', blank=False, null=False)
-
 
     def __unicode__(self):
         return "Data Submission: %s" % self.directory
@@ -203,7 +202,6 @@ class CEDADataset(DataFileAggregationBase):
 
     def __unicode__(self):
         return "CEDA Dataset: %s" % self.catalogue_url
-
 
 
 class ESGFDataset(DataFileAggregationBase):
@@ -246,11 +244,13 @@ class ESGFDataset(DataFileAggregationBase):
     data_submission = models.ForeignKey(DataSubmission, blank=True, null=True)
 
     def get_full_id(self):
-        "Return full DRS Id made up of drsId version as: `self.drs_id`.`self.version`."
+        """
+        Return full DRS Id made up of drsId version as: drs_id.version
+        """
         return "ESGF Dataset: %s.%s" % (self.drs_id, self.version)
 
     def clean(self, *args, **kwargs):
-        if not re.match("^v\d+$", self.version):
+        if not re.match(r"^v\d+$", self.version):
             raise ValidationError('Version must begin with letter "v" followed by a number (date).')
 
         if not self.directory.startswith("/"):
@@ -261,12 +261,16 @@ class ESGFDataset(DataFileAggregationBase):
         super(ESGFDataset, self).save(*args, **kwargs)
 
     def __unicode__(self):
-        "Returns full DRS Id."
+        """
+        Returns full DRS Id.
+        """
         return self.get_full_id()
 
 
 class DataRequest(models.Model):
-    # A Data Request for a given set of inputs
+    """
+    A Data Request for a given set of inputs
+    """
 
     institute = models.ForeignKey(Institute, null=False)
     climate_model = models.ForeignKey(ClimateModel, null=False)
@@ -280,7 +284,8 @@ class DataRequest(models.Model):
 
 
 class DataFile(models.Model):
-    """ A data file
+    """
+    A data file
     """
 
     # RFK relationships:
@@ -335,10 +340,12 @@ class DataFile(models.Model):
 
 
 class DataIssue(models.Model):
-    # A recorded issue with a DataFile
-    # NOTE: You can have multiple data issues related to a single DataFile
-    # NOTE: Aggregation is used to associate a DataIssue with an ESGFDataset, CEDADataset or DataSubmission
+    """
+    A recorded issue with a DataFile
 
+    NOTE: You can have multiple data issues related to a single DataFile
+    NOTE: Aggregation is used to associate a DataIssue with an ESGFDataset, CEDADataset or DataSubmission
+    """
     issue = models.CharField(max_length=500, verbose_name="Issue reported", null=False, blank=False)
     reporter = models.CharField(max_length=60, verbose_name="Reporter", null=False, blank=False)
     date_time = models.DateTimeField(verbose_name="Date and time of report", default=timezone.now,
@@ -352,7 +359,9 @@ class DataIssue(models.Model):
 
 
 class Checksum(models.Model):
-    # A checksum
+    """
+    A checksum
+    """
     id = models.IntegerField(primary_key=True)
     data_file = models.ForeignKey(DataFile, null=False, blank=False)
     checksum_value = models.CharField(max_length=200, null=False, blank=False)
@@ -365,8 +374,9 @@ class Checksum(models.Model):
 
 
 class Settings(SingletonModel):
-    # Global settings for the app (that can be changed within the app
-
+    """
+    Global settings for the app (that can be changed within the app
+    """
     is_paused = models.BooleanField(default=False, null=False)
 
     class Meta:
