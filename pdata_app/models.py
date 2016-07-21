@@ -8,9 +8,7 @@ from django.core.exceptions import ValidationError
 
 from vocabs import STATUS_VALUES, FREQUENCY_VALUES, ONLINE_STATUS, CHECKSUM_TYPES
 
-# NOTES:
-# - We'll need to use: on_delete=models.SET_NULL in some cases
-#   to avoid cascading deletion of objects.
+# TODO We'll need to use: on_delete=models.SET_NULL in some cases to avoid cascading deletion of objects.
 
 print "REMEMBER: Add in the DREQUEST identifiers"
 
@@ -21,7 +19,12 @@ __all__ = model_names
 
 
 class Project(models.Model):
-    # A project
+    """
+    A project
+    """
+    # RFK Relationships
+    # DataFile
+
     short_name = models.CharField(max_length=100, null=False, blank=False)
     full_name = models.CharField(max_length=300, null=False, blank=False)
 
@@ -30,18 +33,29 @@ class Project(models.Model):
 
 
 class Institute(models.Model):
-    # An institute
+    """
+    An institute
+    """
+    # RFK Relationships
+    # DataRequest
+
     short_name = models.CharField(max_length=100, null=False, blank=False)
     full_name = models.CharField(max_length=300, null=False, blank=False)
 
     def __unicode__(self):
         return self.short_name
 
-# NOTE? Should we have Individual in here???
+# TODO Should we have Individual in here???
 
 
 class ClimateModel(models.Model):
-    # A climate model
+    """
+    A climate model
+    """
+    # RFK Relationships
+    # DataFile
+    # DataRequest
+
     short_name = models.CharField(max_length=100, null=False, blank=False)
     full_name = models.CharField(max_length=300, null=False, blank=False)
 
@@ -50,7 +64,13 @@ class ClimateModel(models.Model):
 
 
 class Experiment(models.Model):
-    # An experiment
+    """
+    An experiment
+    """
+    # RFK Relationships
+    # DataFile
+    # DataRequest
+
     short_name = models.CharField(max_length=100, null=False, blank=False)
     full_name = models.CharField(max_length=300, null=False, blank=False)
 
@@ -59,7 +79,12 @@ class Experiment(models.Model):
 
 
 class Variable(models.Model):
-    # A variable
+    """
+    A variable
+    """
+    # RFK Relationships
+    # DataFile
+    # DataRequest
 
     var_id = models.CharField(max_length=100, verbose_name='Variable Id', blank=False, null=False)
     units = models.CharField(max_length=100, verbose_name='Units', blank=False, null=False)
@@ -280,7 +305,7 @@ class DataRequest(models.Model):
                                  null=False, blank=False)
     start_time = models.DateTimeField(verbose_name="Start time", null=False, blank=False)
     end_time = models.DateTimeField(verbose_name="End time", null=False, blank=False)
-# OTHER? - what else is needed here?
+# TODO - what else is needed here?
 
 
 class DataFile(models.Model):
