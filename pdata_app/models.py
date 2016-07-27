@@ -1,6 +1,4 @@
-import datetime
 import re
-import pytz
 
 from django.db import models
 from django.utils import timezone
@@ -10,9 +8,7 @@ from django.core.exceptions import ValidationError
 
 from vocabs import STATUS_VALUES, FREQUENCY_VALUES, ONLINE_STATUS, CHECKSUM_TYPES
 
-# NOTES:
-# - We'll need to use: on_delete=models.SET_NULL in some cases
-#   to avoid cascading deletion of objects.
+# TODO We'll need to use: on_delete=models.SET_NULL in some cases to avoid cascading deletion of objects.
 
 print "REMEMBER: Add in the DREQUEST identifiers"
 
@@ -23,7 +19,12 @@ __all__ = model_names
 
 
 class Project(models.Model):
-    # A project
+    """
+    A project
+    """
+    # RFK Relationships
+    # DataFile
+
     short_name = models.CharField(max_length=100, null=False, blank=False)
     full_name = models.CharField(max_length=300, null=False, blank=False)
 
@@ -32,18 +33,29 @@ class Project(models.Model):
 
 
 class Institute(models.Model):
-    # An institute
+    """
+    An institute
+    """
+    # RFK Relationships
+    # DataRequest
+
     short_name = models.CharField(max_length=100, null=False, blank=False)
     full_name = models.CharField(max_length=300, null=False, blank=False)
 
     def __unicode__(self):
         return self.short_name
 
-# NOTE? Should we have Individual in here???
+# TODO Should we have Individual in here???
 
 
 class ClimateModel(models.Model):
-    # A climate model
+    """
+    A climate model
+    """
+    # RFK Relationships
+    # DataFile
+    # DataRequest
+
     short_name = models.CharField(max_length=100, null=False, blank=False)
     full_name = models.CharField(max_length=300, null=False, blank=False)
 
@@ -52,15 +64,27 @@ class ClimateModel(models.Model):
 
 
 class Experiment(models.Model):
-    # An experiment
+    """
+    An experiment
+    """
+    # RFK Relationships
+    # DataFile
+    # DataRequest
+
     short_name = models.CharField(max_length=100, null=False, blank=False)
     full_name = models.CharField(max_length=300, null=False, blank=False)
 
     def __unicode__(self):
         return self.short_name
 
+
 class Variable(models.Model):
-    # A variable
+    """
+    A variable
+    """
+    # RFK Relationships
+    # DataFile
+    # DataRequest
 
     var_id = models.CharField(max_length=100, verbose_name='Variable Id', blank=False, null=False)
     units = models.CharField(max_length=100, verbose_name='Units', blank=False, null=False)
@@ -82,7 +106,7 @@ class DataFileAggregationBase(models.Model):
         abstract = True
 
     def _file_aggregation(self, field_name):
-        records = [getattr(file, field_name) for datafile in self.get_data_files()]
+        records = [getattr(datafile, field_name) for datafile in self.get_data_files()]
         # Return unique sorted set of records
         return sorted(set(records))
 
@@ -99,29 +123,34 @@ class DataFileAggregationBase(models.Model):
         return self._file_aggregation("frequency")
 
     def variables(self):
-        return self._file_aggregation("variables")
+        return self._file_aggregation("variable")
 
     def get_data_issues(self):
-        records = [datafile.dataissues_set.all().sort_by('date_time').reverse() for datafile in self.get_data_files()]
-        return sorted(set(records))
+        records = []
+        for datafile in self.get_data_files():
+            records.extend(datafile.dataissue_set.all())
+
+        records = list(set(records))
+        records.sort(key=lambda di: di.date_time, reverse=True)
+        return records
 
     def assign_data_issue(self, issue_text, reporter, date_time=None):
         """
         Creates a DataIssue and attaches it to all related DataFile records.
         """
         date_time = date_time or timezone.now()
-        data_files = self.get_data_files()
-        data_issue = DataIssue.objects.get_or_create(issue=issue_text, reporter=reporter, datetime=date_time)
-        data_issue.files.extend(data_files)
+        data_issue, _tf = DataIssue.objects.get_or_create(issue=issue_text,
+            reporter=reporter, date_time=date_time)
         data_issue.save()
 
-# TOFIX: currently ManyToMany is not working here...
+        data_files = self.get_data_files()
+        data_issue.data_file.add(*data_files)
 
     def start_time(self):
         return self.datafile_set.aggregate(Min('start_time'))['start_time__min']
 
     def end_time(self):
-        return self.datafile_set.objects.aggregate(Max('end_time'))['end_time__max']
+        return self.datafile_set.aggregate(Max('end_time'))['end_time__max']
 
     def online_status(self):
         """
@@ -131,8 +160,8 @@ class DataFileAggregationBase(models.Model):
             ONLINE_STATUS.offline
             ONLINE_STATUS.partial
         """
-        files_online = self.datafile_set.objects.filter(online=True).count()
-        files_offline = self.datafile_set.objects.filter(online=False).count()
+        files_online = self.datafile_set.filter(online=True).count()
+        files_offline = self.datafile_set.filter(online=False).count()
 
         if files_offline:
             if files_online:
@@ -144,7 +173,10 @@ class DataFileAggregationBase(models.Model):
 
 
 class DataSubmission(DataFileAggregationBase):
-    # A directory containing a directory tree of data files copied to the platform
+    """
+    A directory containing a directory tree of data files copied to the
+    platform.
+    """
 
     # RFK relationships:
     # ESGFDatasets: ESGFDataset
@@ -164,7 +196,6 @@ class DataSubmission(DataFileAggregationBase):
     incoming_directory = models.CharField(max_length=500, verbose_name='Incoming Directory', blank=False, null=False)
     # Current directory
     directory = models.CharField(max_length=500, verbose_name='Main Directory', blank=False, null=False)
-
 
     def __unicode__(self):
         return "Data Submission: %s" % self.directory
@@ -196,7 +227,6 @@ class CEDADataset(DataFileAggregationBase):
 
     def __unicode__(self):
         return "CEDA Dataset: %s" % self.catalogue_url
-
 
 
 class ESGFDataset(DataFileAggregationBase):
@@ -235,12 +265,17 @@ class ESGFDataset(DataFileAggregationBase):
     # Each ESGF Dataset will be part of one CEDADataset
     ceda_dataset = models.ForeignKey(CEDADataset, blank=True, null=True)
 
+    # Each ESGF Dataset will be part of one submission
+    data_submission = models.ForeignKey(DataSubmission, blank=True, null=True)
+
     def get_full_id(self):
-        "Return full DRS Id made up of drsId version as: `self.drs_id`.`self.version`."
+        """
+        Return full DRS Id made up of drsId version as: drs_id.version
+        """
         return "ESGF Dataset: %s.%s" % (self.drs_id, self.version)
 
     def clean(self, *args, **kwargs):
-        if not re.match("^v\d+$", self.version):
+        if not re.match(r"^v\d+$", self.version):
             raise ValidationError('Version must begin with letter "v" followed by a number (date).')
 
         if not self.directory.startswith("/"):
@@ -251,12 +286,16 @@ class ESGFDataset(DataFileAggregationBase):
         super(ESGFDataset, self).save(*args, **kwargs)
 
     def __unicode__(self):
-        "Returns full DRS Id."
+        """
+        Returns full DRS Id.
+        """
         return self.get_full_id()
 
 
 class DataRequest(models.Model):
-    # A Data Request for a given set of inputs
+    """
+    A Data Request for a given set of inputs
+    """
 
     institute = models.ForeignKey(Institute, null=False)
     climate_model = models.ForeignKey(ClimateModel, null=False)
@@ -266,11 +305,13 @@ class DataRequest(models.Model):
                                  null=False, blank=False)
     start_time = models.DateTimeField(verbose_name="Start time", null=False, blank=False)
     end_time = models.DateTimeField(verbose_name="End time", null=False, blank=False)
-# OTHER? - what else is needed here?
+# TODO - what else is needed here?
 
 
 class DataFile(models.Model):
-    # A data file
+    """
+    A data file
+    """
 
     # RFK relationships:
     # checksums: Checksum - multiple is OK
@@ -324,10 +365,12 @@ class DataFile(models.Model):
 
 
 class DataIssue(models.Model):
-    # A recorded issue with a DataFile
-    # NOTE: You can have multiple data issues related to a single DataFile
-    # NOTE: Aggregation is used to associate a DataIssue with an ESGFDataset, CEDADataset or DataSubmission
+    """
+    A recorded issue with a DataFile
 
+    NOTE: You can have multiple data issues related to a single DataFile
+    NOTE: Aggregation is used to associate a DataIssue with an ESGFDataset, CEDADataset or DataSubmission
+    """
     issue = models.CharField(max_length=500, verbose_name="Issue reported", null=False, blank=False)
     reporter = models.CharField(max_length=60, verbose_name="Reporter", null=False, blank=False)
     date_time = models.DateTimeField(verbose_name="Date and time of report", default=timezone.now,
@@ -341,7 +384,9 @@ class DataIssue(models.Model):
 
 
 class Checksum(models.Model):
-    # A checksum
+    """
+    A checksum
+    """
     id = models.IntegerField(primary_key=True)
     data_file = models.ForeignKey(DataFile, null=False, blank=False)
     checksum_value = models.CharField(max_length=200, null=False, blank=False)
@@ -354,8 +399,9 @@ class Checksum(models.Model):
 
 
 class Settings(SingletonModel):
-    # Global settings for the app (that can be changed within the app
-
+    """
+    Global settings for the app (that can be changed within the app
+    """
     is_paused = models.BooleanField(default=False, null=False)
 
     class Meta:

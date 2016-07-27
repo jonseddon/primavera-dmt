@@ -4,6 +4,8 @@ import unittest
 import logging
 import inspect
 
+from django.test import TestCase
+
 import test.test_datasets as datasets
 from vocabs import *
 from config import config
@@ -61,7 +63,7 @@ def _extract_file_metadata(file_path):
     return data
 
 
-class PdataBaseTest(unittest.TestCase):
+class PdataBaseTest(TestCase):
 
     @classmethod
     def tlog(self, msg, log_level="info"):
@@ -85,9 +87,6 @@ class PdataBaseTest(unittest.TestCase):
 class TestWorkflows(PdataBaseTest):
 
     def setUp(self):
-        # For each test: clear db
-        _clear_db()
-
         # Set up global settings
         self.settings = Settings.objects.create(is_paused=False)
 
@@ -144,80 +143,80 @@ class TestWorkflows(PdataBaseTest):
         for dfile_name in test_dsub.files:
             self.assertEqual(dfile_name, DataFile.objects.filter(name=dfile_name).first().name)
 
-    def test_01(self):
-        # d1 - 3 good files
-        self.tlog("STARTING: test_01")
-        ds = datasets.d1
-        dataset = self._common_dataset_setup(ds)
-
-        # Sleep and then assert that all are completed
-        time.sleep(10)
-        self._assert_all_completed(dataset)
-
-    def test_02(self):
-        # d2 - 2 good files, 1 bad file
-        self.tlog("STARTING: test_02")
-        ds = datasets.d2
-        dataset = self._common_dataset_setup(ds)
-
-        # Sleep and then assert that all are completed
-        time.sleep(10)
-        self._assert_failed_at(dataset, stage=1)
-
-    def test_03(self):
-        # d3 - 3 good files, but IOError raised during Ingest process
-        self.tlog("STARTING: test_03")
-        ds = datasets.d3
-        dataset = self._common_dataset_setup(ds)
-
-        # Sleep and then assert that all are completed
-        time.sleep(10)
-        self._assert_failed_at(dataset, stage=2)
-
-    def test_04(self):
-        # d4 - 3 good files, but withdraw afterwards
-        self.tlog("STARTING: test_04")
-        ds = datasets.d4
-        dataset = self._common_dataset_setup(ds)
-
-        # Sleep and then assert that all are completed
-        time.sleep(10)
-        self._assert_all_completed(dataset)
-
-        # Now withdraw and check all undo actions work
-        dataset.is_withdrawn = True
-        dataset.save()
-
-        time.sleep(20)
-        self._assert_empty(dataset)
-
-    def _common_withdraw_test(self, controller_name, ds):
-        dataset = self._common_dataset_setup(ds)
-
-        # Sleep briefly so that it is part through running and then withdraw mid-transaction
-        while 1:
-            if get_dataset_status(dataset, controller_name) in \
-                    (STATUS_VALUES.PENDING_DO, STATUS_VALUES.DOING, STATUS_VALUES.DONE):
-                break
-            time.sleep(1)
-
-        dataset.is_withdrawn = True
-        dataset.save()
-
-        time.sleep(40)
-        self._assert_empty(dataset)
-
-    def test_05(self):
-        # d5 - 3 good files, but withdraw during QC
-        self.tlog("STARTING: test_05")
-        ds = datasets.d5
-        self._common_withdraw_test("QCController", ds)
-
-    def test_06(self):
-        # d6 - 3 good files, but withdraw during Ingest
-        self.tlog("STARTING: test_06")
-        ds = datasets.d5
-        self._common_withdraw_test("IngestController", ds)
+    # def test_01(self):
+    #     # d1 - 3 good files
+    #     self.tlog("STARTING: test_01")
+    #     ds = datasets.d1
+    #     dataset = self._common_dataset_setup(ds)
+    #
+    #     # Sleep and then assert that all are completed
+    #     time.sleep(10)
+    #     self._assert_all_completed(dataset)
+    #
+    # def test_02(self):
+    #     # d2 - 2 good files, 1 bad file
+    #     self.tlog("STARTING: test_02")
+    #     ds = datasets.d2
+    #     dataset = self._common_dataset_setup(ds)
+    #
+    #     # Sleep and then assert that all are completed
+    #     time.sleep(10)
+    #     self._assert_failed_at(dataset, stage=1)
+    #
+    # def test_03(self):
+    #     # d3 - 3 good files, but IOError raised during Ingest process
+    #     self.tlog("STARTING: test_03")
+    #     ds = datasets.d3
+    #     dataset = self._common_dataset_setup(ds)
+    #
+    #     # Sleep and then assert that all are completed
+    #     time.sleep(10)
+    #     self._assert_failed_at(dataset, stage=2)
+    #
+    # def test_04(self):
+    #     # d4 - 3 good files, but withdraw afterwards
+    #     self.tlog("STARTING: test_04")
+    #     ds = datasets.d4
+    #     dataset = self._common_dataset_setup(ds)
+    #
+    #     # Sleep and then assert that all are completed
+    #     time.sleep(10)
+    #     self._assert_all_completed(dataset)
+    #
+    #     # Now withdraw and check all undo actions work
+    #     dataset.is_withdrawn = True
+    #     dataset.save()
+    #
+    #     time.sleep(20)
+    #     self._assert_empty(dataset)
+    #
+    # def _common_withdraw_test(self, controller_name, ds):
+    #     dataset = self._common_dataset_setup(ds)
+    #
+    #     # Sleep briefly so that it is part through running and then withdraw mid-transaction
+    #     while 1:
+    #         if get_dataset_status(dataset, controller_name) in \
+    #                 (STATUS_VALUES.PENDING_DO, STATUS_VALUES.DOING, STATUS_VALUES.DONE):
+    #             break
+    #         time.sleep(1)
+    #
+    #     dataset.is_withdrawn = True
+    #     dataset.save()
+    #
+    #     time.sleep(40)
+    #     self._assert_empty(dataset)
+    #
+    # def test_05(self):
+    #     # d5 - 3 good files, but withdraw during QC
+    #     self.tlog("STARTING: test_05")
+    #     ds = datasets.d5
+    #     self._common_withdraw_test("QCController", ds)
+    #
+    # def test_06(self):
+    #     # d6 - 3 good files, but withdraw during Ingest
+    #     self.tlog("STARTING: test_06")
+    #     ds = datasets.d5
+    #     self._common_withdraw_test("IngestController", ds)
 
 
     def _assert_all_completed(self, dataset):
