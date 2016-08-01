@@ -14,7 +14,7 @@ import datetime
 import test.test_datasets as datasets
 from pdata_app.utils.dbapi import get_or_create
 from pdata_app.models import (DataSubmission, DataFile, ClimateModel,
-    Experiment, Project, Variable)
+    Experiment, Project, Variable, ESGFDataset, CEDADataset)
 from vocabs import STATUS_VALUES
 
 
@@ -42,6 +42,13 @@ def main():
                                         experiment=experiment, variable=var, frequency=metadata["frequency"],
                                         start_time=metadata["start_time"], end_time=metadata["end_time"],
                                         data_submission=dsub, online=True)
+
+    ceda_ds = get_or_create(CEDADataset, catalogue_url='http://www.metoffice.gov.uk',
+        directory=test_dsub.INCOMING_DIR)
+
+    esgf_ds = get_or_create(ESGFDataset, drs_id='ab.cd.ef.gh', version='v19160519',
+        directory=test_dsub.INCOMING_DIR, data_submission=dsub, ceda_dataset=ceda_ds)
+
 
 
 def _extract_file_metadata(file_path):

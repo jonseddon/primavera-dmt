@@ -3,7 +3,7 @@ from django.shortcuts import render
 # Create your views here.
 from django.shortcuts import render_to_response
 
-from pdata_app.models import DataFile, DataSubmission
+from pdata_app.models import DataFile, DataSubmission, ESGFDataset, CEDADataset
 
 
 def view_data_submissions(request):
@@ -16,6 +16,19 @@ def view_data_files(request):
     data_files = DataFile.objects.all()
     return render_to_response('data_files.html', {'request': request,  'page_title': 'Data Files',
                                                 'records': data_files})
+
+
+def view_ceda_datasets(request):
+    ceda_datasets = CEDADataset.objects.all()
+    return render_to_response('ceda_datasets.html', {'request': request,  'page_title': 'CEDA Datasets',
+                                                'records': ceda_datasets})
+
+
+def view_esgf_datasets(request):
+    esgf_datasets = ESGFDataset.objects.all()
+    return render_to_response('esgf_datasets.html', {'request': request,  'page_title': 'ESGF Datasets',
+                                                'records': esgf_datasets})
+
 
 def view_home(request):
     return render_to_response('home.html', {'request': request, 'page_title': 'The PRIMAVERA DMT'})

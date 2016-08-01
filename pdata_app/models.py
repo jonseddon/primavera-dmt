@@ -272,7 +272,7 @@ class ESGFDataset(DataFileAggregationBase):
         """
         Return full DRS Id made up of drsId version as: drs_id.version
         """
-        return "ESGF Dataset: %s.%s" % (self.drs_id, self.version)
+        return "%s.%s" % (self.drs_id, self.version)
 
     def clean(self, *args, **kwargs):
         if not re.match(r"^v\d+$", self.version):
