@@ -2,10 +2,14 @@ from django.shortcuts import render
 
 # Create your views here.
 from django.shortcuts import render_to_response
-from django.http import JsonResponse, HttpResponseNotFound
 
-from pdata_app.models import *
-from pdata_app.utils import dbapi
+from pdata_app.models import DataFile, DataSubmission
+
+
+def view_data_submissions(request):
+    data_submissions = DataSubmission.objects.all()
+    return render_to_response('data_submissions.html', {'request': request,  'page_title': 'Data Submissions',
+                                                'records': data_submissions})
 
 
 def view_data_files(request):
