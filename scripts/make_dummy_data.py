@@ -49,6 +49,14 @@ def main():
     esgf_ds = get_or_create(ESGFDataset, drs_id='ab.cd.ef.gh', version='v19160519',
         directory=test_dsub.INCOMING_DIR, data_submission=dsub, ceda_dataset=ceda_ds)
 
+    for df in dsub.get_data_files():
+        df.esgf_dataset = esgf_ds
+        df.ceda_dataset = ceda_ds
+        df.save()
+
+    dsub.status = STATUS_VALUES.ARCHIVED
+    dsub.save()
+
 
 
 def _extract_file_metadata(file_path):
