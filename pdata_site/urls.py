@@ -4,16 +4,18 @@ from django.contrib.staticfiles.urls import staticfiles_urlpatterns
 #from pdata_app import models
 
 from rest_framework.urlpatterns import format_suffix_patterns
-#import pdata_app.api
+import pdata_app.views
+
 
 from django.contrib import admin
 admin.autodiscover()
 
-urlpatterns = patterns('',
+urlpatterns = [
     url(r'^admin/', include(admin.site.urls)),
-    url(r'^files/$', 'pdata_app.views.view_data_files'),
-    url(r'.*', 'pdata_app.views.view_home'),
-    )
+    url(r'^files/$', pdata_app.views.view_data_files),
+    url(r'.*', pdata_app.views.view_home),
+]
+
 
 """
                        url(r'^files/$', 'pdata_app.views.view_files'),

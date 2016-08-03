@@ -16,7 +16,6 @@ import os
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = False
-TEMPLATE_DEBUG = False
 
 # Now import local settings (that might override DEBUG settings)
 from settings_local import *
@@ -49,6 +48,22 @@ MIDDLEWARE_CLASSES = (
 
 ROOT_URLCONF = 'pdata_site.urls'
 
+TEMPLATES = [
+    {
+        'BACKEND': 'django.template.backends.django.DjangoTemplates',
+        'DIRS': [os.path.join(BASE_DIR, 'templates')],
+        'APP_DIRS': True,
+        'OPTIONS': {
+            'context_processors': [
+                'django.template.context_processors.debug',
+                'django.template.context_processors.request',
+                'django.contrib.auth.context_processors.auth',
+                'django.contrib.messages.context_processors.messages',
+            ],
+        },
+    },
+]
+
 WSGI_APPLICATION = 'pdata_site.wsgi.application'
 
 # Internationalization
@@ -79,5 +94,3 @@ STATICFILES_DIRS = [
 ]
 
 STATIC_URL = '/static/'
-
-TEMPLATE_DIRS = (os.path.join(BASE_DIR,  'templates'),)
