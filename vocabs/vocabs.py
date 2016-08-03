@@ -26,6 +26,7 @@ ONLINE_STATUS = CodeList(
 
 CHECKSUM_TYPES = CodeList(
         (('SHA256', 'SHA256'),
-         ('MD5', 'MD5'))
+         ('MD5', 'MD5'),
+         ('ADLER32', 'ADLER32'))
 )
 
