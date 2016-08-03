@@ -272,7 +272,7 @@ class ESGFDataset(DataFileAggregationBase):
         """
         Return full DRS Id made up of drsId version as: drs_id.version
         """
-        return "ESGF Dataset: %s.%s" % (self.drs_id, self.version)
+        return "%s.%s" % (self.drs_id, self.version)
 
     def clean(self, *args, **kwargs):
         if not re.match(r"^v\d+$", self.version):
@@ -390,7 +390,7 @@ class Checksum(models.Model):
     id = models.IntegerField(primary_key=True)
     data_file = models.ForeignKey(DataFile, null=False, blank=False)
     checksum_value = models.CharField(max_length=200, null=False, blank=False)
-    checksum_type = models.CharField(max_length=6, choices=CHECKSUM_TYPES.items(), null=False,
+    checksum_type = models.CharField(max_length=20, choices=CHECKSUM_TYPES.items(), null=False,
                                      blank=False)
 
     def __unicode__(self):

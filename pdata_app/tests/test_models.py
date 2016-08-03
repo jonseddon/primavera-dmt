@@ -212,7 +212,7 @@ class TestESGFDatasetMethods(TestCase):
     def test_get_full_id(self):
         full_id = self.esgf_ds.get_full_id()
 
-        expected = 'ESGF Dataset: a.b.c.d.v20160720'
+        expected = 'a.b.c.d.v20160720'
 
         self.assertEqual(full_id, expected)
 
@@ -235,7 +235,7 @@ class TestESGFDatasetMethods(TestCase):
     def test_unicode(self):
         unicode_drs = unicode(self.esgf_ds)
 
-        expected = 'ESGF Dataset: a.b.c.d.v20160720'
+        expected = 'a.b.c.d.v20160720'
 
         self.assertEqual(unicode_drs, expected)
         self.assertIsInstance(unicode_drs, unicode)

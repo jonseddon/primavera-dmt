@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+{% load staticfiles %}
+
+    {% block contents %}
+        <p>These are the ESGF datasets...</p>
+
+        <table class="table table-hover">
+        <tr>
+            <th>DRS ID</th>
+            <th>Version</th>
+            <th>Directory</th>
+            <th># Data Files</th>
+            <th>THREDDS Download URL</th>
+        </tr>
+        {% for record in records %}
+            <tr>
+                <td>{{ record.drs_id }}</td>
+                <td>{{ record.version }}</td>
+                <td>{{ record.directory }}</td>
+                <td>{{ record.get_data_files|length }}</td>
+                <td><a href="{{ record.thredds_url }}">{{ record.thredds_url }}</a></td>
+            </tr>
+        {% endfor %}
+        </table>
+    {% endblock %}
