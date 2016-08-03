@@ -3,8 +3,10 @@ import datetime
 import unittest
 import logging
 import inspect
+import pytz
 
 from django.test import TestCase
+from django.utils.timezone import make_aware
 
 import test.test_datasets as datasets
 from vocabs import *
@@ -136,7 +138,8 @@ class TestWorkflows(PdataBaseTest):
                                             directory=test_dsub.INCOMING_DIR, size=os.path.getsize(path),
                                             project=proj, climate_model=climate_model,
                                             experiment=experiment, variable=var, frequency=m["frequency"],
-                                            start_time=m["start_time"], end_time=m["end_time"],
+                                            start_time=make_aware(m["start_time"], timezone=pytz.utc, is_dst=False),
+                                            end_time=make_aware(m["end_time"], timezone=pytz.utc, is_dst=False),
                                             data_submission=dsub, online=True)
 
         # Make some assertions
