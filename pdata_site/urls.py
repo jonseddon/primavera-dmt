@@ -14,6 +14,7 @@ urlpatterns = [
     url(r'^submissions/$', pdata_app.views.view_data_submissions, name='data_submissions'),
     url(r'^esgf_datasets/$', pdata_app.views.view_esgf_datasets, name='esgf_datasets'),
     url(r'^ceda_datasets/$', pdata_app.views.view_ceda_datasets, name='ceda_datasets'),
+    url(r'^data_requests/$', pdata_app.views.view_data_requests, name='data_requests'),
     url(r'.*', pdata_app.views.view_home),
 ]
 
