@@ -119,6 +119,32 @@ class TestWorkflows(PdataBaseTest):
     def test_02_data_submission(self):
         # Create a Data Submission and add files to it
         self.tlog("STARTING: test_00")
+        test_dsub = self._make_data_submission()
+
+        # Make some assertions
+        for dfile_name in test_dsub.files:
+            self.assertEqual(dfile_name, DataFile.objects.filter(name=dfile_name).first().name)
+
+    def test_03_move_files_to_tape(self):
+        test_dsub = self._make_data_submission()
+
+        data_submission = DataSubmission.objects.all()[0]
+
+        for df in data_submission.get_data_files():
+            df.tape_url = 'batch_id:4037'
+            df.online = False
+            df.save()
+
+        # Make some assertions
+        for dfile_name in test_dsub.files:
+            self.assertFalse(DataFile.objects.filter(name=dfile_name).first().online)
+            self.assertEqual(DataFile.objects.filter(name=dfile_name).first().tape_url, 'batch_id:4037')
+
+    def _make_data_submission(self):
+        """
+        Create files and a data submission. Returns an DataSubmissionForTests
+        object.
+        """
         test_dsub = datasets.test_data_submission
         test_dsub.create_test_files()
 
@@ -143,9 +169,7 @@ class TestWorkflows(PdataBaseTest):
                 end_time=make_aware(m["end_time"], timezone=pytz.utc, is_dst=False),
                 data_submission=dsub, online=True)
 
-        # Make some assertions
-        for dfile_name in test_dsub.files:
-            self.assertEqual(dfile_name, DataFile.objects.filter(name=dfile_name).first().name)
+        return test_dsub
 
 
 def get_suite(tests):
@@ -162,7 +186,8 @@ if __name__ == "__main__":
     limited_suite = True
 
     if limited_suite:
-        tests = ['test_01_data_request', 'test_02_data_submission']
+        tests = ['test_01_data_request', 'test_02_data_submission',
+            'test_03_move_files_to_tape']
         suite = get_suite(tests)
         unittest.TextTestRunner(verbosity=2).run(suite)
     else:
