@@ -10,6 +10,9 @@ running this script if desired.
 """
 import os
 import datetime
+import pytz
+
+from django.utils.timezone import make_aware
 
 import test.test_datasets as datasets
 from pdata_app.utils.dbapi import get_or_create
@@ -36,12 +39,13 @@ def main():
         climate_model = get_or_create(ClimateModel, short_name=metadata["climate_model"], full_name="Really good model")
         experiment = get_or_create(Experiment, short_name=metadata["experiment"], full_name="Really good experiment")
 
-        dfile = DataFile.objects.create(name=dfile_name, incoming_directory=test_dsub.INCOMING_DIR,
-                                        directory=test_dsub.INCOMING_DIR, size=os.path.getsize(path),
-                                        project=proj, climate_model=climate_model,
-                                        experiment=experiment, variable=var, frequency=metadata["frequency"],
-                                        start_time=metadata["start_time"], end_time=metadata["end_time"],
-                                        data_submission=dsub, online=True)
+        _dfile = DataFile.objects.create(name=dfile_name, incoming_directory=test_dsub.INCOMING_DIR,
+            directory=test_dsub.INCOMING_DIR, size=os.path.getsize(path),
+            project=proj, climate_model=climate_model,
+            experiment=experiment, variable=var, frequency=metadata["frequency"],
+            start_time=make_aware(metadata["start_time"], timezone=pytz.utc, is_dst=False),
+            end_time=make_aware(metadata["end_time"], timezone=pytz.utc, is_dst=False),
+            data_submission=dsub, online=True)
 
     ceda_ds = get_or_create(CEDADataset, catalogue_url='http://www.metoffice.gov.uk',
         directory=test_dsub.INCOMING_DIR)
