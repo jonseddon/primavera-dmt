@@ -9,7 +9,8 @@ from django.test import TestCase
 from django.core.exceptions import ValidationError
 
 from pdata_app import models
-from vocabs import STATUS_VALUES, ONLINE_STATUS
+from vocabs import (STATUS_VALUES, ONLINE_STATUS, FREQUENCY_VALUES,
+    CHECKSUM_TYPES)
 from pdata_app.utils.dbapi import get_or_create
 from test.test_datasets import test_data_submission
 
@@ -239,3 +240,40 @@ class TestESGFDatasetMethods(TestCase):
 
         self.assertEqual(unicode_drs, expected)
         self.assertIsInstance(unicode_drs, unicode)
+
+
+class TestChecksum(TestCase):
+    """
+    Test the additional methods in the ESGFDataset class
+    """
+    def setUp(self):
+        # Make a data submission
+        data_submission = get_or_create(models.DataSubmission,
+            status=STATUS_VALUES.ARRIVED, incoming_directory='/some/dir',
+            directory='/some/dir')
+
+        # Make the objects required by a file
+        proj = get_or_create(models.Project, short_name='CMIP6',
+            full_name='6th Coupled Model Intercomparison Project')
+        climate_model = get_or_create(models.ClimateModel,
+            short_name='climate_model', full_name='Really good model')
+        experiment = get_or_create(models.Experiment, short_name='experiment',
+            full_name='Really good experiment')
+        var = get_or_create(models.Variable, var_id='mine',
+            long_name='Really good variable', units='1')
+
+
+        # Make a data file in this submission
+        data_file = get_or_create(models.DataFile, name='filename.nc',
+            incoming_directory='/some/dir', directory='/some/dir', size=1,
+            project=proj, climate_model=climate_model, experiment=experiment,
+            variable=var, frequency=FREQUENCY_VALUES['mon'],
+            data_submission=data_submission, online=True)
+
+        # Make a checksum
+        chk_sum = get_or_create(models.Checksum, data_file=data_file,
+            checksum_value='12345678', checksum_type=CHECKSUM_TYPES['ADLER32'])
+
+    def test_unicode(self):
+        chk_sum = models.Checksum.objects.all()[0]
+        self.assertEqual(unicode(chk_sum), u'ADLER32: 12345678 (filename.nc)')

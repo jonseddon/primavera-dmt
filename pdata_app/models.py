@@ -395,7 +395,7 @@ class Checksum(models.Model):
 
     def __unicode__(self):
         return "%s: %s (%s)" % (self.checksum_type, self.checksum_value,
-                                self.file.name)
+                                self.data_file.name)
 
 
 class Settings(SingletonModel):
