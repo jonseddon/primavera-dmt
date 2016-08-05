@@ -140,6 +140,33 @@ class TestWorkflows(PdataBaseTest):
             self.assertFalse(DataFile.objects.filter(name=dfile_name).first().online)
             self.assertEqual(DataFile.objects.filter(name=dfile_name).first().tape_url, 'batch_id:4037')
 
+    def test_04_restore_from_tape(self):
+        # Do everything that was done for moving to tape
+        test_dsub = self._make_data_submission()
+
+        data_submission = DataSubmission.objects.all()[0]
+
+        for df in data_submission.get_data_files():
+            df.tape_url = 'batch_id:4037'
+            df.online = False
+            df.save()
+
+        # Check that data was moved to tape
+        for dfile_name in test_dsub.files:
+            self.assertFalse(DataFile.objects.filter(name=dfile_name).first().online)
+            self.assertEqual(DataFile.objects.filter(name=dfile_name).first().tape_url, 'batch_id:4037')
+
+        # Restore from tape
+        for df in data_submission.get_data_files():
+            df.online = True
+            df.save()
+
+        # Make some assertions to check that it's been restored
+        for dfile_name in test_dsub.files:
+            self.assertTrue(DataFile.objects.filter(name=dfile_name).first().online)
+            # check that it's still held on tape
+            self.assertEqual(DataFile.objects.filter(name=dfile_name).first().tape_url, 'batch_id:4037')
+
     def _make_data_submission(self):
         """
         Create files and a data submission. Returns an DataSubmissionForTests
@@ -187,7 +214,7 @@ if __name__ == "__main__":
 
     if limited_suite:
         tests = ['test_01_data_request', 'test_02_data_submission',
-            'test_03_move_files_to_tape']
+            'test_03_move_files_to_tape', 'test_04_restore_from_tape']
         suite = get_suite(tests)
         unittest.TextTestRunner(verbosity=2).run(suite)
     else:
