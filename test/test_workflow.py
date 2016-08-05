@@ -1,32 +1,32 @@
+"""
+Use unit tests to represent example workflows in the data management tool.
+
+The workflows that will occur are documented in:
+https://docs.google.com/document/d/1qnIg2pHqF1I1tuP_iCVzb6yL_bXZoheBBUQ9RuGWPlQ
+"""
 import os
 import datetime
-import unittest
 import logging
 import inspect
 import pytz
 
+from django.conf import settings
 from django.test import TestCase
+from django.test.utils import get_runner
 from django.utils.timezone import make_aware
 
 import test.test_datasets as datasets
-from vocabs import *
 from config import config
 from config import get_dir_from_scheme
 
-from pdata_app.utils.dbapi import *
-from pdata_app.models import *
-from pdata_app.models import __all__ as all_class_names
+from vocabs.vocabs import FREQUENCY_VALUES, STATUS_VALUES
+from pdata_app.utils.dbapi import get_or_create
+from pdata_app.models import (ClimateModel, Institute, Experiment, Project,
+    Variable, DataSubmission, DataFile, DataRequest, ESGFDataset, CEDADataset,
+    DataIssue, Checksum, Settings)
 
-classes = [eval(cls_name) for cls_name in all_class_names]
 
 # Utility functions for test workflow
-def _clear_db():
-    print "Clearing out database at start..."
-    for cls in classes:
-        cls.objects.all().delete()
-
-    print "Deleted all!\n"
-
 def _empty_test_data_dirs():
     dir_types = ("incoming", "archive", "esgf")
 
@@ -34,6 +34,7 @@ def _empty_test_data_dirs():
         dr = get_dir_from_scheme("CMIP6-MOHC", "%s_dir" % dir_type)
         for fname in os.listdir(dr):
             os.remove(os.path.join(dr, fname))
+
 
 def _create_test_data_dirs():
     dir_types = ("incoming", "archive", "esgf")
@@ -87,7 +88,6 @@ class PdataBaseTest(TestCase):
 
 
 class TestWorkflows(PdataBaseTest):
-
     def setUp(self):
         # Set up global settings
         self.settings = Settings.objects.create(is_paused=False)
@@ -95,29 +95,161 @@ class TestWorkflows(PdataBaseTest):
     def tearDown(self):
         pass
 
-    def _common_dataset_setup(self, ds):
-        "Common setup for all workflow tests - depending on dataset provided as ``ds``."
-        # Create test files
-        ds.create_test_files()
+    def test_01_data_request(self):
+        institute = get_or_create(Institute, short_name='u', full_name='University')
+        climate_model = get_or_create(ClimateModel, short_name='my_model', full_name='Really big model')
+        experiment = get_or_create(Experiment, short_name='my_expt', full_name='Really detailed experiment')
+        variable = get_or_create(Variable, var_id='var1', units='1')
 
-        # Create a Chain consisting of three controllers
-        scheme = "CMIP6-MOHC"
-        chain = create_chain(scheme, [QCController, IngestController, PublishController], completed_externally=False)
-        incoming_dir = get_dir_from_scheme(scheme, "incoming_dir")
+        data_req = get_or_create(DataRequest, institute=institute,
+            climate_model=climate_model, experiment=experiment,
+            variable=variable, frequency=FREQUENCY_VALUES['ann'],
+            start_time=datetime.datetime(1900, 1, 1, 0, 0, 0, 0, pytz.utc),
+            end_time=datetime.datetime(2000, 1, 1, 0, 0, 0, 0, pytz.utc))
 
-        # Add the dataset to the db
-        dataset = get_or_create(Dataset, incoming_dir=incoming_dir, name=ds.id,
-                                chain=chain, arrival_time=timezone.now())
+        # Make some assertions
+        data_req = DataRequest.objects.all()[0]
+        self.assertEqual(data_req.institute.full_name, 'University')
+        self.assertEqual(data_req.climate_model.short_name, 'my_model')
+        self.assertEqual(data_req.experiment.short_name, 'my_expt')
+        self.assertEqual(data_req.variable.var_id, 'var1')
 
-        # Add files
-        for fname in ds.files:
-            insert(File, name=fname, directory=incoming_dir, size=10, dataset=dataset)
-
-        return dataset
-
-    def test_00(self):
+    def test_02_data_submission(self):
         # Create a Data Submission and add files to it
         self.tlog("STARTING: test_00")
+        test_dsub = self._make_data_submission()
+
+        # Make some assertions
+        for dfile_name in test_dsub.files:
+            self.assertEqual(dfile_name, DataFile.objects.filter(name=dfile_name).first().name)
+
+    def test_03_move_files_to_tape(self):
+        test_dsub = self._make_data_submission()
+
+        data_submission = DataSubmission.objects.all()[0]
+
+        for df in data_submission.get_data_files():
+            df.tape_url = 'batch_id:4037'
+            df.online = False
+            df.save()
+
+        # Make some assertions
+        for dfile_name in test_dsub.files:
+            self.assertFalse(DataFile.objects.filter(name=dfile_name).first().online)
+            self.assertEqual(DataFile.objects.filter(name=dfile_name).first().tape_url, 'batch_id:4037')
+
+    def test_04_restore_from_tape(self):
+        # Do everything that was done for moving to tape
+        test_dsub = self._make_data_submission()
+
+        data_submission = DataSubmission.objects.all()[0]
+
+        for df in data_submission.get_data_files():
+            df.tape_url = 'batch_id:4037'
+            df.online = False
+            df.save()
+
+        # Check that data was moved to tape
+        for dfile_name in test_dsub.files:
+            self.assertFalse(DataFile.objects.filter(name=dfile_name).first().online)
+            self.assertEqual(DataFile.objects.filter(name=dfile_name).first().tape_url, 'batch_id:4037')
+
+        # Restore from tape
+        for df in data_submission.get_data_files():
+            df.online = True
+            df.save()
+
+        # Make some assertions to check that it's been restored
+        for dfile_name in test_dsub.files:
+            self.assertTrue(DataFile.objects.filter(name=dfile_name).first().online)
+            # check that it's still held on tape
+            self.assertEqual(DataFile.objects.filter(name=dfile_name).first().tape_url, 'batch_id:4037')
+
+    def test_05_create_data_issue(self):
+        # Create a data submission to start with
+        test_dsub = self._make_data_submission()
+
+        data_submission = DataSubmission.objects.all()[0]
+
+        # Now, create the data issue
+        data_issue = get_or_create(DataIssue, issue='test issue',
+            reporter='Jon Seddon')
+
+        # Add the issue to all files in the submission
+        for df in data_submission.get_data_files():
+            df.dataissue_set.add(data_issue)
+            df.save()
+
+        # Make some assertions
+        for dfile_name in test_dsub.files:
+            df = DataFile.objects.filter(name=dfile_name).first()
+            self.assertEqual(df.dataissue_set.count(), 1)
+            self.assertEqual(df.dataissue_set.first().issue, 'test issue')
+
+    def test_06_ingest_to_ceda(self):
+        # Create a ata submission to start with
+        test_dsub = self._make_data_submission()
+
+        data_submission = DataSubmission.objects.all()[0]
+
+        # Create a CEDA data set
+        ceda_ds = get_or_create(CEDADataset, doi='doi:10.2514/1.A32039',
+            catalogue_url='http://catalogue.ceda.ac.uk/uuid/85c7d0b09c974bd6abb07a324c2f427b',
+            directory='/badc/some/dir')
+
+        for df in data_submission.get_data_files():
+            df.ceda_dataset = ceda_ds
+            df.ceda_opendap_url = 'http://dap.ceda.ac.uk/data/badc/cmip5/some/dir/' + df.name
+            df.ceda_download_url = 'http://browse.ceda.ac.uk/browse/badc/cmip5/' + df.name
+            df.save()
+
+        # Make some assertions
+        for dfile_name in test_dsub.files:
+            df = DataFile.objects.filter(name=dfile_name).first()
+            self.assertEqual(df.ceda_dataset.doi, 'doi:10.2514/1.A32039')
+            self.assertEqual(df.ceda_download_url, 'http://browse.ceda.ac.uk/browse/badc/cmip5/' + df.name)
+
+    def test_07_publish_to_esgf(self):
+        # Create a ata submission to start with
+        test_dsub = self._make_data_submission()
+
+        data_submission = DataSubmission.objects.all()[0]
+
+        # Ingest into CEDA
+        ceda_ds = get_or_create(CEDADataset, doi='doi:10.2514/1.A32039',
+            catalogue_url='http://catalogue.ceda.ac.uk/uuid/85c7d0b09c974bd6abb07a324c2f427b',
+            directory='/badc/some/dir')
+
+        for df in data_submission.get_data_files():
+            df.ceda_dataset = ceda_ds
+            df.ceda_opendap_url = 'http://dap.ceda.ac.uk/data/badc/cmip5/some/dir/' + df.name
+            df.ceda_download_url = 'http://browse.ceda.ac.uk/browse/badc/cmip5/' + df.name
+            df.save()
+
+        # Create an ESGF data set
+        esgf_ds = get_or_create(ESGFDataset, drs_id='a.b.c.d', version='v20160720',
+            directory='/some/dir', ceda_dataset=ceda_ds,
+            data_submission=data_submission)
+
+        # Update each file
+        for df in data_submission.get_data_files():
+            df.esgf_dataset = esgf_ds
+            df.esgf_opendap_url = 'http://esgf.ceda.ac.uk/data/badc/cmip5/some/dir/' + df.name
+            df.esgf_download_url = 'http://esgf.ceda.ac.uk/browse/badc/cmip5/' + df.name
+            df.save()
+
+        # Make some assertions
+        for dfile_name in test_dsub.files:
+            df = DataFile.objects.filter(name=dfile_name).first()
+            self.assertEqual(df.esgf_dataset.get_full_id(), 'a.b.c.d.v20160720')
+            self.assertEqual(df.esgf_download_url, 'http://esgf.ceda.ac.uk/browse/badc/cmip5/' + df.name)
+            self.assertEqual(df.esgf_dataset.data_submission.directory, './test_data/submission')
+
+    def _make_data_submission(self):
+        """
+        Create files and a data submission. Returns an DataSubmissionForTests
+        object.
+        """
         test_dsub = datasets.test_data_submission
         test_dsub.create_test_files()
 
@@ -135,127 +267,14 @@ class TestWorkflows(PdataBaseTest):
             experiment = get_or_create(Experiment, short_name=m["experiment"], full_name="Really good experiment")
 
             dfile = DataFile.objects.create(name=dfile_name, incoming_directory=test_dsub.INCOMING_DIR,
-                                            directory=test_dsub.INCOMING_DIR, size=os.path.getsize(path),
-                                            project=proj, climate_model=climate_model,
-                                            experiment=experiment, variable=var, frequency=m["frequency"],
-                                            start_time=make_aware(m["start_time"], timezone=pytz.utc, is_dst=False),
-                                            end_time=make_aware(m["end_time"], timezone=pytz.utc, is_dst=False),
-                                            data_submission=dsub, online=True)
+                directory=test_dsub.INCOMING_DIR, size=os.path.getsize(path),
+                project=proj, climate_model=climate_model,
+                experiment=experiment, variable=var, frequency=m["frequency"],
+                start_time=make_aware(m["start_time"], timezone=pytz.utc, is_dst=False),
+                end_time=make_aware(m["end_time"], timezone=pytz.utc, is_dst=False),
+                data_submission=dsub, online=True)
 
-        # Make some assertions
-        for dfile_name in test_dsub.files:
-            self.assertEqual(dfile_name, DataFile.objects.filter(name=dfile_name).first().name)
-
-    # def test_01(self):
-    #     # d1 - 3 good files
-    #     self.tlog("STARTING: test_01")
-    #     ds = datasets.d1
-    #     dataset = self._common_dataset_setup(ds)
-    #
-    #     # Sleep and then assert that all are completed
-    #     time.sleep(10)
-    #     self._assert_all_completed(dataset)
-    #
-    # def test_02(self):
-    #     # d2 - 2 good files, 1 bad file
-    #     self.tlog("STARTING: test_02")
-    #     ds = datasets.d2
-    #     dataset = self._common_dataset_setup(ds)
-    #
-    #     # Sleep and then assert that all are completed
-    #     time.sleep(10)
-    #     self._assert_failed_at(dataset, stage=1)
-    #
-    # def test_03(self):
-    #     # d3 - 3 good files, but IOError raised during Ingest process
-    #     self.tlog("STARTING: test_03")
-    #     ds = datasets.d3
-    #     dataset = self._common_dataset_setup(ds)
-    #
-    #     # Sleep and then assert that all are completed
-    #     time.sleep(10)
-    #     self._assert_failed_at(dataset, stage=2)
-    #
-    # def test_04(self):
-    #     # d4 - 3 good files, but withdraw afterwards
-    #     self.tlog("STARTING: test_04")
-    #     ds = datasets.d4
-    #     dataset = self._common_dataset_setup(ds)
-    #
-    #     # Sleep and then assert that all are completed
-    #     time.sleep(10)
-    #     self._assert_all_completed(dataset)
-    #
-    #     # Now withdraw and check all undo actions work
-    #     dataset.is_withdrawn = True
-    #     dataset.save()
-    #
-    #     time.sleep(20)
-    #     self._assert_empty(dataset)
-    #
-    # def _common_withdraw_test(self, controller_name, ds):
-    #     dataset = self._common_dataset_setup(ds)
-    #
-    #     # Sleep briefly so that it is part through running and then withdraw mid-transaction
-    #     while 1:
-    #         if get_dataset_status(dataset, controller_name) in \
-    #                 (STATUS_VALUES.PENDING_DO, STATUS_VALUES.DOING, STATUS_VALUES.DONE):
-    #             break
-    #         time.sleep(1)
-    #
-    #     dataset.is_withdrawn = True
-    #     dataset.save()
-    #
-    #     time.sleep(40)
-    #     self._assert_empty(dataset)
-    #
-    # def test_05(self):
-    #     # d5 - 3 good files, but withdraw during QC
-    #     self.tlog("STARTING: test_05")
-    #     ds = datasets.d5
-    #     self._common_withdraw_test("QCController", ds)
-    #
-    # def test_06(self):
-    #     # d6 - 3 good files, but withdraw during Ingest
-    #     self.tlog("STARTING: test_06")
-    #     ds = datasets.d5
-    #     self._common_withdraw_test("IngestController", ds)
-
-
-    def _assert_all_completed(self, dataset):
-        self.log.warn("Checking dataset is COMPLETED: %s" % dataset.name)
-        chain = dataset.chain
-        if chain.completed_externally:
-            assert dataset.processing_status == PROCESSING_STATUS_VALUES.COMPLETED
-
-        for stage_name in get_ordered_process_stages(chain):
-            self.tlog("%s, %s --> %s" % (dataset, stage_name, get_dataset_status(dataset, stage_name)))
-            assert get_dataset_status(dataset, stage_name) == STATUS_VALUES.DONE
-            self.log.warn("CHECKED PROCESS STATUS: %s, %s" % (dataset.name, stage_name))
-
-        self.log.warn("COMPLETED COMPLETION CHECK!")
-
-    def _assert_failed_at(self, dataset, stage):
-        self.log.warn("Checking dataset FAILED at stage %d: %s" % (stage, dataset.name))
-        chain = dataset.chain
-        stages = ["dummy"] + get_ordered_process_stages(chain)
-
-        stage_name = stages[stage]
-        self.tlog("%s, %s --> %s" % (dataset, stage_name, get_dataset_status(dataset, stage_name)))
-        assert get_dataset_status(dataset, stage_name) == STATUS_VALUES.FAILED
-
-        self.log.warn("COMPLETED FAILURE CHECK!")
-
-    def _assert_empty(self, dataset):
-        self.log.warn("Checking dataset is EMPTY: %s" % dataset.name)
-        chain = dataset.chain
-
-        for stage_name in get_ordered_process_stages(chain):
-            self.tlog("%s, %s --> %s" % (dataset, stage_name, get_dataset_status(dataset, stage_name)))
-            assert get_dataset_status(dataset, stage_name) == STATUS_VALUES.EMPTY
-            self.log.warn("CHECKED PROCESS STATUS: %s, %s" % (dataset.name, stage_name))
-
-        self.log.warn("COMPLETED EMPTY CHECK!")
+        return test_dsub
 
 
 def get_suite(tests):
@@ -265,14 +284,22 @@ def get_suite(tests):
 
     return suite
 
+
 if __name__ == "__main__":
 
-    limited_suite = False
     limited_suite = True
 
+    tests = ['test_01_data_request', 'test_02_data_submission',
+        'test_03_move_files_to_tape', 'test_04_restore_from_tape',
+        'test_05_create_data_issue', 'test_06_ingest_to_ceda',
+        'test_07_publish_to_esgf']
+
+    full_test_names = ['test.test_workflow.TestWorkflows.' + t for t in tests]
+
+    TestRunner = get_runner(settings)
+    test_runner = TestRunner(verbosity=2)
+
     if limited_suite:
-        tests = ['test_00']
-        suite = get_suite(tests)
-        unittest.TextTestRunner(verbosity=2).run(suite)
+        test_runner.run_tests(full_test_names)
     else:
-        unittest.main()
+        test_runner.run_tests(['test.test_workflow.TestWorkflows'])

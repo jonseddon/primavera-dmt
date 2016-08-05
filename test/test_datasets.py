@@ -30,7 +30,7 @@ class DatasetForTests(object):
         for (indx, fname) in enumerate(self.files):
 
             fpath = os.path.join(self.INCOMING_DIR, fname)
-            print "Writing test file: %s" % fpath
+            # print "Writing test file: %s" % fpath
             content = self._get_var_id(fname)
             if indx == self.corrupt_index:
                 content = "RUBBISH"

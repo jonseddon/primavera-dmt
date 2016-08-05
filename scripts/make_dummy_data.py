@@ -3,7 +3,8 @@
 make_dummy_data.py
 
 Uses test_dataset.py to create some dummy files with a .nc extension. A dummy
-data submission is created, which contains these files.
+data submission is created, which contains these files. Dummy data requests
+that would be completely and partially fulfilled by these files are also created.
 
 The reset_db.sh script can be used by the user to clear the database before
 running this script if desired.
@@ -17,12 +18,48 @@ from django.utils.timezone import make_aware
 import test.test_datasets as datasets
 from pdata_app.utils.dbapi import get_or_create
 from pdata_app.models import (DataSubmission, DataFile, ClimateModel,
-    Experiment, Project, Variable, ESGFDataset, CEDADataset)
-from vocabs import STATUS_VALUES
+    Experiment, Project, Variable, ESGFDataset, CEDADataset, DataRequest,
+    Institute)
+from vocabs import STATUS_VALUES, FREQUENCY_VALUES
 
 
-def main():
-    # Create a Data Submission and add files to it
+def make_data_request():
+    """
+    Create a DataRequest that matches files in the later submission
+    """
+    # Make the variable zos for which all data is available
+    institute = get_or_create(Institute, short_name='MOHC', full_name='Met Office Hadley Centre')
+    climate_model = get_or_create(ClimateModel, short_name='HadGEM2-ES', full_name='Really big model')
+    experiment = get_or_create(Experiment, short_name='rcp45', full_name='Representative Concentration Pathway for 4.5 W/m^2')
+    variable = get_or_create(Variable, var_id='zos', units='m',
+        long_name='Sea Surface Height Above Geoid',
+        standard_name='sea_surface_height_above_geoid')
+
+    data_req = get_or_create(DataRequest, institute=institute,
+        climate_model=climate_model, experiment=experiment,
+        variable=variable, frequency=FREQUENCY_VALUES['day'],
+        start_time=datetime.datetime(1991, 1, 1, 0, 0, 0, 0, pytz.utc),
+        end_time=datetime.datetime(1993, 12, 30, 0, 0, 0, 0, pytz.utc))
+
+    # Make the variable rsds for which one year is missing
+    institute = get_or_create(Institute, short_name='IPSL', full_name='Institut Pierre Simon Laplace')
+    climate_model = get_or_create(ClimateModel, short_name='IPSL-CM5A-LR', full_name='Another really big model')
+    experiment = get_or_create(Experiment, short_name='abrupt4xCO2', full_name='Impose an instantaneous quadrupling of atmospheric CO2 (relative to preindustrial conditions)')
+    variable = get_or_create(Variable, var_id='rsds', units='W m-2',
+        long_name='Surface Downwelling Shortwave Radiation',
+        standard_name='surface_downwelling_shortwave_flux_in_air')
+
+    data_req = get_or_create(DataRequest, institute=institute,
+        climate_model=climate_model, experiment=experiment,
+        variable=variable, frequency=FREQUENCY_VALUES['day'],
+        start_time=datetime.datetime(1991, 1, 1, 0, 0, 0, 0, pytz.utc),
+        end_time=datetime.datetime(1994, 12, 30, 0, 0, 0, 0, pytz.utc))
+
+
+def make_data_submission():
+    """
+    Create a Data Submission and add files to it
+    """
     test_dsub = datasets.test_data_submission
     test_dsub.create_test_files()
 
@@ -61,6 +98,10 @@ def main():
     dsub.status = STATUS_VALUES.ARCHIVED
     dsub.save()
 
+
+def main():
+    make_data_request()
+    make_data_submission()
 
 
 def _extract_file_metadata(file_path):
