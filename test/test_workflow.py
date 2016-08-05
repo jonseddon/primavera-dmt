@@ -6,12 +6,13 @@ https://docs.google.com/document/d/1qnIg2pHqF1I1tuP_iCVzb6yL_bXZoheBBUQ9RuGWPlQ
 """
 import os
 import datetime
-import unittest
 import logging
 import inspect
 import pytz
 
+from django.conf import settings
 from django.test import TestCase
+from django.test.utils import get_runner
 from django.utils.timezone import make_aware
 
 import test.test_datasets as datasets
@@ -23,9 +24,6 @@ from pdata_app.utils.dbapi import get_or_create
 from pdata_app.models import (ClimateModel, Institute, Experiment, Project,
     Variable, DataSubmission, DataFile, DataRequest, ESGFDataset, CEDADataset,
     DataIssue, Checksum, Settings)
-from pdata_app.models import __all__ as all_class_names
-
-classes = [eval(cls_name) for cls_name in all_class_names]
 
 
 # Utility functions for test workflow
@@ -168,7 +166,25 @@ class TestWorkflows(PdataBaseTest):
             self.assertEqual(DataFile.objects.filter(name=dfile_name).first().tape_url, 'batch_id:4037')
 
     def test_05_create_data_issue(self):
-        pass
+        # Create a data submission to start with
+        test_dsub = self._make_data_submission()
+
+        data_submission = DataSubmission.objects.all()[0]
+
+        # Now, create the data issue
+        data_issue = get_or_create(DataIssue, issue='test issue',
+            reporter='Jon Seddon')
+
+        # Add the issue to all files in the submission
+        for df in data_submission.get_data_files():
+            df.dataissue_set.add(data_issue)
+            df.save()
+
+        # Make some assertions
+        for dfile_name in test_dsub.files:
+            df = DataFile.objects.filter(name=dfile_name).first()
+            self.assertEqual(df.dataissue_set.count(), 1)
+            self.assertEqual(df.dataissue_set.first().issue, 'test issue')
 
     def test_06_ingest_to_ceda(self):
         # Create a ata submission to start with
@@ -271,15 +287,19 @@ def get_suite(tests):
 
 if __name__ == "__main__":
 
-    limited_suite = False
     limited_suite = True
 
+    tests = ['test_01_data_request', 'test_02_data_submission',
+        'test_03_move_files_to_tape', 'test_04_restore_from_tape',
+        'test_05_create_data_issue', 'test_06_ingest_to_ceda',
+        'test_07_publish_to_esgf']
+
+    full_test_names = ['test.test_workflow.TestWorkflows.' + t for t in tests]
+
+    TestRunner = get_runner(settings)
+    test_runner = TestRunner(verbosity=2)
+
     if limited_suite:
-        tests = ['test_01_data_request', 'test_02_data_submission',
-            'test_03_move_files_to_tape', 'test_04_restore_from_tape',
-            'test_05_create_data_issue', 'test_06_ingest_to_ceda',
-            'test_07_publish_to_esgf']
-        suite = get_suite(tests)
-        unittest.TextTestRunner(verbosity=2).run(suite)
+        test_runner.run_tests(full_test_names)
     else:
-        unittest.main()
+        test_runner.run_tests(['test.test_workflow.TestWorkflows'])
