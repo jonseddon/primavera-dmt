@@ -167,6 +167,37 @@ class TestWorkflows(PdataBaseTest):
             # check that it's still held on tape
             self.assertEqual(DataFile.objects.filter(name=dfile_name).first().tape_url, 'batch_id:4037')
 
+    def test_05_create_data_issue(self):
+        pass
+
+    def test_06_ingest_to_ceda(self):
+        # Create a ata submission to start with
+        test_dsub = self._make_data_submission()
+
+        data_submission = DataSubmission.objects.all()[0]
+
+
+        # Create a CEDA data set
+        ceda_ds = get_or_create(CEDADataset, doi='doi:10.2514/1.A32039',
+            catalogue_url='http://catalogue.ceda.ac.uk/uuid/85c7d0b09c974bd6abb07a324c2f427b',
+            directory='/badc/some/dir')
+
+        for df in data_submission.get_data_files():
+            df.ceda_dataset = ceda_ds
+            df.ceda_opendap_url = 'http://dap.ceda.ac.uk/data/badc/cmip5/some/dir/' + df.name
+            df.ceda_download_url = 'http://browse.ceda.ac.uk/browse/badc/cmip5/' + df.name
+            df.save()
+
+        # Make some assertions
+        for dfile_name in test_dsub.files:
+            df = DataFile.objects.filter(name=dfile_name).first()
+            self.assertEqual(df.ceda_dataset.doi, 'doi:10.2514/1.A32039')
+            self.assertEqual(df.ceda_download_url, 'http://browse.ceda.ac.uk/browse/badc/cmip5/' + df.name)
+
+    def test_07_publish_to_esgf(self):
+        pass
+
+
     def _make_data_submission(self):
         """
         Create files and a data submission. Returns an DataSubmissionForTests
@@ -214,7 +245,9 @@ if __name__ == "__main__":
 
     if limited_suite:
         tests = ['test_01_data_request', 'test_02_data_submission',
-            'test_03_move_files_to_tape', 'test_04_restore_from_tape']
+            'test_03_move_files_to_tape', 'test_04_restore_from_tape',
+            'test_05_create_data_issue', 'test_06_ingest_to_ceda',
+            'test_07_publish_to_esgf']
         suite = get_suite(tests)
         unittest.TextTestRunner(verbosity=2).run(suite)
     else:
