@@ -39,6 +39,66 @@ def _extract_file_metadata(file_path):
     return data
 
 
+class TestProject(TestCase):
+    """
+    Test Project class
+    """
+    def setUp(self):
+        _p = get_or_create(models.Project, short_name='t', full_name='test')
+
+    def test_unicode(self):
+        proj = models.Project.objects.first()
+        self.assertEqual(unicode(proj), u't')
+
+
+class TestInstitute(TestCase):
+    """
+    Test Institute class
+    """
+    def setUp(self):
+        _p = get_or_create(models.Institute, short_name='t', full_name='test')
+
+    def test_unicode(self):
+        inst = models.Institute.objects.first()
+        self.assertEqual(unicode(inst), u't')
+
+
+class TestClimateModel(TestCase):
+    """
+    Test ClimateModel class
+    """
+    def setUp(self):
+        _p = get_or_create(models.ClimateModel, short_name='t', full_name='test')
+
+    def test_unicode(self):
+        clim_model = models.ClimateModel.objects.first()
+        self.assertEqual(unicode(clim_model), u't')
+
+
+class TestExperiment(TestCase):
+    """
+    Test Experiment class
+    """
+    def setUp(self):
+        _p = get_or_create(models.Experiment, short_name='t', full_name='test')
+
+    def test_unicode(self):
+        expt = models.Experiment.objects.first()
+        self.assertEqual(unicode(expt), u't')
+
+
+class TestVariable(TestCase):
+    """
+    Test Variable class
+    """
+    def setUp(self):
+        _p = get_or_create(models.Variable, var_id='test_var', units='1')
+
+    def test_unicode(self):
+        vble = models.Variable.objects.first()
+        self.assertEqual(unicode(vble), u'test_var')
+
+
 class TestDataFileAggregationBaseMethods(TestCase):
     """
     The tests in this class test the methods in the models.FileAggregationBase
@@ -201,6 +261,33 @@ class TestDataFileAggregationBaseMethods(TestCase):
             self.assertEqual(di.reporter, 'Lewis')
 
 
+class TestDataSubmission(TestCase):
+    """
+    Test DataSubmission class
+    """
+    def setUp(self):
+        _p = get_or_create(models.DataSubmission,
+            status=STATUS_VALUES['EXPECTED'], incoming_directory='/some/dir',
+            directory='/other/dir')
+
+    def test_unicode(self):
+        data_sub = models.DataSubmission.objects.first()
+        self.assertEqual(unicode(data_sub), u'Data Submission: /other/dir')
+
+
+class TestCEDADataset(TestCase):
+    """
+    Test CEDADataset class
+    """
+    def setUp(self):
+        _p = get_or_create(models.CEDADataset, catalogue_url='http://some.url/',
+            directory='/some/dir')
+
+    def test_unicode(self):
+        ceda_ds = models.CEDADataset.objects.first()
+        self.assertEqual(unicode(ceda_ds), u'CEDA Dataset: http://some.url/')
+
+
 class TestESGFDatasetMethods(TestCase):
     """
     Test the additional methods in the ESGFDataset class
@@ -242,9 +329,54 @@ class TestESGFDatasetMethods(TestCase):
         self.assertIsInstance(unicode_drs, unicode)
 
 
+class TestDataFile(TestCase):
+    """
+    Test the methods in the DataFile class
+    """
+    def setUp(self):
+        # Make the objects required by a file
+        data_submission = get_or_create(models.DataSubmission,
+            status=STATUS_VALUES.ARRIVED, incoming_directory='/some/dir',
+            directory='/some/dir')
+        proj = get_or_create(models.Project, short_name='CMIP6',
+            full_name='6th Coupled Model Intercomparison Project')
+        climate_model = get_or_create(models.ClimateModel,
+            short_name='climate_model', full_name='Really good model')
+        experiment = get_or_create(models.Experiment, short_name='experiment',
+            full_name='Really good experiment')
+        var = get_or_create(models.Variable, var_id='mine',
+            long_name='Really good variable', units='1')
+
+        # Make the data file
+        data_file = get_or_create(models.DataFile, name='filename.nc',
+            incoming_directory='/some/dir', directory='/other/dir', size=1,
+            project=proj, climate_model=climate_model, experiment=experiment,
+            variable=var, frequency=FREQUENCY_VALUES['mon'],
+            data_submission=data_submission, online=True)
+
+    def test_unicode(self):
+        data_file = models.DataFile.objects.first()
+        self.assertEqual(unicode(data_file),
+            u'filename.nc (Directory: /other/dir)')
+
+
+class TestDataIssue(TestCase):
+    """
+    Test DataIssue class
+    """
+    def setUp(self):
+        _p = get_or_create(models.DataIssue, issue='test', reporter='me',
+            date_time=datetime.datetime(2016, 8, 8, 8, 42, 37, 0, pytz.utc))
+
+    def test_unicode(self):
+        data_issue = models.DataIssue.objects.first()
+        self.assertEqual(unicode(data_issue),
+            u'Data Issue (2016-08-08 08:42:37+00:00): test (me)')
+
+
 class TestChecksum(TestCase):
     """
-    Test the additional methods in the ESGFDataset class
+    Test the Checksum class
     """
     def setUp(self):
         # Make a data submission
@@ -261,7 +393,6 @@ class TestChecksum(TestCase):
             full_name='Really good experiment')
         var = get_or_create(models.Variable, var_id='mine',
             long_name='Really good variable', units='1')
-
 
         # Make a data file in this submission
         data_file = get_or_create(models.DataFile, name='filename.nc',
