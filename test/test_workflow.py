@@ -277,14 +277,6 @@ class TestWorkflows(PdataBaseTest):
         return test_dsub
 
 
-def get_suite(tests):
-    suite = unittest.TestSuite()
-    for test in tests:
-        suite.addTest(TestWorkflows(test))
-
-    return suite
-
-
 if __name__ == "__main__":
 
     limited_suite = True

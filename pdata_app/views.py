@@ -1,6 +1,7 @@
 from django.shortcuts import render, HttpResponseRedirect
 from django.core.urlresolvers import reverse
-from django.shortcuts import get_list_or_404
+from django.db import connection
+from django.db.models import Min, Max
 
 from pdata_app.models import (DataFile, DataSubmission, ESGFDataset, CEDADataset,
     DataRequest)
@@ -53,11 +54,41 @@ def view_variable_query_form(request):
 
 def view_variable_query_results(request, var_id):
     files = DataFile.objects.filter(variable__var_id=var_id)
+
     if not files:
         return render(request, 'variable_query.html', {'request': request,
         'page_title': 'Variable Query',
         'message': 'Variable: {} not found'.format(var_id)})
-    else:
-        return render(request, 'variable_query_results.html', {'request': request,
-            'page_title': 'Variable Query Results', 'var_id': var_id,
-            'files': files})
+
+    vbles_found = []
+
+    # loop through the unique combinations
+    cursor = connection.cursor()
+    uniq_rows = cursor.execute('SELECT DISTINCT frequency, climate_model_id, '
+        'experiment_id, project_id FROM pdata_app_datafile WHERE variable_id=%s', [var_id])
+    print uniq_rows
+    print uniq_rows.fetchall()
+
+    for row in uniq_rows.fetchall():
+        frequency, climate_model, experiment, project = row
+        row_files = DataFile.objects.filter(variable__var_id=var_id,
+            frequency=frequency, climate_model_id=climate_model,
+            experiment_id=experiment, project_id=project)
+        first_file = row_files.first()
+        start_time = row_files.aggregate(Min('start_time'))['start_time__min']
+        end_time = row_files.aggregate(Max('end_time'))['end_time__max']
+        vbles_found.append({
+            'project': first_file.project.short_name,
+            'model': first_file.model.short_name,
+            'experiment': first_file.experiment.short_name,
+            'frequency': first_file.frequency,
+            'start_date': '{:04d}-{:02d}-{:02d}'.format(start_time.year,
+                start_time.month, start_time.day),
+            'end_date': '{:04d}-{:02d}-{:02d}'.format(end_time.year,
+                end_time.month, end_time.day)
+        })
+
+
+    return render(request, 'variable_query_results.html', {'request': request,
+        'page_title': 'Variable Query Results', 'var_id': var_id,
+        'variables': vbles_found})

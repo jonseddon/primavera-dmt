@@ -29,11 +29,10 @@ def make_data_request():
     """
     # Make the variable zos for which all data is available
     institute = get_or_create(Institute, short_name='MOHC', full_name='Met Office Hadley Centre')
-    climate_model = get_or_create(ClimateModel, short_name='HadGEM2-ES', full_name='Really big model')
-    experiment = get_or_create(Experiment, short_name='rcp45', full_name='Representative Concentration Pathway for 4.5 W/m^2')
-    variable = get_or_create(Variable, var_id='zos', units='m',
-        long_name='Sea Surface Height Above Geoid',
-        standard_name='sea_surface_height_above_geoid')
+    climate_model = get_or_create(ClimateModel, short_name='HadGEM2-ES', full_name='Really good model')
+    experiment = get_or_create(Experiment, short_name='rcp45', full_name='Really good experiment')
+    variable = get_or_create(Variable, var_id='zos', units='1',
+        long_name='Really good variable')
 
     data_req = get_or_create(DataRequest, institute=institute,
         climate_model=climate_model, experiment=experiment,
@@ -43,11 +42,10 @@ def make_data_request():
 
     # Make the variable rsds for which one year is missing
     institute = get_or_create(Institute, short_name='IPSL', full_name='Institut Pierre Simon Laplace')
-    climate_model = get_or_create(ClimateModel, short_name='IPSL-CM5A-LR', full_name='Another really big model')
-    experiment = get_or_create(Experiment, short_name='abrupt4xCO2', full_name='Impose an instantaneous quadrupling of atmospheric CO2 (relative to preindustrial conditions)')
-    variable = get_or_create(Variable, var_id='rsds', units='W m-2',
-        long_name='Surface Downwelling Shortwave Radiation',
-        standard_name='surface_downwelling_shortwave_flux_in_air')
+    climate_model = get_or_create(ClimateModel, short_name='IPSL-CM5A-LR', full_name='Really good model')
+    experiment = get_or_create(Experiment, short_name='abrupt4xCO2', full_name='Really good experiment')
+    variable = get_or_create(Variable, var_id='rsds', units='1',
+        long_name='Really good variable')
 
     data_req = get_or_create(DataRequest, institute=institute,
         climate_model=climate_model, experiment=experiment,

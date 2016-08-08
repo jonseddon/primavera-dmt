@@ -4,8 +4,12 @@
     {% block contents %}
         Variable to search for: {{ var_id }}
 
-        {% for data_file in files %}
-        <li>{{ data_file.name }}</li>
+        <table>
+        {% for vble in variables %}
+            <tr><td>{{ vble.project }}</td><td>{{ vble.model }}</td>
+            <td>{{ vble.experiment }}</td><td>{{ vble.frequency }}</td>
+            <td>{{ vble.start_date }}</td><td>{{ vble.end_date }}</td></tr>
         {% endfor %}
+        </table>
 
     {% endblock %}
