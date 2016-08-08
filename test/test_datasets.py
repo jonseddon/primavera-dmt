@@ -79,11 +79,18 @@ d6 = DatasetForTests("cmip5.output1.IPSL.IPSL-CM5A-LR.abrupt4xCO2.day.atmos.cfDa
                       "rsds_cfDay_IPSL-CM5A-LR_abrupt4xCO2_r1i1p1_19920101-19921230.nc",
                       "rsds_cfDay_IPSL-CM5A-LR_abrupt4xCO2_r1i1p1_19930101-19931230.nc"))
 
+# d7 - Same as d3 but files provided by MOHC
+d7 = DatasetForTests("cmip5.output1.MOHC.HadGEM2-ES.amip4K.day.atmos.day.r1i1p1.v20140430",
+                     ("tasmax_day_HadGEM2-ES_amip4K_r1i1p1_18590101-18591230.nc",
+                      "tasmax_day_HadGEM2-ES_amip4K_r1i1p1_18600101-18601230.nc",
+                      "tasmax_day_HadGEM2-ES_amip4K_r1i1p1_18610101-18611230.nc"),
+                     simulate_action="PUBLICATION FAILS")
+
 
 class DataSubmissionForTests(DatasetForTests):
 
     INCOMING_DIR = "./test_data/submission"
 
 test_data_submission = DataSubmissionForTests(None,
-                        tuple(list(d3.files) + list(d5.files) + list(d6.files))
+                        tuple(list(d3.files) + list(d5.files) + list(d6.files) + list(d7.files))
                    )

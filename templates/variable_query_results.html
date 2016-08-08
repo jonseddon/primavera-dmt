@@ -1,0 +1,11 @@
+{% extends "base.html" %}
+{% load staticfiles %}
+
+    {% block contents %}
+        Variable to search for: {{ var_id }}
+
+        {% for data_file in files %}
+        <li>{{ data_file.name }}</li>
+        {% endfor %}
+
+    {% endblock %}
