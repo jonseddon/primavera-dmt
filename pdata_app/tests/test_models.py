@@ -129,7 +129,8 @@ class TestDataFileAggregationBaseMethods(TestCase):
                 incoming_directory=self.example_files.INCOMING_DIR,
                 directory=self.example_files.INCOMING_DIR, size=1, project=self.proj,
                 climate_model=climate_model, experiment=experiment,
-                variable=var, frequency=metadata["frequency"], online=True,
+                variable=var, frequency=metadata["frequency"],
+                rip_code=metadata["ensemble"], online=True,
                 start_time=metadata["start_time"], end_time=metadata["end_time"],
                 data_submission=self.dsub)
 
@@ -351,7 +352,7 @@ class TestDataFile(TestCase):
         data_file = get_or_create(models.DataFile, name='filename.nc',
             incoming_directory='/some/dir', directory='/other/dir', size=1,
             project=proj, climate_model=climate_model, experiment=experiment,
-            variable=var, frequency=FREQUENCY_VALUES['mon'],
+            variable=var, frequency=FREQUENCY_VALUES['mon'], rip_code='r1i1p1',
             data_submission=data_submission, online=True)
 
     def test_unicode(self):
@@ -398,7 +399,7 @@ class TestChecksum(TestCase):
         data_file = get_or_create(models.DataFile, name='filename.nc',
             incoming_directory='/some/dir', directory='/some/dir', size=1,
             project=proj, climate_model=climate_model, experiment=experiment,
-            variable=var, frequency=FREQUENCY_VALUES['mon'],
+            variable=var, frequency=FREQUENCY_VALUES['mon'], rip_code='r1i1p1',
             data_submission=data_submission, online=True)
 
         # Make a checksum

@@ -6,11 +6,12 @@
 
         <p><table class="table table-hover">
         <tr><th>Project</th><th>Model</th><th>Experiment</th><th>Frequency</th>
-        <th>Earlist Start Date</th><th>Latest End Date</th></tr>
-        {% for vble in variables %}
-            <tr><td>{{ vble.project }}</td><td>{{ vble.model }}</td>
-            <td>{{ vble.experiment }}</td><td>{{ vble.frequency }}</td>
-            <td>{{ vble.start_date }}</td><td>{{ vble.end_date }}</td></tr>
+        <th>RIP Code</th><th>Earliest Start Date</th><th>Latest End Date</th></tr>
+        {% for file_set in file_sets %}
+            <tr><td>{{ file_set.project }}</td><td>{{ file_set.model }}</td>
+            <td>{{ file_set.experiment }}</td><td>{{ file_set.frequency }}</td>
+            <td>{{ file_set.rip_code }}</td>
+            <td>{{ file_set.start_date }}</td><td>{{ file_set.end_date }}</td></tr>
         {% endfor %}
         </table></p>
 

@@ -269,7 +269,7 @@ class TestWorkflows(PdataBaseTest):
             dfile = DataFile.objects.create(name=dfile_name, incoming_directory=test_dsub.INCOMING_DIR,
                 directory=test_dsub.INCOMING_DIR, size=os.path.getsize(path),
                 project=proj, climate_model=climate_model,
-                experiment=experiment, variable=var, frequency=m["frequency"],
+                experiment=experiment, variable=var, frequency=m["frequency"], rip_code=m["ensemble"],
                 start_time=make_aware(m["start_time"], timezone=pytz.utc, is_dst=False),
                 end_time=make_aware(m["end_time"], timezone=pytz.utc, is_dst=False),
                 data_submission=dsub, online=True)
