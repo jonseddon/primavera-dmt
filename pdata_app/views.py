@@ -1,7 +1,13 @@
-from django.shortcuts import render
+import os
+
+from django.shortcuts import render, HttpResponseRedirect
+from django.core.urlresolvers import reverse
+from django.db import connection
+from django.db.models import Min, Max
 
 from pdata_app.models import (DataFile, DataSubmission, ESGFDataset, CEDADataset,
-    DataRequest)
+    DataRequest, Variable)
+from vocabs.vocabs import ONLINE_STATUS
 
 
 def view_data_submissions(request):
@@ -37,3 +43,102 @@ def view_data_requests(request):
 def view_home(request):
     return render(request, 'home.html', {'request': request,
         'page_title': 'The PRIMAVERA DMT'})
+
+
+def view_variable_query(request):
+    return render(request, 'variable_query.html', {'request': request,
+        'page_title': 'Variable Query'})
+
+
+def view_variable_query_form(request):
+    var_id = request.POST['var_id']
+    return HttpResponseRedirect(reverse('variable_query_results', args=[var_id]))
+
+
+def view_variable_query_results(request, var_id):
+    # TODO: add some defensive coding to handle no results returned, etc.
+
+    # see if any files contain the variable requested
+    files = DataFile.objects.filter(variable__var_id=var_id)
+    if not files:
+        return render(request, 'variable_query.html', {'request': request,
+        'page_title': 'Variable Query',
+        'message': 'Variable: {} not found'.format(var_id)})
+
+    file_sets_found = []
+
+    # get the variable_id primary key from the var_id name
+    variable_id = Variable.objects.filter(var_id=var_id).first().id
+
+    # loop through the unique combinations
+    cursor = connection.cursor()
+    uniq_rows = cursor.execute('SELECT DISTINCT frequency, climate_model_id, '
+        'experiment_id, project_id, rip_code FROM pdata_app_datafile WHERE '
+        'variable_id=%s', [variable_id])
+
+    for row in uniq_rows.fetchall():
+        # unpack the four items from each distinct set of files
+        frequency, climate_model, experiment, project, rip_code = row
+        # find all of the files that contain these distinct items
+        row_files = DataFile.objects.filter(variable__var_id=var_id,
+            frequency=frequency, climate_model_id=climate_model,
+            experiment_id=experiment, project_id=project, rip_code=rip_code)
+        # generate some summary info about the files
+        files_online = row_files.filter(online=True).count()
+        files_offline = row_files.filter(online=False).count()
+        if files_offline:
+            if files_online:
+                online_status = ONLINE_STATUS.partial
+            else:
+                online_status = ONLINE_STATUS.offline
+        else:
+            online_status = ONLINE_STATUS.online
+        num_files = row_files.count()
+        # directories where the files currently are
+        directories = ', '.join(sorted(set([df.directory for df in row_files])))
+        # CEDA download URL
+        ceda_dl_url = os.path.commonprefix(sorted(set(
+            [df.ceda_download_url for df in row_files])))
+        ceda_dl_url, __ = ceda_dl_url.rsplit('/', 1)
+        # CEDA OpenDAP URL
+        ceda_od_url = os.path.commonprefix(sorted(set(
+            [df.ceda_opendap_url for df in row_files])))
+        ceda_od_url, __ = ceda_od_url.rsplit('/', 1)
+        # ESGF download URL
+        esgf_dl_url = os.path.commonprefix(sorted(set(
+            [df.esgf_download_url for df in row_files])))
+        esgf_dl_url, __ = esgf_dl_url.rsplit('/', 1)
+        # ESGF OpenDAP URL
+        esgf_od_url = os.path.commonprefix(sorted(set(
+            [df.esgf_opendap_url for df in row_files])))
+        esgf_od_url, __ = esgf_od_url.rsplit('/', 1)
+        # get first file in the set
+        first_file = row_files.first()
+        # find the earliest start and latest end times of the set
+        start_time = row_files.aggregate(Min('start_time'))['start_time__min']
+        end_time = row_files.aggregate(Max('end_time'))['end_time__max']
+        # save the information in a dictionary
+        file_sets_found.append({
+            'project': first_file.project.short_name,
+            'model': first_file.climate_model.short_name,
+            'experiment': first_file.experiment.short_name,
+            'frequency': first_file.frequency,
+            'rip_code': rip_code,
+            'num_files': num_files,
+            'online_status': online_status,
+            'directory': directories,
+            'start_date': '{:04d}-{:02d}-{:02d}'.format(start_time.year,
+                start_time.month, start_time.day),
+            'end_date': '{:04d}-{:02d}-{:02d}'.format(end_time.year,
+                end_time.month, end_time.day),
+            'ceda_dl_url': ceda_dl_url,
+            'ceda_od_url': ceda_od_url,
+            'esgf_dl_url': esgf_dl_url,
+            'esgf_od_url': esgf_od_url
+        })
+        # TODO version
+        # TODO unit test
+
+    return render(request, 'variable_query_results.html', {'request': request,
+        'page_title': '{}: Variable Query Results'.format(var_id),
+        'var_id': var_id, 'file_sets': file_sets_found})

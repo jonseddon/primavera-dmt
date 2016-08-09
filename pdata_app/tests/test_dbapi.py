@@ -154,6 +154,7 @@ def _create_file_object():
     data_file = dbapi.get_or_create(models.DataFile, name='test',
         incoming_directory='/some/dir', directory='/some/dir', size=1,
         project=project, climate_model=clim_mod, experiment=expt,
-        variable=vble, frequency='t', data_submission=dsub, online=False)
+        variable=vble, frequency='t', rip_code='r1i1p1', data_submission=dsub,
+        online=False)
 
     return data_file

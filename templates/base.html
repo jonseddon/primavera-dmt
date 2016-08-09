@@ -62,6 +62,8 @@
                     <li><a href="{% url 'ceda_datasets' %}">CEDA Datasets</a></li>
                     <li><a href="{% url 'data_requests' %}">Data Requests</a></li>
                     <li role="separator" class="divider"></li>
+                    <li><a href="{% url 'variable_query' %}">Variable Query</a></li>
+                    <li role="separator" class="divider"></li>
                     <li><a href="{% url 'data_files' %}">Global Settings</a></li>
                   </ul>
                 </li>
@@ -73,8 +75,6 @@
 
     <div class="container-fluid">
         <H1>{{ page_title|default:"Untitled Page" }}</H1>
-
-        <div id="alert-box" class="alert alert-success hide" role="alert">This loaded fine!</div>
 
         {% block contents %}
 

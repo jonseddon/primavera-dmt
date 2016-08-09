@@ -331,8 +331,10 @@ class DataFile(models.Model):
     climate_model = models.ForeignKey(ClimateModel)
     experiment = models.ForeignKey(Experiment)
     variable = models.ForeignKey(Variable)
-    frequency = models.CharField(max_length=20, choices=FREQUENCY_VALUES.items(), verbose_name="Time frequency",
-                                 null=False, blank=False)
+    frequency = models.CharField(max_length=20, choices=FREQUENCY_VALUES.items(),
+        verbose_name="Time frequency", null=False, blank=False)
+    rip_code = models.CharField(max_length=20, verbose_name="RIP code",
+        null=False, blank=False)
 
     # DateTimes are allowed to be null/blank because some fields (such as orography)
     # are time-independent

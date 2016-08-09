@@ -6,8 +6,6 @@ https://docs.google.com/document/d/1qnIg2pHqF1I1tuP_iCVzb6yL_bXZoheBBUQ9RuGWPlQ
 """
 import os
 import datetime
-import logging
-import inspect
 import pytz
 
 from django.conf import settings
@@ -16,8 +14,6 @@ from django.test.utils import get_runner
 from django.utils.timezone import make_aware
 
 import test.test_datasets as datasets
-from config import config
-from config import get_dir_from_scheme
 
 from vocabs.vocabs import FREQUENCY_VALUES, STATUS_VALUES
 from pdata_app.utils.dbapi import get_or_create
@@ -31,7 +27,7 @@ def _empty_test_data_dirs():
     dir_types = ("incoming", "archive", "esgf")
 
     for dir_type in dir_types:
-        dr = get_dir_from_scheme("CMIP6-MOHC", "%s_dir" % dir_type)
+        dr = os.path.join('.', 'test_data', dir_type)
         for fname in os.listdir(dr):
             os.remove(os.path.join(dr, fname))
 
@@ -40,7 +36,7 @@ def _create_test_data_dirs():
     dir_types = ("incoming", "archive", "esgf")
 
     for dir_type in dir_types:
-        dr = get_dir_from_scheme("CMIP6-MOHC", "%s_dir" % dir_type)
+        dr = os.path.join('.', 'test_data', dir_type)
         if not os.path.isdir(dr): os.makedirs(dr)
 
 
@@ -69,20 +65,11 @@ def _extract_file_metadata(file_path):
 class PdataBaseTest(TestCase):
 
     @classmethod
-    def tlog(self, msg, log_level="info"):
-        meth_name = inspect.stack()[1][0].f_code.co_name
-        self.log.log(getattr(logging, log_level.upper()), "%s: %s" % (meth_name, msg))
-
-    @classmethod
     def setUpClass(self):
-        self.log = logging.getLogger(self.__class__.__name__)
-        self.log.setLevel(getattr(logging, config["log_level"]))
-        self.tlog("Setting up...", "INFO")
         _create_test_data_dirs()
 
     @classmethod
     def tearDownClass(self):
-        self.log.info("Removing all content after running tests.")
         # Empty data dirs
         _empty_test_data_dirs()
 
@@ -116,7 +103,6 @@ class TestWorkflows(PdataBaseTest):
 
     def test_02_data_submission(self):
         # Create a Data Submission and add files to it
-        self.tlog("STARTING: test_00")
         test_dsub = self._make_data_submission()
 
         # Make some assertions
@@ -269,20 +255,12 @@ class TestWorkflows(PdataBaseTest):
             dfile = DataFile.objects.create(name=dfile_name, incoming_directory=test_dsub.INCOMING_DIR,
                 directory=test_dsub.INCOMING_DIR, size=os.path.getsize(path),
                 project=proj, climate_model=climate_model,
-                experiment=experiment, variable=var, frequency=m["frequency"],
+                experiment=experiment, variable=var, frequency=m["frequency"], rip_code=m["ensemble"],
                 start_time=make_aware(m["start_time"], timezone=pytz.utc, is_dst=False),
                 end_time=make_aware(m["end_time"], timezone=pytz.utc, is_dst=False),
                 data_submission=dsub, online=True)
 
         return test_dsub
-
-
-def get_suite(tests):
-    suite = unittest.TestSuite()
-    for test in tests:
-        suite.addTest(TestWorkflows(test))
-
-    return suite
 
 
 if __name__ == "__main__":

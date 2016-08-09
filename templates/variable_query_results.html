@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+{% load staticfiles %}
+
+    {% block contents %}
+        <p><table class="table table-hover">
+        <tr><th>Project</th><th>Model</th><th>Experiment</th><th>Frequency</th>
+        <th>RIP Code</th><th>Number of Files</th><th>Online Status</th>
+        <th>Earliest Start Date</th><th>Latest End Date</th>
+        <th>Group Workspace Directory</th><th>CEDA Download URL</th>
+        <th>CEDA OpenDAP URL</th><th>ESGF Download URL</th>
+        <th>ESGF OpenDAP URL</th></tr>
+        {% for file_set in file_sets %}
+            <tr><td>{{ file_set.project }}</td><td>{{ file_set.model }}</td>
+            <td>{{ file_set.experiment }}</td><td>{{ file_set.frequency }}</td>
+            <td>{{ file_set.rip_code }}</td><td>{{ file_set.num_files }}</td>
+            <td>{{ file_set.online_status }}</td>
+            <td>{{ file_set.start_date }}</td><td>{{ file_set.end_date }}</td>
+            <td style="white-space: nowrap;">{{ file_set.directory }}</td>
+            <td><a href="{{ file_set.ceda_dl_url }}">{{ file_set.ceda_dl_url }}</a></td>
+            <td><a href="{{ file_set.ceda_od_url }}">{{ file_set.ceda_od_url }}</a></td>
+            <td><a href="{{ file_set.esgf_dl_url }}">{{ file_set.esgf_dl_url }}</a></td>
+            <td><a href="{{ file_set.esgf_od_url }}">{{ file_set.esgf_od_url }}</a></td></tr>
+        {% endfor %}
+        </table></p>
+
+    {% endblock %}
