@@ -2,14 +2,16 @@
 {% load staticfiles %}
 
     {% block contents %}
-        Variable to search for: {{ var_id }}
+        <p>Variable to search for: {{ var_id }}</p>
 
-        <table>
+        <p><table class="table table-hover">
+        <tr><th>Project</th><th>Model</th><th>Experiment</th><th>Frequency</th>
+        <th>Earlist Start Date</th><th>Latest End Date</th></tr>
         {% for vble in variables %}
             <tr><td>{{ vble.project }}</td><td>{{ vble.model }}</td>
             <td>{{ vble.experiment }}</td><td>{{ vble.frequency }}</td>
             <td>{{ vble.start_date }}</td><td>{{ vble.end_date }}</td></tr>
         {% endfor %}
-        </table>
+        </table></p>
 
     {% endblock %}
