@@ -92,6 +92,10 @@ def make_data_submission():
     for df in dsub.get_data_files():
         df.esgf_dataset = esgf_ds
         df.ceda_dataset = ceda_ds
+        df.ceda_download_url = 'http://browse.ceda.ac.uk/browse/badc/cmip5/' + df.name
+        df.ceda_opendap_url = 'http://dap.ceda.ac.uk/data/badc/cmip5/some/dir/' + df.name
+        df.esgf_opendap_url = 'http://esgf.ceda.ac.uk/data/badc/cmip5/some/dir/' + df.name
+        df.esgf_download_url = 'http://esgf.ceda.ac.uk/browse/badc/cmip5/' + df.name
         df.save()
 
     dsub.status = STATUS_VALUES.ARCHIVED
