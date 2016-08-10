@@ -142,3 +142,29 @@ def view_variable_query_results(request, var_id):
     return render(request, 'variable_query_results.html', {'request': request,
         'page_title': '{}: Variable Query Results'.format(var_id),
         'var_id': var_id, 'file_sets': file_sets_found})
+
+
+def view_expected_query(request):
+    # TODO: add autocomplete: http://flaviusim.com/blog/AJAX-Autocomplete-Search-with-Django-and-jQuery/
+    request_params = request.GET
+
+    # Basic page request with nothing specified
+    if not request_params:
+        return render(request, 'expected_query.html', {'request': request,
+            'page_title': 'Expected Data Query'})
+
+    model = request_params.get('model')
+    experiment = request_params.get('experiment')
+    project = request_params.get('project')
+
+    # Some parameters specified
+    if not (model and experiment and project):
+        msg = 'Please specify a Project, Model and Experiment'
+        return render(request, 'expected_query.html', {'request': request,
+            'page_title': 'Expected Data Query', 'message': msg})
+
+    # Everything supplied
+    else:
+        msg = 'All is groovy'
+        return render(request, 'expected_query.html', {'request': request,
+            'page_title': 'Expected Data Query', 'message': msg})

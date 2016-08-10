@@ -20,6 +20,7 @@ urlpatterns = [
         name='variable_query_results'),
     url(r'^variable_query_form$', pdata_app.views.view_variable_query_form,
         name='variable_query_form'),
+    url(r'^expected_query/$', pdata_app.views.view_expected_query, name='expected_query'),
     url(r'.*', pdata_app.views.view_home),
 ]
 
