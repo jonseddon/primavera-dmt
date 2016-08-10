@@ -1,4 +1,5 @@
 import os
+from operator import attrgetter
 
 from django.shortcuts import render, HttpResponseRedirect
 from django.core.urlresolvers import reverse
@@ -144,27 +145,51 @@ def view_variable_query_results(request, var_id):
         'var_id': var_id, 'file_sets': file_sets_found})
 
 
-def view_expected_query(request):
+def view_outstanding_query(request):
     # TODO: add autocomplete: http://flaviusim.com/blog/AJAX-Autocomplete-Search-with-Django-and-jQuery/
     request_params = request.GET
 
     # Basic page request with nothing specified
     if not request_params:
-        return render(request, 'expected_query.html', {'request': request,
-            'page_title': 'Expected Data Query'})
+        return render(request, 'outstanding_query.html', {'request': request,
+            'page_title': 'Outstanding Data Query'})
 
+    project = request_params.get('project')
     model = request_params.get('model')
     experiment = request_params.get('experiment')
-    project = request_params.get('project')
 
     # Some parameters specified
     if not (model and experiment and project):
         msg = 'Please specify a Project, Model and Experiment'
-        return render(request, 'expected_query.html', {'request': request,
-            'page_title': 'Expected Data Query', 'message': msg})
+        return render(request, 'outstanding_query.html', {'request': request,
+            'page_title': 'Outstanding Data Query', 'message': msg})
 
-    # Everything supplied
-    else:
-        msg = 'All is groovy'
-        return render(request, 'expected_query.html', {'request': request,
-            'page_title': 'Expected Data Query', 'message': msg})
+    # Everything supplied so start processing
+
+    # Identify all of the data requests that match this query
+    data_reqs = DataRequest.objects.filter(climate_model__short_name=model,
+        experiment__short_name=experiment)
+
+    if not data_reqs:
+        msg = 'No data requests match that query'
+        return render(request, 'outstanding_query.html', {'request': request,
+            'page_title': 'Outstanding Data Query', 'message': msg})
+
+    outstanding_reqs = []
+
+    for req in data_reqs:
+        req_files = DataFile.objects.filter(
+            climate_model__id=req.climate_model_id,
+            experiment__id=req.experiment_id,
+            variable__id=req.variable_id,
+            frequency=req.frequency)
+
+        if not req_files:
+            # no files found so request not satisfied
+            outstanding_reqs.append(req)
+
+    # TODO: sort the results by table and then variable
+    outstanding_reqs.sort(key=attrgetter('variable.var_id'))
+
+    return render(request, 'outstanding_query_results.html', {'request': request,
+        'page_title': 'Outstanding Data Query', 'records': outstanding_reqs})

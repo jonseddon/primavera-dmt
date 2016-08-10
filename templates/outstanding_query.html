@@ -6,9 +6,9 @@
             <p>{{ message }}</p>
         {% endif %}
 
-        <p>Variable to search for:</p>
+        <p>Outstanding data to search for:</p>
 
-        <form class="form-horizontal" action="{% url 'expected_query' %}" method="get">
+        <form class="form-horizontal" action="{% url 'outstanding_query' %}" method="get">
             <div class="form-group">
                 <label for="project" class="col-sm-2 control-label">Project</label>
                 <div class="col-sm-10">
