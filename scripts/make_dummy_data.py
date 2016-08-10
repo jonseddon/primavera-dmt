@@ -53,6 +53,23 @@ def make_data_request():
         start_time=datetime.datetime(1991, 1, 1, 0, 0, 0, 0, pytz.utc),
         end_time=datetime.datetime(1994, 12, 30, 0, 0, 0, 0, pytz.utc))
 
+    # Make two requests that are entirely missing
+    variable = get_or_create(Variable, var_id='pie', units='1', long_name='Really good variable')
+
+    data_req = get_or_create(DataRequest, institute=institute,
+        climate_model=climate_model, experiment=experiment,
+        variable=variable, frequency=FREQUENCY_VALUES['day'],
+        start_time=datetime.datetime(1991, 1, 1, 0, 0, 0, 0, pytz.utc),
+        end_time=datetime.datetime(1994, 12, 30, 0, 0, 0, 0, pytz.utc))
+
+    variable = get_or_create(Variable, var_id='cake', units='1', long_name='Really good variable')
+
+    data_req = get_or_create(DataRequest, institute=institute,
+        climate_model=climate_model, experiment=experiment,
+        variable=variable, frequency=FREQUENCY_VALUES['day'],
+        start_time=datetime.datetime(1991, 1, 1, 0, 0, 0, 0, pytz.utc),
+        end_time=datetime.datetime(1994, 12, 30, 0, 0, 0, 0, pytz.utc))
+
 
 def make_data_submission():
     """
@@ -112,7 +129,7 @@ def _extract_file_metadata(file_path):
     Extracts metadata from file name and returns dictionary.
     """
     # e.g. tasmax_day_IPSL-CM5A-LR_amip4K_r1i1p1_18590101-18591230.nc
-    keys = ("var_id", "frequency", "climate_model", "experiment", "ensemble", "time_range")
+    keys = ("var_id", "table", "climate_model", "experiment", "ensemble", "time_range")
 
     items = os.path.splitext(os.path.basename(file_path))[0].split("_")
     data = {}
@@ -125,6 +142,13 @@ def _extract_file_metadata(file_path):
             start_time, end_time = value.split("-")
             data["start_time"] = datetime.datetime.strptime(start_time, "%Y%m%d")
             data["end_time"] = datetime.datetime.strptime(end_time, "%Y%m%d")
+        elif key == "table":
+            for fv in FREQUENCY_VALUES:
+                if fv.lower() in value.lower():
+                    data['frequency'] = fv
+                    break
+            if 'frequency' not in data:
+                data['frequency'] = ''
         else:
             data[key] = value
 

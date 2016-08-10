@@ -9,24 +9,11 @@
     <link href="{% static 'css/base.css' %}?v=" rel="stylesheet">
     <script language="JavaScript" src="{% static 'ext/jquery-1.12.4.min.js' %}"></script>
     <script language="JavaScript" src="{% static 'ext/bootstrap-3.3.6-dist/js/bootstrap.min.js' %}"></script>
-    <script language="JavaScript" src="{% static 'js/pdatalib.js' %}"></script>
 
     <link href="{% static 'ext/bootstrap-3.3.6-dist/css/bootstrap.min.css' %}" rel="stylesheet">
     <script src="//code.jquery.com/ui/1.11.4/jquery-ui.js"></script>
 
-    <script>
-        $(document).ready(function(){
-            $('[data-toggle="tooltip"]').tooltip();
-        });
-    </script>
-
     <title>{{ page_title }}</title>
-    <style>
-        body {
-             width: 1100px;
-             margin: 0 auto;
-        }
-    </style>
 
 </head>
 <body>
@@ -63,6 +50,7 @@
                     <li><a href="{% url 'data_requests' %}">Data Requests</a></li>
                     <li role="separator" class="divider"></li>
                     <li><a href="{% url 'variable_query' %}">Variable Query</a></li>
+                    <li><a href="{% url 'outstanding_query' %}">Outstanding Data Query</a></li>
                     <li role="separator" class="divider"></li>
                     <li><a href="{% url 'data_files' %}">Global Settings</a></li>
                   </ul>

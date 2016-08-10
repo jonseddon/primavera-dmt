@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+{% load staticfiles %}
+
+    {% block contents %}
+        {% if records %}
+            <p>No files have been received for the following data requests:</p>
+
+            <table class="table table-hover">
+            <tr>
+                <th>Institute</th>
+                <th>Climate Model</th>
+                <th>Experiment</th>
+                <th>Variable ID</th>
+                <th>Frequency</th>
+                <th>Start</th>
+                <th>End</th>
+            </tr>
+            {% for record in records %}
+                <tr>
+                    <td>{{ record.institute.short_name }}</td>
+                    <td>{{ record.climate_model.short_name }}</td>
+                    <td>{{ record.experiment.short_name }}</td>
+                    <td>{{ record.variable.var_id }}</td>
+                    <td>{{ record.frequency }}</td>
+                    <td>{{ record.start_time|date:"Y-m-d" }}</td>
+                    <td>{{ record.end_time|date:"Y-m-d" }}</td>
+                </tr>
+            {% endfor %}
+            </table>
+        {% else %}
+            <p>Files have been received for all of the specified data requests.</p>
+        {% endif %}
+    {% endblock %}
