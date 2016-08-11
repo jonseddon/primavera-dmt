@@ -6,7 +6,8 @@ from solo.models import SingletonModel
 from django.db.models import Min, Max
 from django.core.exceptions import ValidationError
 
-from vocabs import STATUS_VALUES, FREQUENCY_VALUES, ONLINE_STATUS, CHECKSUM_TYPES
+from vocabs import (STATUS_VALUES, FREQUENCY_VALUES, ONLINE_STATUS,
+    CHECKSUM_TYPES, VARIABLE_TYPES)
 
 # TODO We'll need to use: on_delete=models.SET_NULL in some cases to avoid cascading deletion of objects.
 
@@ -389,7 +390,6 @@ class Checksum(models.Model):
     """
     A checksum
     """
-    id = models.IntegerField(primary_key=True)
     data_file = models.ForeignKey(DataFile, null=False, blank=False)
     checksum_value = models.CharField(max_length=200, null=False, blank=False)
     checksum_type = models.CharField(max_length=20, choices=CHECKSUM_TYPES.items(), null=False,
@@ -398,6 +398,25 @@ class Checksum(models.Model):
     def __unicode__(self):
         return "%s: %s (%s)" % (self.checksum_type, self.checksum_value,
                                 self.data_file.name)
+
+
+class VariableRequest(models.Model):
+    """
+    A variable requested in the CMIP6 data request
+    """
+    long_name = models.CharField(max_length=200, null=False, blank=False)
+    units = models.CharField(max_length=200, null=False, blank=False)
+    var_name = models.CharField(max_length=30, null=False, blank=False)
+    standard_name = models.CharField(max_length=100, null=False, blank=False)
+    cell_methods = models.CharField(max_length=200, null=False, blank=False)
+    positive = models.CharField(max_length=20, null=True, blank=True)
+    variable_type = models.CharField(max_length=20, choices=VARIABLE_TYPES.items(), null=False, blank=False)
+    dimensions = models.CharField(max_length=200, null=False, blank=False)
+    cmor_name = models.CharField(max_length=20, null=False, blank=False)
+    modeling_realm = models.CharField(max_length=20, null=False, blank=False)
+    frequency = models.CharField(max_length=200, choices=FREQUENCY_VALUES.items(), null=False, blank=False)
+    cell_measures = models.CharField(max_length=200, null=False, blank=False)
+    uid = models.CharField(max_length=200, null=False, blank=False)
 
 
 class Settings(SingletonModel):

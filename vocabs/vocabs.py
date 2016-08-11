@@ -30,3 +30,7 @@ CHECKSUM_TYPES = CodeList(
          ('ADLER32', 'ADLER32'))
 )
 
+VARIABLE_TYPES = CodeList(
+        (('real', 'real'),
+         ('None', 'None'))
+)
