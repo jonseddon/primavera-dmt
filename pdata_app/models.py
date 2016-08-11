@@ -15,7 +15,8 @@ print "REMEMBER: Add in the DREQUEST identifiers"
 
 model_names = ['Project', 'Institute', 'ClimateModel', 'Experiment', 'Variable',
                'DataSubmission', 'DataFile', 'ESGFDataset', 'CEDADataset',
-               'DataRequest', 'DataIssue', 'Checksum', 'Settings']
+               'DataRequest', 'DataIssue', 'Checksum', 'Settings',
+               'VariableRequest']
 __all__ = model_names
 
 
@@ -404,6 +405,7 @@ class VariableRequest(models.Model):
     """
     A variable requested in the CMIP6 data request
     """
+    table_name = models.CharField(max_length=30, null=False, blank=False)
     long_name = models.CharField(max_length=200, null=False, blank=False)
     units = models.CharField(max_length=200, null=False, blank=False)
     var_name = models.CharField(max_length=30, null=False, blank=False)
@@ -418,6 +420,8 @@ class VariableRequest(models.Model):
     cell_measures = models.CharField(max_length=200, null=False, blank=False)
     uid = models.CharField(max_length=200, null=False, blank=False)
 
+    def __unicode__(self):
+        return 'VariableRequest: {} ({})'.format(self.cmor_name, self.table_name)
 
 class Settings(SingletonModel):
     """
