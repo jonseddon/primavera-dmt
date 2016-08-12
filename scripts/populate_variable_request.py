@@ -32,8 +32,7 @@ from pdata_app.utils.dbapi import get_or_create
 # If modifying these scopes, delete your previously saved credentials
 # at ~/.credentials/sheets.googleapis.com-python-quickstart.json
 SCOPES = 'https://www.googleapis.com/auth/spreadsheets.readonly'
-#TODO: improve the path on the next line
-CLIENT_SECRET_FILE = 'etc/client_secret_920707869718-bjp97l2ikhi0qdqi4ibb5ivcpmnml7n8.apps.googleusercontent.com.json'
+CLIENT_SECRET_FILE = 'client_secret_920707869718-bjp97l2ikhi0qdqi4ibb5ivcpmnml7n8.apps.googleusercontent.com.json'
 APPLICATION_NAME = 'PRIMAVERA-DMT'
 
 
@@ -52,12 +51,14 @@ def get_credentials():
     if not os.path.exists(credential_dir):
         os.makedirs(credential_dir)
     credential_path = os.path.join(credential_dir,
-                                   'sheets.googleapis.com-python-quickstart.json')
+        'sheets.googleapis.com-populate_variable_request.json')
 
     store = oauth2client.file.Storage(credential_path)
     credentials = store.get()
     if not credentials or credentials.invalid:
-        flow = client.flow_from_clientsecrets(CLIENT_SECRET_FILE, SCOPES)
+        curr_dir = os.path.dirname(__file__)
+        secret_file_path = os.path.abspath(os.path.join(curr_dir, '..', 'etc', CLIENT_SECRET_FILE))
+        flow = client.flow_from_clientsecrets(secret_file_path, SCOPES)
         flow.user_agent = APPLICATION_NAME
         if flags:
             credentials = tools.run_flow(flow, store, flags)

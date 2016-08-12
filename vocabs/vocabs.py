@@ -16,7 +16,8 @@ FREQUENCY_VALUES = CodeList(
          ('6hr', '6hr'),
          ('3hr', '3hr'),
          ('1hr', '1hr'),
-         ('subhr', 'subhr'))
+         ('subhr', 'subhr'),
+         ('fx', 'fx'))
 )
 
 
