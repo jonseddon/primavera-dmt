@@ -97,6 +97,29 @@ class Variable(models.Model):
         return self.var_id
 
 
+class VariableRequest(models.Model):
+    """
+    A variable requested in the CMIP6 data request
+    """
+    table_name = models.CharField(max_length=30, null=False, blank=False)
+    long_name = models.CharField(max_length=200, null=False, blank=False)
+    units = models.CharField(max_length=200, null=False, blank=False)
+    var_name = models.CharField(max_length=30, null=False, blank=False)
+    standard_name = models.CharField(max_length=100, null=False, blank=False)
+    cell_methods = models.CharField(max_length=200, null=False, blank=False)
+    positive = models.CharField(max_length=20, null=True, blank=True)
+    variable_type = models.CharField(max_length=20, choices=VARIABLE_TYPES.items(), null=False, blank=False)
+    dimensions = models.CharField(max_length=200, null=False, blank=False)
+    cmor_name = models.CharField(max_length=20, null=False, blank=False)
+    modeling_realm = models.CharField(max_length=20, null=False, blank=False)
+    frequency = models.CharField(max_length=200, choices=FREQUENCY_VALUES.items(), null=False, blank=False)
+    cell_measures = models.CharField(max_length=200, null=False, blank=False)
+    uid = models.CharField(max_length=200, null=False, blank=False)
+
+    def __unicode__(self):
+        return 'VariableRequest: {} ({})'.format(self.cmor_name, self.table_name)
+
+
 class DataFileAggregationBase(models.Model):
     """
     An abstract base class for datasets containing many files.
@@ -303,6 +326,7 @@ class DataRequest(models.Model):
     climate_model = models.ForeignKey(ClimateModel, null=False)
     experiment = models.ForeignKey(Experiment, null=False)
     variable = models.ForeignKey(Variable, null=False)
+    variable_request = models.ForeignKey(VariableRequest, null=False)
     frequency = models.CharField(max_length=20, choices=FREQUENCY_VALUES.items(), verbose_name="Time frequency",
                                  null=False, blank=False)
     start_time = models.DateTimeField(verbose_name="Start time", null=False, blank=False)
@@ -400,28 +424,6 @@ class Checksum(models.Model):
         return "%s: %s (%s)" % (self.checksum_type, self.checksum_value,
                                 self.data_file.name)
 
-
-class VariableRequest(models.Model):
-    """
-    A variable requested in the CMIP6 data request
-    """
-    table_name = models.CharField(max_length=30, null=False, blank=False)
-    long_name = models.CharField(max_length=200, null=False, blank=False)
-    units = models.CharField(max_length=200, null=False, blank=False)
-    var_name = models.CharField(max_length=30, null=False, blank=False)
-    standard_name = models.CharField(max_length=100, null=False, blank=False)
-    cell_methods = models.CharField(max_length=200, null=False, blank=False)
-    positive = models.CharField(max_length=20, null=True, blank=True)
-    variable_type = models.CharField(max_length=20, choices=VARIABLE_TYPES.items(), null=False, blank=False)
-    dimensions = models.CharField(max_length=200, null=False, blank=False)
-    cmor_name = models.CharField(max_length=20, null=False, blank=False)
-    modeling_realm = models.CharField(max_length=20, null=False, blank=False)
-    frequency = models.CharField(max_length=200, choices=FREQUENCY_VALUES.items(), null=False, blank=False)
-    cell_measures = models.CharField(max_length=200, null=False, blank=False)
-    uid = models.CharField(max_length=200, null=False, blank=False)
-
-    def __unicode__(self):
-        return 'VariableRequest: {} ({})'.format(self.cmor_name, self.table_name)
 
 class Settings(SingletonModel):
     """

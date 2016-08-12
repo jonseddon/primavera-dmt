@@ -3,7 +3,7 @@
 populate_variable_request.py
 
 Populates the PRIMAVERA-DMT VariableRequest table with details from the PRIMAVERA
-data request.
+data request spreadsheet.
 
 Uses the Google Sheets API: https://developers.google.com/sheets/quickstart/python
 To load the spreadsheet at: https://docs.google.com/spreadsheets/d/1RyAtRixFpC5eMz94TyJE8QLbp1jxhrrKWGV_op5ch5Q
@@ -70,6 +70,7 @@ def get_credentials():
 
 def main():
     """
+    Run the processing.
     """
     credentials = get_credentials()
     http = credentials.authorize(httplib2.Http())

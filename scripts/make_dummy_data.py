@@ -19,8 +19,8 @@ import test.test_datasets as datasets
 from pdata_app.utils.dbapi import get_or_create
 from pdata_app.models import (DataSubmission, DataFile, ClimateModel,
     Experiment, Project, Variable, ESGFDataset, CEDADataset, DataRequest,
-    Institute)
-from vocabs import STATUS_VALUES, FREQUENCY_VALUES
+    Institute, VariableRequest)
+from vocabs import STATUS_VALUES, FREQUENCY_VALUES, VARIABLE_TYPES
 
 
 def make_data_request():
@@ -33,10 +33,17 @@ def make_data_request():
     experiment = get_or_create(Experiment, short_name='rcp45', full_name='Really good experiment')
     variable = get_or_create(Variable, var_id='zos', units='1',
         long_name='Really good variable')
+    var_req = get_or_create(VariableRequest, table_name='Amon',
+        long_name='Really good variable', units='1', var_name='zos',
+        standard_name='really_good_variable', cell_methods='time:mean',
+        positive='optimistic', variable_type=VARIABLE_TYPES['real'],
+        dimensions='massive', cmor_name='zos', modeling_realm='atmos',
+        frequency=FREQUENCY_VALUES['day'], cell_measures='', uid='123abc')
 
     data_req = get_or_create(DataRequest, institute=institute,
         climate_model=climate_model, experiment=experiment,
-        variable=variable, frequency=FREQUENCY_VALUES['day'],
+        variable=variable, variable_request=var_req,
+        frequency=FREQUENCY_VALUES['day'],
         start_time=datetime.datetime(1991, 1, 1, 0, 0, 0, 0, pytz.utc),
         end_time=datetime.datetime(1993, 12, 30, 0, 0, 0, 0, pytz.utc))
 
@@ -46,27 +53,48 @@ def make_data_request():
     experiment = get_or_create(Experiment, short_name='abrupt4xCO2', full_name='Really good experiment')
     variable = get_or_create(Variable, var_id='rsds', units='1',
         long_name='Really good variable')
+    var_req = get_or_create(VariableRequest, table_name='Amon',
+        long_name='Really good variable', units='1', var_name='rsds',
+        standard_name='really_good_variable', cell_methods='time:mean',
+        positive='optimistic', variable_type=VARIABLE_TYPES['real'],
+        dimensions='massive', cmor_name='rsds', modeling_realm='atmos',
+        frequency=FREQUENCY_VALUES['day'], cell_measures='', uid='123abc')
 
     data_req = get_or_create(DataRequest, institute=institute,
         climate_model=climate_model, experiment=experiment,
-        variable=variable, frequency=FREQUENCY_VALUES['day'],
+        variable=variable, variable_request=var_req,
+        frequency=FREQUENCY_VALUES['day'],
         start_time=datetime.datetime(1991, 1, 1, 0, 0, 0, 0, pytz.utc),
         end_time=datetime.datetime(1994, 12, 30, 0, 0, 0, 0, pytz.utc))
 
     # Make two requests that are entirely missing
     variable = get_or_create(Variable, var_id='pie', units='1', long_name='Really good variable')
+    var_req = get_or_create(VariableRequest, table_name='Amon',
+        long_name='Really good variable', units='1', var_name='pie',
+        standard_name='really_good_variable', cell_methods='time:mean',
+        positive='optimistic', variable_type=VARIABLE_TYPES['real'],
+        dimensions='massive', cmor_name='pie', modeling_realm='atmos',
+        frequency=FREQUENCY_VALUES['day'], cell_measures='', uid='123abc')
 
     data_req = get_or_create(DataRequest, institute=institute,
         climate_model=climate_model, experiment=experiment,
-        variable=variable, frequency=FREQUENCY_VALUES['day'],
+        variable=variable, variable_request=var_req,
+        frequency=FREQUENCY_VALUES['day'],
         start_time=datetime.datetime(1991, 1, 1, 0, 0, 0, 0, pytz.utc),
         end_time=datetime.datetime(1994, 12, 30, 0, 0, 0, 0, pytz.utc))
 
     variable = get_or_create(Variable, var_id='cake', units='1', long_name='Really good variable')
+    var_req = get_or_create(VariableRequest, table_name='Amon',
+        long_name='Really good variable', units='1', var_name='cake',
+        standard_name='really_good_variable', cell_methods='time:mean',
+        positive='optimistic', variable_type=VARIABLE_TYPES['real'],
+        dimensions='massive', cmor_name='cake', modeling_realm='atmos',
+        frequency=FREQUENCY_VALUES['day'], cell_measures='', uid='123abc')
 
     data_req = get_or_create(DataRequest, institute=institute,
         climate_model=climate_model, experiment=experiment,
-        variable=variable, frequency=FREQUENCY_VALUES['day'],
+        variable=variable, variable_request=var_req,
+        frequency=FREQUENCY_VALUES['day'],
         start_time=datetime.datetime(1991, 1, 1, 0, 0, 0, 0, pytz.utc),
         end_time=datetime.datetime(1994, 12, 30, 0, 0, 0, 0, pytz.utc))
 
