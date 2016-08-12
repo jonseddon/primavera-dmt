@@ -14,7 +14,10 @@ FREQUENCY_VALUES = CodeList(
          ('mon', 'mon'),
          ('day', 'day'),
          ('6hr', '6hr'),
-         ('3hr', '3hr'))
+         ('3hr', '3hr'),
+         ('1hr', '1hr'),
+         ('subhr', 'subhr'),
+         ('fx', 'fx'))
 )
 
 
@@ -30,3 +33,8 @@ CHECKSUM_TYPES = CodeList(
          ('ADLER32', 'ADLER32'))
 )
 
+VARIABLE_TYPES = CodeList(
+        (('real', 'real'),
+         ('None', 'None'),
+         ('', ''))
+)
