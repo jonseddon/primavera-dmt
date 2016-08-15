@@ -1,8 +1,7 @@
 import os
 from operator import attrgetter
 
-from django.shortcuts import render, HttpResponseRedirect
-from django.core.urlresolvers import reverse
+from django.shortcuts import render
 from django.db import connection
 from django.db.models import Min, Max
 
@@ -47,16 +46,22 @@ def view_home(request):
 
 
 def view_variable_query(request):
-    return render(request, 'variable_query.html', {'request': request,
-        'page_title': 'Variable Query'})
+    request_params = request.GET
 
+    if not request_params:
+        return render(request, 'variable_query.html', {'request': request,
+            'page_title': 'Variable Query'})
 
-def view_variable_query_form(request):
-    var_id = request.POST['var_id']
-    return HttpResponseRedirect(reverse('variable_query_results', args=[var_id]))
+    var_id = request_params.get('var_id')
 
+    # Parameter specified
+    if not var_id:
+        msg = 'Please specify a Variable'
+        return render(request, 'variable_query.html', {'request': request,
+            'page_title': 'Variable Query', 'message': msg})
 
-def view_variable_query_results(request, var_id):
+    # Everything supplied so start processing
+
     # TODO: add some defensive coding to handle no results returned, etc.
 
     # see if any files contain the variable requested
@@ -97,22 +102,6 @@ def view_variable_query_results(request, var_id):
         num_files = row_files.count()
         # directories where the files currently are
         directories = ', '.join(sorted(set([df.directory for df in row_files])))
-        # CEDA download URL
-        ceda_dl_url = os.path.commonprefix(sorted(set(
-            [df.ceda_download_url for df in row_files])))
-        ceda_dl_url, __ = ceda_dl_url.rsplit('/', 1)
-        # CEDA OpenDAP URL
-        ceda_od_url = os.path.commonprefix(sorted(set(
-            [df.ceda_opendap_url for df in row_files])))
-        ceda_od_url, __ = ceda_od_url.rsplit('/', 1)
-        # ESGF download URL
-        esgf_dl_url = os.path.commonprefix(sorted(set(
-            [df.esgf_download_url for df in row_files])))
-        esgf_dl_url, __ = esgf_dl_url.rsplit('/', 1)
-        # ESGF OpenDAP URL
-        esgf_od_url = os.path.commonprefix(sorted(set(
-            [df.esgf_opendap_url for df in row_files])))
-        esgf_od_url, __ = esgf_od_url.rsplit('/', 1)
         # get first file in the set
         first_file = row_files.first()
         # find the earliest start and latest end times of the set
@@ -132,10 +121,10 @@ def view_variable_query_results(request, var_id):
                 start_time.month, start_time.day),
             'end_date': '{:04d}-{:02d}-{:02d}'.format(end_time.year,
                 end_time.month, end_time.day),
-            'ceda_dl_url': ceda_dl_url,
-            'ceda_od_url': ceda_od_url,
-            'esgf_dl_url': esgf_dl_url,
-            'esgf_od_url': esgf_od_url
+            'ceda_dl_url': _find_common_directory(row_files, 'ceda_download_url'),
+            'ceda_od_url': _find_common_directory(row_files, 'ceda_opendap_url'),
+            'esgf_dl_url': _find_common_directory(row_files, 'esgf_download_url'),
+            'esgf_od_url': _find_common_directory(row_files, 'esgf_opendap_url')
         })
         # TODO version
         # TODO unit test
@@ -193,3 +182,23 @@ def view_outstanding_query(request):
 
     return render(request, 'outstanding_query_results.html', {'request': request,
         'page_title': 'Outstanding Data Query', 'records': outstanding_reqs})
+
+
+def _find_common_directory(query_set, attribute, separator='/'):
+    """
+    Takes a query set and an attribute present on objects in that query set. It
+    finds the prefix that is common to that attribute on all of the objects. It
+    returns the directory part of this common prefix (everything before the
+    final separator).
+
+    :param django.db.models.query.QuerySet query_set: The query set to search through.
+    :param str attribute: The name of the attribute to find.
+    :param str separator: The separator between directories.
+    :returns: The prefix that is common to all attributes.
+    :raises AttributeError: If attribute does not exist.
+    """
+    common_prefix = os.path.commonprefix(sorted(set(
+        [getattr(qi, attribute) for qi in query_set])))
+    common_dir, __ = common_prefix.rsplit(separator, 1)
+
+    return common_dir
