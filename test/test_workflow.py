@@ -111,14 +111,14 @@ class TestWorkflows(PdataBaseTest):
 
     def test_02_data_submission(self):
         # Create a Data Submission and add files to it
-        test_dsub = self._make_data_submission()
+        test_dsub = _make_data_submission()
 
         # Make some assertions
         for dfile_name in test_dsub.files:
             self.assertEqual(dfile_name, DataFile.objects.filter(name=dfile_name).first().name)
 
     def test_03_move_files_to_tape(self):
-        test_dsub = self._make_data_submission()
+        test_dsub = _make_data_submission()
 
         data_submission = DataSubmission.objects.all()[0]
 
@@ -134,7 +134,7 @@ class TestWorkflows(PdataBaseTest):
 
     def test_04_restore_from_tape(self):
         # Do everything that was done for moving to tape
-        test_dsub = self._make_data_submission()
+        test_dsub = _make_data_submission()
 
         data_submission = DataSubmission.objects.all()[0]
 
@@ -161,7 +161,7 @@ class TestWorkflows(PdataBaseTest):
 
     def test_05_create_data_issue(self):
         # Create a data submission to start with
-        test_dsub = self._make_data_submission()
+        test_dsub = _make_data_submission()
 
         data_submission = DataSubmission.objects.all()[0]
 
@@ -182,7 +182,7 @@ class TestWorkflows(PdataBaseTest):
 
     def test_06_ingest_to_ceda(self):
         # Create a ata submission to start with
-        test_dsub = self._make_data_submission()
+        test_dsub = _make_data_submission()
 
         data_submission = DataSubmission.objects.all()[0]
 
@@ -205,7 +205,7 @@ class TestWorkflows(PdataBaseTest):
 
     def test_07_publish_to_esgf(self):
         # Create a ata submission to start with
-        test_dsub = self._make_data_submission()
+        test_dsub = _make_data_submission()
 
         data_submission = DataSubmission.objects.all()[0]
 
@@ -239,36 +239,36 @@ class TestWorkflows(PdataBaseTest):
             self.assertEqual(df.esgf_download_url, 'http://esgf.ceda.ac.uk/browse/badc/cmip5/' + df.name)
             self.assertEqual(df.esgf_dataset.data_submission.directory, './test_data/submission')
 
-    def _make_data_submission(self):
-        """
-        Create files and a data submission. Returns an DataSubmissionForTests
-        object.
-        """
-        test_dsub = datasets.test_data_submission
-        test_dsub.create_test_files()
+def _make_data_submission():
+    """
+    Create files and a data submission. Returns an DataSubmissionForTests
+    object.
+    """
+    test_dsub = datasets.test_data_submission
+    test_dsub.create_test_files()
 
-        dsub = get_or_create(DataSubmission, status=STATUS_VALUES.ARRIVED,
-                   incoming_directory=test_dsub.INCOMING_DIR,
-                   directory=test_dsub.INCOMING_DIR)
+    dsub = get_or_create(DataSubmission, status=STATUS_VALUES.ARRIVED,
+               incoming_directory=test_dsub.INCOMING_DIR,
+               directory=test_dsub.INCOMING_DIR)
 
-        for dfile_name in test_dsub.files:
-            path = os.path.join(test_dsub.INCOMING_DIR, dfile_name)
-            m = metadata = _extract_file_metadata(path)
+    for dfile_name in test_dsub.files:
+        path = os.path.join(test_dsub.INCOMING_DIR, dfile_name)
+        m = metadata = _extract_file_metadata(path)
 
-            proj = get_or_create(Project, short_name="CMIP6", full_name="6th Coupled Model Intercomparison Project")
-            var = get_or_create(Variable, var_id=m["var_id"], long_name="Really good variable", units="1")
-            climate_model = get_or_create(ClimateModel, short_name=m["climate_model"], full_name="Really good model")
-            experiment = get_or_create(Experiment, short_name=m["experiment"], full_name="Really good experiment")
+        proj = get_or_create(Project, short_name="CMIP6", full_name="6th Coupled Model Intercomparison Project")
+        var = get_or_create(Variable, var_id=m["var_id"], long_name="Really good variable", units="1")
+        climate_model = get_or_create(ClimateModel, short_name=m["climate_model"], full_name="Really good model")
+        experiment = get_or_create(Experiment, short_name=m["experiment"], full_name="Really good experiment")
 
-            dfile = DataFile.objects.create(name=dfile_name, incoming_directory=test_dsub.INCOMING_DIR,
-                directory=test_dsub.INCOMING_DIR, size=os.path.getsize(path),
-                project=proj, climate_model=climate_model,
-                experiment=experiment, variable=var, frequency=m["frequency"], rip_code=m["ensemble"],
-                start_time=make_aware(m["start_time"], timezone=pytz.utc, is_dst=False),
-                end_time=make_aware(m["end_time"], timezone=pytz.utc, is_dst=False),
-                data_submission=dsub, online=True)
+        dfile = DataFile.objects.create(name=dfile_name, incoming_directory=test_dsub.INCOMING_DIR,
+            directory=test_dsub.INCOMING_DIR, size=os.path.getsize(path),
+            project=proj, climate_model=climate_model,
+            experiment=experiment, variable=var, frequency=m["frequency"], rip_code=m["ensemble"],
+            start_time=make_aware(m["start_time"], timezone=pytz.utc, is_dst=False),
+            end_time=make_aware(m["end_time"], timezone=pytz.utc, is_dst=False),
+            data_submission=dsub, online=True)
 
-        return test_dsub
+    return test_dsub
 
 
 if __name__ == "__main__":
