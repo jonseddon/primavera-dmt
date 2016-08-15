@@ -3,13 +3,12 @@ import re
 from django.db import models
 from django.utils import timezone
 from solo.models import SingletonModel
-from django.db.models import Min, Max
+from django.db.models import Min, Max, PROTECT, SET_NULL, CASCADE
 from django.core.exceptions import ValidationError
 
 from vocabs import (STATUS_VALUES, FREQUENCY_VALUES, ONLINE_STATUS,
     CHECKSUM_TYPES, VARIABLE_TYPES)
 
-# TODO We'll need to use: on_delete=models.SET_NULL in some cases to avoid cascading deletion of objects.
 
 print "REMEMBER: Add in the DREQUEST identifiers"
 
@@ -288,10 +287,12 @@ class ESGFDataset(DataFileAggregationBase):
     thredds_url = models.URLField(verbose_name="THREDDS Download URL", blank=True, null=True)
 
     # Each ESGF Dataset will be part of one CEDADataset
-    ceda_dataset = models.ForeignKey(CEDADataset, blank=True, null=True)
+    ceda_dataset = models.ForeignKey(CEDADataset, blank=True, null=True,
+        on_delete=SET_NULL)
 
     # Each ESGF Dataset will be part of one submission
-    data_submission = models.ForeignKey(DataSubmission, blank=True, null=True)
+    data_submission = models.ForeignKey(DataSubmission, blank=True, null=True,
+        on_delete=SET_NULL)
 
     def get_full_id(self):
         """
@@ -322,11 +323,13 @@ class DataRequest(models.Model):
     A Data Request for a given set of inputs
     """
 
-    institute = models.ForeignKey(Institute, null=False)
-    climate_model = models.ForeignKey(ClimateModel, null=False)
-    experiment = models.ForeignKey(Experiment, null=False)
-    variable = models.ForeignKey(Variable, null=False)
-    variable_request = models.ForeignKey(VariableRequest, null=False)
+    institute = models.ForeignKey(Institute, null=False, on_delete=PROTECT)
+    climate_model = models.ForeignKey(ClimateModel, null=False,
+        on_delete=PROTECT)
+    experiment = models.ForeignKey(Experiment, null=False, on_delete=PROTECT)
+    variable = models.ForeignKey(Variable, null=False, on_delete=PROTECT)
+    variable_request = models.ForeignKey(VariableRequest, null=False,
+        on_delete=PROTECT)
     frequency = models.CharField(max_length=20, choices=FREQUENCY_VALUES.items(), verbose_name="Time frequency",
                                  null=False, blank=False)
     start_time = models.DateTimeField(verbose_name="Start time", null=False, blank=False)
@@ -353,10 +356,10 @@ class DataFile(models.Model):
     size = models.BigIntegerField(null=False, verbose_name="File size (bytes)")
 
     # Scientific metadata
-    project = models.ForeignKey(Project)
-    climate_model = models.ForeignKey(ClimateModel)
-    experiment = models.ForeignKey(Experiment)
-    variable = models.ForeignKey(Variable)
+    project = models.ForeignKey(Project, null=False, on_delete=PROTECT)
+    climate_model = models.ForeignKey(ClimateModel, null=False, on_delete=PROTECT)
+    experiment = models.ForeignKey(Experiment, null=False, on_delete=PROTECT)
+    variable = models.ForeignKey(Variable, null=False, on_delete=PROTECT)
     frequency = models.CharField(max_length=20, choices=FREQUENCY_VALUES.items(),
         verbose_name="Time frequency", null=False, blank=False)
     rip_code = models.CharField(max_length=20, verbose_name="RIP code",
@@ -367,11 +370,14 @@ class DataFile(models.Model):
     start_time = models.DateTimeField(verbose_name="Start time", null=True, blank=True)
     end_time = models.DateTimeField(verbose_name="End time", null=True, blank=True)
 
-    data_submission = models.ForeignKey(DataSubmission, null=False, blank=False)
+    data_submission = models.ForeignKey(DataSubmission, null=False, blank=False,
+        on_delete=CASCADE)
 
     # These Dataset fields might only be known after processing so they can be null/blank
-    esgf_dataset = models.ForeignKey(ESGFDataset, null=True, blank=True)
-    ceda_dataset = models.ForeignKey(CEDADataset, null=True, blank=True)
+    esgf_dataset = models.ForeignKey(ESGFDataset, null=True, blank=True,
+        on_delete=SET_NULL)
+    ceda_dataset = models.ForeignKey(CEDADataset, null=True, blank=True,
+        on_delete=SET_NULL)
 
     # URLs will not be known at start so can be blank
     ceda_download_url = models.URLField(verbose_name="CEDA Download URL", null=True, blank=True)
@@ -415,7 +421,8 @@ class Checksum(models.Model):
     """
     A checksum
     """
-    data_file = models.ForeignKey(DataFile, null=False, blank=False)
+    data_file = models.ForeignKey(DataFile, null=False, blank=False,
+        on_delete=CASCADE)
     checksum_value = models.CharField(max_length=200, null=False, blank=False)
     checksum_type = models.CharField(max_length=20, choices=CHECKSUM_TYPES.items(), null=False,
                                      blank=False)
