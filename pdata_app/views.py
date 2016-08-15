@@ -6,7 +6,7 @@ from django.db import connection
 from django.db.models import Min, Max
 
 from pdata_app.models import (DataFile, DataSubmission, ESGFDataset, CEDADataset,
-    DataRequest, Variable)
+    DataRequest, DataIssue, Variable)
 from vocabs.vocabs import ONLINE_STATUS
 
 
@@ -38,6 +38,12 @@ def view_data_requests(request):
     data_reqs = DataRequest.objects.all()
     return render(request, 'data_requests.html', {'request': request,
         'page_title': 'Data Requests', 'records': data_reqs})
+
+
+def view_data_issues(request):
+    data_issues = DataIssue.objects.all()
+    return render(request, 'data_issues.html', {'request': request,
+        'page_title': 'Data Issues', 'records': data_issues})
 
 
 def view_home(request):
