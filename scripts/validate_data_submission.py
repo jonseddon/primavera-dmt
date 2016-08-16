@@ -8,6 +8,7 @@ data submission in the Data Management Tool.
 import argparse
 import logging
 import os
+import random
 import sys
 
 import iris
@@ -75,7 +76,9 @@ def identify_and_validate(files, project):
 
         metadata['project'] = project
 
+        # try:
         validate_file_contents(cube, metadata)
+        # except FileValidationError:
 
         print '*** {}'.format(metadata)
 
@@ -98,9 +101,9 @@ def identify_filename_metadata(filename):
         if cmpt_name == 'date_string':
             start_date, end_date = cmpt.split('-')
             start_datetime = PartialDateTime(year=int(start_date[0:4]),
-                month=int(start_date[5:6]))
+                month=int(start_date[4:6]))
             end_datetime = PartialDateTime(year=int(end_date[0:4]),
-                month=int(end_date[5:6]))
+                month=int(end_date[4:6]))
             metadata['start_date'] = start_datetime
             metadata['end_date'] = end_datetime
         else:
@@ -123,7 +126,7 @@ def identify_contents_metadata(cube):
     """
     Uses Iris to get additional metadata from the files contents
 
-    :param str filename: The path of the file to work with
+    :param iris.cube.Cube cube: The loaded file to check
     :returns: A dictionary of the identified metadata
     """
     metadata = {}
@@ -145,6 +148,8 @@ def load_cube(filename):
     :returns: An Iris cube containing the loaded file
     :raises FileValidationError: If the file generates more than a single cube
     """
+    iris.FUTURE.netcdf_promote = True
+
     cubes = iris.load(filename)
     if len(cubes) != 1:
         msg = "Filename '{}' does not load to a single variable"
@@ -163,8 +168,8 @@ def validate_file_contents(cube, metadata):
     :returns: A boolean
     """
     _check_start_end_times(cube, metadata)
-    _check_contiguity(cube)
-    _check_data_point(cube)
+    _check_contiguity(cube, metadata)
+    _check_data_point(cube, metadata)
 
 
 def _check_start_end_times(cube, metadata):
@@ -173,7 +178,8 @@ def _check_start_end_times(cube, metadata):
 
     :param iris.cube.Cube cube: The loaded file to check
     :param dict metadata: Metadata obtained from the file
-    :returns: A boolean
+    :returns: True if the times match
+    :raises FileValidationError: If the times don't match
     """
     file_start_date = metadata['start_date']
     file_end_date = metadata['end_date']
@@ -183,11 +189,13 @@ def _check_start_end_times(cube, metadata):
     data_end = time.units.num2date(time.points[-1])
 
     if not _compare_dates(file_start_date, data_start):
-        msg = ''
+        msg = ('Start date in filename does not match the first time in the '
+            'file ({}): {}'.format(str(data_start), metadata['basename']))
         logger.warning(msg)
         raise FileValidationError(msg)
     elif not _compare_dates(file_end_date, data_end):
-        msg = ''
+        msg = ('End date in filename does not match the last time in the '
+            'file ({}): {}'.format(str(data_end), metadata['basename']))
         logger.warning(msg)
         raise FileValidationError(msg)
     else:
@@ -208,24 +216,51 @@ def _compare_dates(date_1, date_2):
         return True
 
 
-def _check_contiguity(cube):
+def _check_contiguity(cube, metadata):
     """
     Check whether the time coordinate is contiguous
 
     :param iris.cube.Cube cube: The loaded file to check
-    :returns: A boolean
+    :param dict metadata: Metadata obtained from the file
+    :returns: True if the data is contiguous
+    :raises FileValidationError: If the data isn't contiguous
     """
-    pass
+    time_coord = cube.coord('time')
+
+    if not time_coord.is_contiguous():
+        msg = ('The points in the time dimension in the file are not '
+            'contiguous: {}'.format(metadata['basename']))
+        logger.warning(msg)
+        raise FileValidationError(msg)
+    else:
+        return True
 
 
-def _check_data_point(cube):
+def _check_data_point(cube, metadata):
     """
     Check whether a data point can be loaded
 
     :param iris.cube.Cube cube: The loaded file to check
-    :returns: A boolean
+    :param dict metadata: Metadata obtained from the file
+    :returns: True if a data point was read without any exceptions being raised
+    :raises FileValidationError: If there was a problem reading the data point
     """
-    pass
+    point_index = []
+
+    for dim_length in cube.shape:
+        point_index.append(int(random.random() * dim_length))
+
+    point_index = tuple(point_index)
+
+    try:
+        data_point = cube.data[point_index]
+    except Exception:
+        msg = 'Unable to extract data point {} from file: {}'.format(
+            point_index, metadata['basename'])
+        logger.warning(msg)
+        raise FileValidationError(msg)
+    else:
+        return True
 
 
 def create_database_submission():
