@@ -6,15 +6,14 @@ This script is run by users to validate submitted data files and to create a
 data submission in the Data Management Tool.
 """
 import argparse
-import datetime
 import logging
 import os
 import sys
 
 import iris
+from iris.time import PartialDateTime
 import django
 django.setup()
-import pytz
 
 from vocabs.vocabs import FREQUENCY_VALUES
 
@@ -26,7 +25,7 @@ DEFAULT_LOG_FORMAT = '%(levelname)s: %(message)s'
 logger = logging.getLogger(__name__)
 
 
-class FileValidationFails(Exception):
+class FileValidationError(Exception):
     def __init__(self, message=''):
         """
         :param str message: The error message text.
@@ -69,19 +68,23 @@ def identify_and_validate(files, project):
     :returns:
     """
     for filename in files:
-        metadata = identify_filename_metadata(filename, project)
-        metadata.update(identify_contents_metadata(filename))
+        metadata = identify_filename_metadata(filename)
+
+        cube = load_cube(filename)
+        metadata.update(identify_contents_metadata(cube))
+
+        metadata['project'] = project
+
+        validate_file_contents(cube, metadata)
 
         print '*** {}'.format(metadata)
 
 
-
-def identify_filename_metadata(filename, project):
+def identify_filename_metadata(filename):
     """
     Identify all of the required metadata from the filename and file contents
 
     :param str filename: The file's complete path
-    :param str project: the name of the project that the file is part of
     :returns: A dictionary containing the identified metadata
     """
     components = ['cmor_name', 'table', 'climate_model', 'experiment', 'rip_code',
@@ -89,22 +92,22 @@ def identify_filename_metadata(filename, project):
 
     basename = os.path.basename(filename)
     directory = os.path.dirname(filename)
-    metadata = {'basename': basename, 'directory': directory,
-                'project': project}
+    metadata = {'basename': basename, 'directory': directory}
     # deduce as much as possible from the filename
     for cmpt_name, cmpt in zip(components, basename.rstrip('.nc').split('_')):
         if cmpt_name == 'date_string':
             start_date, end_date = cmpt.split('-')
-            start_datetime = datetime.datetime(int(start_date[0:4]),
-                int(start_date[5:6]), 1, 0, 0, 0, 0, pytz.UTC)
-            end_datetime = datetime.datetime(int(end_date[0:4]),
-                int(end_date[5:6]), 30, 23, 59, 59, 999999, pytz.UTC)
+            start_datetime = PartialDateTime(year=int(start_date[0:4]),
+                month=int(start_date[5:6]))
+            end_datetime = PartialDateTime(year=int(end_date[0:4]),
+                month=int(end_date[5:6]))
             metadata['start_date'] = start_datetime
             metadata['end_date'] = end_datetime
         else:
             metadata[cmpt_name] = cmpt
 
     metadata['filesize'] = os.path.getsize(filename)
+
     for freq in FREQUENCY_VALUES:
         if freq in metadata['table'].lower():
             metadata['frequency'] = freq
@@ -116,7 +119,7 @@ def identify_filename_metadata(filename, project):
     return metadata
 
 
-def identify_contents_metadata(filename):
+def identify_contents_metadata(cube):
     """
     Uses Iris to get additional metadata from the files contents
 
@@ -124,14 +127,6 @@ def identify_contents_metadata(filename):
     :returns: A dictionary of the identified metadata
     """
     metadata = {}
-
-    cubes = iris.load(filename)
-    if len(cubes) != 1:
-        msg = "Filename '{}' does not load to a single variable"
-        logger.warning(msg)
-        raise FileValidationFails(msg)
-    else:
-        cube = cubes[0]
 
     # This could be None if cube.var_name isn't defined
     metadata['var_name'] = cube.var_name
@@ -141,6 +136,96 @@ def identify_contents_metadata(filename):
 
     return metadata
 
+
+def load_cube(filename):
+    """
+    Loads the specified file into a single Iris cube
+
+    :param str filename: The path of the file to load
+    :returns: An Iris cube containing the loaded file
+    :raises FileValidationError: If the file generates more than a single cube
+    """
+    cubes = iris.load(filename)
+    if len(cubes) != 1:
+        msg = "Filename '{}' does not load to a single variable"
+        logger.warning(msg)
+        raise FileValidationError(msg)
+
+    return cubes[0]
+
+
+def validate_file_contents(cube, metadata):
+    """
+    Check whether the contents of the cube loaded from a file are valid
+
+    :param iris.cube.Cube cube: The loaded file to check
+    :param dict metadata: Metadata obtained from the file
+    :returns: A boolean
+    """
+    _check_start_end_times(cube, metadata)
+    _check_contiguity(cube)
+    _check_data_point(cube)
+
+
+def _check_start_end_times(cube, metadata):
+    """
+    Check whether the start and end dates match those in the metadata
+
+    :param iris.cube.Cube cube: The loaded file to check
+    :param dict metadata: Metadata obtained from the file
+    :returns: A boolean
+    """
+    file_start_date = metadata['start_date']
+    file_end_date = metadata['end_date']
+
+    time = cube.coord('time')
+    data_start = time.units.num2date(time.points[0])
+    data_end = time.units.num2date(time.points[-1])
+
+    if not _compare_dates(file_start_date, data_start):
+        msg = ''
+        logger.warning(msg)
+        raise FileValidationError(msg)
+    elif not _compare_dates(file_end_date, data_end):
+        msg = ''
+        logger.warning(msg)
+        raise FileValidationError(msg)
+    else:
+        return True
+
+
+def _compare_dates(date_1, date_2):
+    """
+    Compare the year and month of two datetime like objects
+
+    :param date_1: The first date to compare
+    :param date_2: The second date to compare
+    :returns: True if the dates match
+    """
+    if date_1.year != date_2.year or date_1.month != date_2.month:
+        return False
+    else:
+        return True
+
+
+def _check_contiguity(cube):
+    """
+    Check whether the time coordinate is contiguous
+
+    :param iris.cube.Cube cube: The loaded file to check
+    :returns: A boolean
+    """
+    pass
+
+
+def _check_data_point(cube):
+    """
+    Check whether a data point can be loaded
+
+    :param iris.cube.Cube cube: The loaded file to check
+    :returns: A boolean
+    """
+    pass
 
 
 def create_database_submission():
