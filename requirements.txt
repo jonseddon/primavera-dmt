@@ -3,3 +3,4 @@ pytz
 django-solo
 djangorestframework
 psycopg2==2.6.1
+google-api-python-client

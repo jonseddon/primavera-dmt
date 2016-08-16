@@ -7,6 +7,7 @@ import pytz
 
 from django.test import TestCase
 from django.core.exceptions import ValidationError
+from django.utils.timezone import make_aware
 
 from pdata_app import models
 from vocabs import (STATUS_VALUES, ONLINE_STATUS, FREQUENCY_VALUES,
@@ -31,8 +32,12 @@ def _extract_file_metadata(file_path):
 
         if key == "time_range":
             start_time, end_time = value.split("-")
-            data["start_time"] = datetime.datetime.strptime(start_time, "%Y%m%d")
-            data["end_time"] = datetime.datetime.strptime(end_time, "%Y%m%d")
+            data["start_time"] = make_aware(
+                datetime.datetime.strptime(start_time, "%Y%m%d"),
+                timezone=pytz.utc, is_dst=False)
+            data["end_time"] = make_aware(
+                datetime.datetime.strptime(end_time, "%Y%m%d"),
+                timezone=pytz.utc, is_dst=False)
         else:
             data[key] = value
 
@@ -213,7 +218,7 @@ class TestDataFileAggregationBaseMethods(TestCase):
 
     def test_get_data_issues_with_single_issue(self):
         di = models.DataIssue(issue='unit test', reporter='bob',
-            date_time=datetime.datetime(1950, 12, 13))
+            date_time=datetime.datetime(1950, 12, 13, 0, 0, 0, 0, pytz.utc))
         di.save()
 
         datafile = self.dsub.get_data_files()[0]
@@ -225,7 +230,7 @@ class TestDataFileAggregationBaseMethods(TestCase):
 
     def test_get_data_issues_with_single_issue_on_all_files(self):
         di = models.DataIssue(issue='unit test', reporter='bob',
-            date_time=datetime.datetime(1950, 12, 13))
+            date_time=datetime.datetime(1950, 12, 13, 0, 0, 0, 0, pytz.utc))
         di.save()
 
         for df in self.dsub.get_data_files():
@@ -237,10 +242,10 @@ class TestDataFileAggregationBaseMethods(TestCase):
 
     def test_get_data_issues_with_many_issues(self):
         di1 = models.DataIssue(issue='2nd test', reporter='bill',
-            date_time=datetime.datetime(1805, 7, 5))
+            date_time=datetime.datetime(1805, 7, 5, 0, 0, 0, 0, pytz.utc))
         di1.save()
         di2 = models.DataIssue(issue='unit test', reporter='bob',
-            date_time=datetime.datetime(1950, 12, 13))
+            date_time=datetime.datetime(1950, 12, 13, 0, 0, 0, 0, pytz.utc))
         di2.save()
 
         datafile = self.dsub.get_data_files()[0]
@@ -255,7 +260,7 @@ class TestDataFileAggregationBaseMethods(TestCase):
 
     def test_assign_data_issue(self):
         self.dsub.assign_data_issue('all files', 'Lewis',
-            datetime.datetime(1881, 10, 11))
+            datetime.datetime(1881, 10, 11, 0, 0, 0, 0, pytz.utc))
 
         for df in self.dsub.get_data_files():
             di = df.dataissue_set.filter(issue='all files')[0]
