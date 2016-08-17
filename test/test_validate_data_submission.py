@@ -9,9 +9,9 @@ import iris
 from iris.tests.stock import realistic_3d
 from iris.time import PartialDateTime
 
-from scripts.validate_data_submission import (_compare_dates,
-    _check_start_end_times, _check_contiguity, _check_data_point,
-    identify_filename_metadata, FileValidationError)
+from scripts.validate_data_submission import (_check_start_end_times,
+    _check_contiguity, _check_data_point, identify_filename_metadata,
+    FileValidationError, _make_partial_date_time)
 
 
 class TestIdentifyFilenameMetadata(TestCase):
@@ -46,18 +46,11 @@ class TestIdentifyFilenameMetadata(TestCase):
         self.assertEqual(self.metadata['end_date'],
             PartialDateTime(year=1884, month=11))
 
-
-class TestCompareDates(TestCase):
-    def setUp(self):
-        self.pdt = PartialDateTime(year=1978, month=7)
-        self.dt1 = datetime.datetime(1978, 7, 19, 0, 43, 17)
-        self.dt2 = datetime.datetime(1982, 8, 23, 18, 11, 59)
-
-    def test_equals(self):
-        self.assertTrue(_compare_dates(self.pdt, self.dt1))
-
-    def test_not_equals(self):
-        self.assertFalse(_compare_dates(self.pdt, self.dt2))
+    @mock.patch('scripts.validate_data_submission.logger')
+    def test_bad_date_format(self, mock_logger):
+        filename = 'clt_Amon_HadGEM2-ES_historical_r1i1p1_1859-1884.nc'
+        self.assertRaises(FileValidationError,
+            identify_filename_metadata, filename)
 
 
 class TestCheckStartEndTimes(TestCase):
@@ -124,3 +117,18 @@ class TestCheckDataPoint(TestCase):
     def test_todo(self):
         # TODO: figure put how to test this function
         pass
+
+
+class TestMakePartialDateTime(TestCase):
+    def test_yyyymm(self):
+        expected = PartialDateTime(year=2014, month=8)
+        actual = _make_partial_date_time('201408')
+        self.assertEqual(actual, expected)
+
+    def test_yyyymmdd(self):
+        expected = PartialDateTime(year=2014, month=8, day=1)
+        actual = _make_partial_date_time('20140801')
+        self.assertEqual(actual, expected)
+
+    def test_yyyy(self):
+        self.assertRaises(ValueError, _make_partial_date_time, '2014')

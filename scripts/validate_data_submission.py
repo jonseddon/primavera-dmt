@@ -97,16 +97,26 @@ def identify_filename_metadata(filename):
     basename = os.path.basename(filename)
     directory = os.path.dirname(filename)
     metadata = {'basename': basename, 'directory': directory}
+
+    # split the filename into sections
+    filename_sects = basename.rstrip('.nc').split('_')
+
+    # but if experiment present_day was in the filename, join these sections
+    # back together
+    if filename_sects[3] == 'present' and filename_sects[4] == 'day':
+        filename_sects[3] += '_' +  filename_sects.pop(4)
+
     # deduce as much as possible from the filename
-    for cmpt_name, cmpt in zip(components, basename.rstrip('.nc').split('_')):
+    for cmpt_name, cmpt in zip(components, filename_sects):
         if cmpt_name == 'date_string':
             start_date, end_date = cmpt.split('-')
-            start_datetime = PartialDateTime(year=int(start_date[0:4]),
-                month=int(start_date[4:6]))
-            end_datetime = PartialDateTime(year=int(end_date[0:4]),
-                month=int(end_date[4:6]))
-            metadata['start_date'] = start_datetime
-            metadata['end_date'] = end_datetime
+            try:
+                metadata['start_date'] = _make_partial_date_time(start_date)
+                metadata['end_date'] = _make_partial_date_time(end_date)
+            except ValueError:
+                msg = 'Unknown date format in filename: {}'.format(filename)
+                logger.debug(msg)
+                raise FileValidationError(msg)
         else:
             metadata[cmpt_name] = cmpt
 
@@ -155,11 +165,11 @@ def load_cube(filename):
         cubes = iris.load(filename)
     except Exception:
         msg = 'Unable to load cube: {}'.format(filename)
-        logger.warning(msg)
+        logger.debug(msg)
         raise FileValidationError(msg)
     if len(cubes) != 1:
         msg = "Filename '{}' does not load to a single variable"
-        logger.warning(msg)
+        logger.debug(msg)
         raise FileValidationError(msg)
 
     return cubes[0]
@@ -178,6 +188,13 @@ def validate_file_contents(cube, metadata):
     _check_data_point(cube, metadata)
 
 
+def create_database_submission():
+    """
+    Create an entry in the database for this submission
+    """
+    pass
+
+
 def _check_start_end_times(cube, metadata):
     """
     Check whether the start and end dates match those in the metadata
@@ -194,30 +211,16 @@ def _check_start_end_times(cube, metadata):
     data_start = time.units.num2date(time.points[0])
     data_end = time.units.num2date(time.points[-1])
 
-    if not _compare_dates(file_start_date, data_start):
+    if file_start_date != data_start:
         msg = ('Start date in filename does not match the first time in the '
             'file ({}): {}'.format(str(data_start), metadata['basename']))
-        logger.warning(msg)
+        logger.debug(msg)
         raise FileValidationError(msg)
-    elif not _compare_dates(file_end_date, data_end):
+    elif file_end_date != data_end:
         msg = ('End date in filename does not match the last time in the '
             'file ({}): {}'.format(str(data_end), metadata['basename']))
-        logger.warning(msg)
+        logger.debug(msg)
         raise FileValidationError(msg)
-    else:
-        return True
-
-
-def _compare_dates(date_1, date_2):
-    """
-    Compare the year and month of two datetime like objects
-
-    :param date_1: The first date to compare
-    :param date_2: The second date to compare
-    :returns: True if the dates match
-    """
-    if date_1.year != date_2.year or date_1.month != date_2.month:
-        return False
     else:
         return True
 
@@ -236,7 +239,7 @@ def _check_contiguity(cube, metadata):
     if not time_coord.is_contiguous():
         msg = ('The points in the time dimension in the file are not '
             'contiguous: {}'.format(metadata['basename']))
-        logger.warning(msg)
+        logger.debug(msg)
         raise FileValidationError(msg)
     else:
         return True
@@ -263,17 +266,36 @@ def _check_data_point(cube, metadata):
     except Exception:
         msg = 'Unable to extract data point {} from file: {}'.format(
             point_index, metadata['basename'])
-        logger.warning(msg)
+        logger.debug(msg)
         raise FileValidationError(msg)
     else:
         return True
 
 
-def create_database_submission():
+def _make_partial_date_time(date_string):
     """
-    Create an entry in the database for this submission
+    Convert the fields in `date_string` into a PartialDateTime object. Formats
+    that are known about are:
+
+    YYYMM
+    YYYYMMDD
+
+    :param str date_string: The date string to process
+    :returns: An Iris PartialDateTime object containing as much information as
+        could be deduced from date_string
+    :rtype: iris.time.PartialDateTime
+    :raises ValueError: If the string is not in a known format.
     """
-    pass
+    if len(date_string) == 6:
+        pdt_str = PartialDateTime(year=int(date_string[0:4]),
+            month=int(date_string[4:6]))
+    elif len(date_string) == 8:
+        pdt_str = PartialDateTime(year=int(date_string[0:4]),
+            month=int(date_string[4:6]), day=int(date_string[6:8]))
+    else:
+        raise ValueError('Unknown date string format')
+
+    return pdt_str
 
 
 def parse_args():
