@@ -69,9 +69,9 @@ def identify_and_validate(files, project):
     :returns:
     """
     for filename in files:
-        metadata = identify_filename_metadata(filename)
+        # TODO: what action should be taken if a file fails validation?
 
-        # TODO: what action should be taken if a file fails validation
+        metadata = identify_filename_metadata(filename)
         try:
             cube = load_cube(filename)
             metadata.update(identify_contents_metadata(cube))
@@ -104,7 +104,7 @@ def identify_filename_metadata(filename):
     # but if experiment present_day was in the filename, join these sections
     # back together
     if filename_sects[3] == 'present' and filename_sects[4] == 'day':
-        filename_sects[3] += '_' +  filename_sects.pop(4)
+        filename_sects[3] += '_' + filename_sects.pop(4)
 
     # deduce as much as possible from the filename
     for cmpt_name, cmpt in zip(components, filename_sects):
