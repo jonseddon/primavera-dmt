@@ -6,7 +6,9 @@ This script is run by users to validate submitted data files and to create a
 data submission in the Data Management Tool.
 """
 import argparse
+import itertools
 import logging
+from multiprocessing import Process, Manager
 import os
 import random
 import sys
@@ -57,31 +59,71 @@ def list_files(directory, suffix='.nc'):
     return nc_files
 
 
-def identify_and_validate(files, project):
+def identify_and_validate(filenames, project, num_processes):
     """
     Loop through a list of file names, identify each file's metadata and then
-    validate it.
+    validate it. The looping is done in parallel using the multiprocessing
+    library module.
 
     clt_Amon_HadGEM2-ES_historical_r1i1p1_185912-188411.nc
 
-    :param list files: The files to process
+    :param list filenames: The files to process
     :param str project: The name of the project
+    :param int num_processes: The number of parallel processes to use
     :returns:
     """
-    for filename in files:
-        # TODO: what action should be taken if a file fails validation?
+    jobs = []
+    manager = Manager()
+    params = manager.Queue(num_processes)
+    result_list = manager.list()
+    for i in range(num_processes):
+        p = Process(target=identify_and_validate_file, args=(params, result_list))
+        jobs.append(p)
+        p.start()
 
-        metadata = identify_filename_metadata(filename)
+    func_input_pair = zip(filenames, (project,) * len(filenames))
+    blank_pair = (None, None)
+
+    iters = itertools.chain(func_input_pair, (blank_pair,) * num_processes)
+    for item in iters:
+        params.put(item)
+
+    for j in jobs:
+        j.join()
+
+    for result in result_list:
+        print 'AAA {}'.format(result)
+
+
+def identify_and_validate_file(params, output):
+    """
+    Identify `filename`'s metadata and then validate the file. The function
+    continues getting items to process from the parameter queue until a None
+    is received.
+
+    :param multiprocessing.Manager.Queue params: A queue, with each item being a
+        tuple of the filename to load and the name of the project
+    :param multiprocessing.Manager.list output: A list containing the output
+        metadata dictionaries for each file
+    """
+    while True:
+        filename, project = params.get()
+
+        if filename is None:
+            return
+
         try:
+            metadata = identify_filename_metadata(filename)
             cube = load_cube(filename)
             metadata.update(identify_contents_metadata(cube))
             metadata['project'] = project
+
             validate_file_contents(cube, metadata)
         except FileValidationError:
             msg = 'File failed validation: {}'.format(filename)
             logger.warning(msg)
-
-        print '*** {}'.format(metadata)
+        else:
+            output.append(metadata)
 
 
 def identify_filename_metadata(filename):
@@ -91,8 +133,8 @@ def identify_filename_metadata(filename):
     :param str filename: The file's complete path
     :returns: A dictionary containing the identified metadata
     """
-    components = ['cmor_name', 'table', 'climate_model', 'experiment', 'rip_code',
-        'date_string']
+    components = ['cmor_name', 'table', 'climate_model', 'experiment',
+        'rip_code', 'date_string']
 
     basename = os.path.basename(filename)
     directory = os.path.dirname(filename)
@@ -309,6 +351,8 @@ def parse_args():
         'being submitted to (default: %(default)s)', default='CMIP6')
     parser.add_argument('--log-level', help='set logging level to one of '
         'debug, info, warn (the default), or error')
+    parser.add_argument('--processes', help='the number of parallel processes '
+        'to use (default: %(default)s)', default=8, type=int)
     parser.add_argument('--version', action='version',
         version='%(prog)s {}'.format(__version__))
     args = parser.parse_args()
@@ -327,7 +371,7 @@ def main(args):
 
     logger.debug('%s files identified', len(data_files))
 
-    identify_and_validate(data_files, args.project)
+    identify_and_validate(data_files, args.project, args.processes)
 
     create_database_submission()
 
@@ -335,11 +379,14 @@ def main(args):
 if __name__ == "__main__":
     cmd_args = parse_args()
 
+    # Disable propagation and discard any existing handlers.
+    logger.propagate = False
+    if len(logger.handlers):
+        logger.handlers = []
+
     # set-up the logger
     console = logging.StreamHandler(stream=sys.stdout)
     fmtr = logging.Formatter(fmt=DEFAULT_LOG_FORMAT)
-    console.setFormatter(fmtr)
-    logger.addHandler(console)
     if cmd_args.log_level:
         try:
             logger.setLevel(getattr(logging, cmd_args.log_level.upper()))
@@ -349,6 +396,8 @@ if __name__ == "__main__":
             sys.exit(1)
     else:
         logger.setLevel(DEFAULT_LOG_LEVEL)
+    console.setFormatter(fmtr)
+    logger.addHandler(console)
 
     # run the code
     main(cmd_args)
