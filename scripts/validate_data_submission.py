@@ -71,14 +71,15 @@ def identify_and_validate(files, project):
     for filename in files:
         metadata = identify_filename_metadata(filename)
 
-        cube = load_cube(filename)
-        metadata.update(identify_contents_metadata(cube))
-
-        metadata['project'] = project
-
-        # try:
-        validate_file_contents(cube, metadata)
-        # except FileValidationError:
+        # TODO: what action should be taken if a file fails validation
+        try:
+            cube = load_cube(filename)
+            metadata.update(identify_contents_metadata(cube))
+            metadata['project'] = project
+            validate_file_contents(cube, metadata)
+        except FileValidationError:
+            msg = 'File failed validation: {}'.format(filename)
+            logger.warning(msg)
 
         print '*** {}'.format(metadata)
 
@@ -150,7 +151,12 @@ def load_cube(filename):
     """
     iris.FUTURE.netcdf_promote = True
 
-    cubes = iris.load(filename)
+    try:
+        cubes = iris.load(filename)
+    except Exception:
+        msg = 'Unable to load cube: {}'.format(filename)
+        logger.warning(msg)
+        raise FileValidationError(msg)
     if len(cubes) != 1:
         msg = "Filename '{}' does not load to a single variable"
         logger.warning(msg)
