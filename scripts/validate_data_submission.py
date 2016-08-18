@@ -18,7 +18,10 @@ from iris.time import PartialDateTime
 import django
 django.setup()
 
-from vocabs.vocabs import FREQUENCY_VALUES
+from pdata_app.models import (Project, ClimateModel, Experiment, DataSubmission,
+    DataFile, Variable)
+from pdata_app.utils.dbapi import get_or_create
+from vocabs.vocabs import FREQUENCY_VALUES, STATUS_VALUES
 
 __version__ = '0.1.0b'
 
@@ -70,7 +73,8 @@ def identify_and_validate(filenames, project, num_processes):
     :param list filenames: The files to process
     :param str project: The name of the project
     :param int num_processes: The number of parallel processes to use
-    :returns:
+    :returns: A list containing the metadata dictionary generated for each file
+    :rtype: multiprocessing.Manager.list
     """
     jobs = []
     manager = Manager()
@@ -91,8 +95,7 @@ def identify_and_validate(filenames, project, num_processes):
     for j in jobs:
         j.join()
 
-    for result in result_list:
-        print 'AAA {}'.format(result)
+    return result_list
 
 
 def identify_and_validate_file(params, output):
@@ -230,11 +233,32 @@ def validate_file_contents(cube, metadata):
     _check_data_point(cube, metadata)
 
 
-def create_database_submission():
+def create_database_submission(validated_metadata, directory):
     """
     Create an entry in the database for this submission
+
+    :param multiprocessing.Manager.list validated_metadata: A list containing
+        the metadata dictionary generated for each file
+    :param str directory: The directory that the files were uploaded to
+    :returns:
     """
-    pass
+    data_sub = get_or_create(DataSubmission, status=STATUS_VALUES['ARRIVED'],
+        incoming_directory=directory, directory=directory)
+
+    for file in validated_metadata:
+        create_database_file(metadata)
+
+
+def create_database_file(metadata):
+    """
+    Create a database entry for a data file
+
+    :param dict metadata:
+    :returns:
+    """
+    projects = Project.objects.filter(short_name=metadata.project)
+    if projects.count() == 0:
+        msg = 'No project'
 
 
 def _check_start_end_times(cube, metadata):
@@ -366,14 +390,19 @@ def main(args):
     """
     logger.debug('Submission directory: %s', args.directory)
     logger.debug('Project: %s', args.project)
+    logger.debug('Processes requested: %s', args.processes)
 
     data_files = list_files(args.directory)
 
     logger.debug('%s files identified', len(data_files))
 
-    identify_and_validate(data_files, args.project, args.processes)
+    validated_metadata = identify_and_validate(data_files, args.project, args.processes)
 
-    create_database_submission()
+    logger.debug('%s files validated successfully', len(validated_metadata))
+
+    create_database_submission(validated_metadata, args.directory)
+
+    logger.debug('Processing complete')
 
 
 if __name__ == "__main__":
