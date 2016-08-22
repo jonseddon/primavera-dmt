@@ -8,10 +8,11 @@ import mock
 import iris
 from iris.tests.stock import realistic_3d
 from iris.time import PartialDateTime
+import pytz
 
 from scripts.validate_data_submission import (_check_start_end_times,
     _check_contiguity, _check_data_point, identify_filename_metadata,
-    FileValidationError, _make_partial_date_time)
+    FileValidationError, _make_partial_date_time, _pdt_to_datetime)
 
 
 class TestIdentifyFilenameMetadata(TestCase):
@@ -51,6 +52,28 @@ class TestIdentifyFilenameMetadata(TestCase):
         filename = 'clt_Amon_HadGEM2-ES_historical_r1i1p1_1859-1884.nc'
         self.assertRaises(FileValidationError,
             identify_filename_metadata, filename)
+
+
+class TestPdtToDatetime(TestCase):
+    def test_year_month_day(self):
+        pdt = PartialDateTime(2016, 8, 22)
+        actual = _pdt_to_datetime(pdt)
+
+        expected = datetime.datetime(2016, 8, 22, 0, 0, tzinfo=pytz.UTC)
+
+        self.assertEqual(actual, expected)
+
+    def test_year_month(self):
+        pdt = PartialDateTime(2016, 8)
+        actual = _pdt_to_datetime(pdt)
+
+        expected = datetime.datetime(2016, 8, 1, 0, 0, tzinfo=pytz.UTC)
+
+        self.assertEqual(actual, expected)
+
+    def test_year(self):
+        pdt = PartialDateTime(2016)
+        self.assertRaises(ValueError, _pdt_to_datetime, pdt)
 
 
 class TestCheckStartEndTimes(TestCase):

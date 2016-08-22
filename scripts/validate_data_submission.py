@@ -6,6 +6,7 @@ This script is run by users to validate submitted data files and to create a
 data submission in the Data Management Tool.
 """
 import argparse
+import datetime
 import itertools
 import logging
 from multiprocessing import Process, Manager
@@ -17,10 +18,11 @@ import iris
 from iris.time import PartialDateTime
 import django
 django.setup()
+import pytz
 
 from pdata_app.models import (Project, ClimateModel, Experiment, DataSubmission,
     DataFile, Variable)
-from pdata_app.utils.dbapi import get_or_create
+from pdata_app.utils.dbapi import get_or_create, match_one
 from vocabs.vocabs import FREQUENCY_VALUES, STATUS_VALUES
 
 __version__ = '0.1.0b'
@@ -34,6 +36,20 @@ logger = logging.getLogger(__name__)
 class FileValidationError(Exception):
     def __init__(self, message=''):
         """
+        An exception to indicate that a data file has failed validation.
+
+        :param str message: The error message text.
+        """
+        Exception.__init__(self)
+        self.message = message
+
+
+class SubmissionError(Exception):
+    def __init__(self, message=''):
+        """
+        An exception to indicate that there has been an error that means that
+        the data submission cannot continue.
+
         :param str message: The error message text.
         """
         Exception.__init__(self)
@@ -80,8 +96,10 @@ def identify_and_validate(filenames, project, num_processes):
     manager = Manager()
     params = manager.Queue(num_processes)
     result_list = manager.list()
+    error_event = manager.Event()
     for i in range(num_processes):
-        p = Process(target=identify_and_validate_file, args=(params, result_list))
+        p = Process(target=identify_and_validate_file, args=(params,
+            result_list, error_event))
         jobs.append(p)
         p.start()
 
@@ -95,10 +113,13 @@ def identify_and_validate(filenames, project, num_processes):
     for j in jobs:
         j.join()
 
+    if error_event.set():
+        raise SubmissionError()
+
     return result_list
 
 
-def identify_and_validate_file(params, output):
+def identify_and_validate_file(params, output, error_event):
     """
     Identify `filename`'s metadata and then validate the file. The function
     continues getting items to process from the parameter queue until a None
@@ -108,8 +129,13 @@ def identify_and_validate_file(params, output):
         tuple of the filename to load and the name of the project
     :param multiprocessing.Manager.list output: A list containing the output
         metadata dictionaries for each file
+    :param multiprocessing.Manager.Event error_event: If set then a catastrophic
+        error has occurred in another process and processing should end
     """
     while True:
+        if error_event.is_set():
+            return
+
         filename, project = params.get()
 
         if filename is None:
@@ -117,11 +143,20 @@ def identify_and_validate_file(params, output):
 
         try:
             metadata = identify_filename_metadata(filename)
-            cube = load_cube(filename)
-            metadata.update(identify_contents_metadata(cube))
             metadata['project'] = project
 
+            verify_fk_relationships(metadata)
+
+            cube = load_cube(filename)
+            metadata.update(identify_contents_metadata(cube))
+
             validate_file_contents(cube, metadata)
+        except SubmissionError:
+            msg = ('A serious file error means the submission cannot continue: '
+                  '{}'.format(filename))
+            logger.error(msg)
+            error_event.set()
+            return
         except FileValidationError:
             msg = 'File failed validation: {}'.format(filename)
             logger.warning(msg)
@@ -135,6 +170,7 @@ def identify_filename_metadata(filename):
 
     :param str filename: The file's complete path
     :returns: A dictionary containing the identified metadata
+    :raises FileValidationError: If unable to parse the date string
     """
     components = ['cmor_name', 'table', 'climate_model', 'experiment',
         'rip_code', 'date_string']
@@ -178,6 +214,30 @@ def identify_filename_metadata(filename):
     return metadata
 
 
+def verify_fk_relationships(metadata):
+    """
+    Check that entries already exist in the database for `Project`,
+    `ClimateModel` and `Experiment`.
+
+    :param dict metadata: Metadata identified for this file.
+    :returns: True if objects exist.
+    :raises SubmissionError: If there are no existing entries in the
+        database for `Project`, `ClimateModel` or `Experiment`.
+    """
+    checks = [
+        (Project, 'project'),
+        (ClimateModel, 'climate_model'),
+        (Experiment, 'experiment')]
+
+    for check_type, check_str in checks:
+        results = match_one(check_type, short_name=metadata[check_str])
+        if not results:
+            msg = ('There is no existing entry for {}: {} in file: {}'.format(
+                check_str, metadata[check_str], metadata['basename']))
+            logger.warning(msg)
+            raise SubmissionError(msg)
+
+
 def identify_contents_metadata(cube):
     """
     Uses Iris to get additional metadata from the files contents
@@ -209,7 +269,7 @@ def load_cube(filename):
     try:
         cubes = iris.load(filename)
     except Exception:
-        msg = 'Unable to load cube: {}'.format(filename)
+        msg = 'Unable to load data from file: {}'.format(filename)
         logger.debug(msg)
         raise FileValidationError(msg)
     if len(cubes) != 1:
@@ -245,20 +305,108 @@ def create_database_submission(validated_metadata, directory):
     data_sub = get_or_create(DataSubmission, status=STATUS_VALUES['ARRIVED'],
         incoming_directory=directory, directory=directory)
 
-    for file in validated_metadata:
-        create_database_file(metadata)
+    for data_file in validated_metadata:
+        create_database_file_object(data_file, data_sub)
 
 
-def create_database_file(metadata):
+def create_database_file_object(metadata, data_submission):
     """
     Create a database entry for a data file
 
-    :param dict metadata:
+    :param dict metadata: This file's metadata
+    :param pdata_app.models.DataSubmission data_submission: The parent data
+        submission
     :returns:
     """
-    projects = Project.objects.filter(short_name=metadata.project)
-    if projects.count() == 0:
-        msg = 'No project'
+    foreign_key_types = [
+        (Project, 'project'),
+        (ClimateModel, 'climate_model'),
+        (Experiment, 'experiment')]
+
+    metadata_objs = {}
+
+    for object_type, object_str in foreign_key_types:
+        result = match_one(object_type, short_name=metadata[object_str])
+        if result:
+            metadata_objs[object_str] = result
+        else:
+            msg = ("No {} '{}' found for file: {}. Please create this object "
+                "and resubmit.".format(object_str.replace('_', ' '),
+                metadata['project'], metadata['basename']))
+            logger.error(msg)
+            raise SubmissionError(msg)
+
+    variable = get_or_create(Variable, var_id=metadata['var_name'],
+        units=metadata['units'], long_name=metadata['long_name'],
+        standard_name=metadata['standard_name'])
+
+    # create a data file. If the file already exists in the database with
+    # identical metadata then nothing happens. If the file exists but with
+    # slighly different metadata then django.db.utils.IntegrityError is
+    # raised which may or may not be what we want to happen
+    # TODO: sort the above
+    try:
+        data_file = get_or_create(DataFile, name=metadata['basename'],
+            incoming_directory=metadata['directory'],
+            directory=metadata['directory'], size=metadata['filesize'],
+            project=metadata_objs['project'],
+            climate_model=metadata_objs['climate_model'],
+            experiment=metadata_objs['experiment'],
+            variable=variable, frequency=metadata['frequency'],
+            rip_code=metadata['rip_code'],
+            start_time=_pdt_to_datetime(metadata['start_date']),
+            end_time=_pdt_to_datetime(metadata['end_date'], start_of_period=False),
+            data_submission=data_submission, online=True)
+    except django.db.utils.IntegrityError:
+        msg = ('Unable to submit file because it already exists in the '
+            'database with different metadata: {} ({}) .'.format(
+            metadata['basename'], metadata['directory']))
+        logger.error(msg)
+        raise SubmissionError(msg)
+
+
+def _pdt_to_datetime(pdt, start_of_period=True):
+    """
+    Convert an Iris PartialDateTime object into a Python datetime object. If
+    the day of the month is not specified in `pdt` then it is set as 1 in the
+    output unless `start_of_period` isn't True, when 30 is used as the day of the
+    month (because a 360 day calendar is assumed).
+
+    :param iris.time.PartialDateTime pdt: The partial date time to convert
+    :param bool start_of_period: If true and no day is specified then day is
+        set to 1, otherwise day is set to 30.
+    :returns: A Python datetime representation of `pdt`
+    """
+    datetime_attrs = {}
+
+    compulsory_attrs = ['year', 'month']
+
+    for attr in compulsory_attrs:
+        attr_value = getattr(pdt, attr)
+        if attr_value:
+            datetime_attrs[attr] = attr_value
+        else:
+            msg = '{} must be defined in: {}'.format(attr, pdt)
+            logger.error(msg)
+            raise ValueError(msg)
+
+    if pdt.day:
+        datetime_attrs['day'] = pdt.day
+    else:
+        if start_of_period:
+            datetime_attrs['day'] = 1
+        else:
+            datetime_attrs['day'] = 30
+
+    optional_attrs = ['hour', 'minute', 'second', 'microsecond']
+    for attr in optional_attrs:
+        attr_value = getattr(pdt, attr)
+        if attr_value:
+            datetime_attrs[attr] = attr_value
+
+    datetime_attrs['tzinfo'] = pytz.UTC
+
+    return datetime.datetime(**datetime_attrs)
 
 
 def _check_start_end_times(cube, metadata):
@@ -396,11 +544,15 @@ def main(args):
 
     logger.debug('%s files identified', len(data_files))
 
-    validated_metadata = identify_and_validate(data_files, args.project, args.processes)
+    try:
+        validated_metadata = identify_and_validate(data_files, args.project,
+            args.processes)
 
-    logger.debug('%s files validated successfully', len(validated_metadata))
+        logger.debug('%s files validated successfully', len(validated_metadata))
 
-    create_database_submission(validated_metadata, args.directory)
+        create_database_submission(validated_metadata, args.directory)
+    except SubmissionError:
+        sys.exit(1)
 
     logger.debug('Processing complete')
 
