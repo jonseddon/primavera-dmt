@@ -237,6 +237,8 @@ def verify_fk_relationships(metadata):
             logger.warning(msg)
             raise SubmissionError(msg)
 
+    return True
+
 
 def identify_contents_metadata(cube):
     """
@@ -519,12 +521,17 @@ def parse_args():
     parser = argparse.ArgumentParser(description='Validate and create a '
         'PRIMAVERA data submission')
     parser.add_argument('directory', help="the submission's top-level directory")
-    parser.add_argument('--project', help='the project that data is ultimately '
+    parser.add_argument('-j', '--project', help='the project that data is ultimately '
         'being submitted to (default: %(default)s)', default='CMIP6')
-    parser.add_argument('--log-level', help='set logging level to one of '
+    parser.add_argument('-l', '--log-level', help='set logging level to one of '
         'debug, info, warn (the default), or error')
-    parser.add_argument('--processes', help='the number of parallel processes '
+    parser.add_argument('-p', '--processes', help='the number of parallel processes '
         'to use (default: %(default)s)', default=8, type=int)
+    parser.add_argument('-r', '--relaxed', help='create a submission from '
+        'validated files, ignoring failed files (default behaviour is to only '
+        'create a submission when all files pass validation)', action='store_true')
+    parser.add_argument('-v', '--validate_only', help='only validate the input, '
+        'do not create a data submission', action='store_true')
     parser.add_argument('--version', action='version',
         version='%(prog)s {}'.format(__version__))
     args = parser.parse_args()
@@ -550,7 +557,21 @@ def main(args):
 
         logger.debug('%s files validated successfully', len(validated_metadata))
 
+        if args.validate_only:
+            logger.debug('Data submission not run (-v option specified)')
+            logger.debug('Processing complete')
+            sys.exit(0)
+
+        if not args.relaxed and len(validated_metadata) != len(data_files):
+            msg = ('Not all files passed validation. Please fix these errors '
+                'and then re-run this script to create a data submission.')
+            logger.error(msg)
+            raise SubmissionError(msg)
+
         create_database_submission(validated_metadata, args.directory)
+
+        logger.debug('%s files submitted successfully',
+            match_one(DataSubmission, incoming_directory=args.directory).get_data_files().count())
     except SubmissionError:
         sys.exit(1)
 
