@@ -8,6 +8,7 @@
         <tr>
             <th>Current Directory</th>
             <th>Status</th>
+            <th>Online Status</th>
             <th># Data Files</th>
             <th># Data Issues</th>
             <th>Start</th>
@@ -16,6 +17,7 @@
         {% for record in records %}
             <tr>
                 <td>{{ record.directory }}</td>
+                <td>{{ record.status }}</td>
                 <td>{{ record.online_status }}</td>
                 <td>{{ record.get_data_files|length }}</td>
                 <td>{{ record.get_data_issues|length }}</td>
