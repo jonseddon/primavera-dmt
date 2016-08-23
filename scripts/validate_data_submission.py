@@ -21,9 +21,10 @@ django.setup()
 import pytz
 
 from pdata_app.models import (Project, ClimateModel, Experiment, DataSubmission,
-    DataFile, Variable)
+    DataFile, Variable, Checksum)
 from pdata_app.utils.dbapi import get_or_create, match_one
-from vocabs.vocabs import FREQUENCY_VALUES, STATUS_VALUES
+from pdata_app.utils.common import adler32
+from vocabs.vocabs import FREQUENCY_VALUES, STATUS_VALUES, CHECKSUM_TYPES
 
 __version__ = '0.1.0b'
 
@@ -310,6 +311,9 @@ def create_database_submission(validated_metadata, directory):
     for data_file in validated_metadata:
         create_database_file_object(data_file, data_sub)
 
+    data_sub.status = STATUS_VALUES['VALIDATED']
+    data_sub.save()
+
 
 def create_database_file_object(metadata, data_submission):
     """
@@ -365,6 +369,10 @@ def create_database_file_object(metadata, data_submission):
             metadata['basename'], metadata['directory']))
         logger.error(msg)
         raise SubmissionError(msg)
+
+    checksum_value = adler32(os.path.join(metadata['directory'],metadata['basename'] ))
+    checksum = get_or_create(Checksum, data_file=data_file,
+        checksum_value=checksum_value, checksum_type=CHECKSUM_TYPES['ADLER32'])
 
 
 def _pdt_to_datetime(pdt, start_of_period=True):

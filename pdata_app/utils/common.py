@@ -37,3 +37,6 @@ def md5(fpath):
 
 def sha256(fpath):
     return commands.getoutput("sha256sum %s" % fpath).split()[0]
+
+def adler32(fpath):
+    return commands.getoutput("adler32 %s" % fpath).split()[0]
