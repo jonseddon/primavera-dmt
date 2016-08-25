@@ -1,7 +1,9 @@
 import os
 from operator import attrgetter
 
-from django.shortcuts import render
+from django.contrib.auth import authenticate, login, logout
+from django.contrib.auth.decorators import login_required
+from django.shortcuts import render, redirect
 from django.db import connection
 from django.db.models import Min, Max
 
@@ -10,6 +12,40 @@ from pdata_app.models import (DataFile, DataSubmission, ESGFDataset, CEDADataset
 from vocabs.vocabs import ONLINE_STATUS
 
 
+def view_login(request):
+    if request.method == 'GET':
+        next_page = request.GET.get('next')
+        if next_page:
+            return render(request, 'login.html', {'request': request,
+                'page_title': 'Login', 'next': next_page})
+        else:
+            return render(request, 'login.html', {'request': request,
+                'page_title': 'Login'})
+
+    username = request.POST['username']
+    password = request.POST['password']
+    next_page = request.POST['next']
+    user = authenticate(username=username, password=password)
+    if user is not None and user.is_active:
+        login(request, user)
+        if next_page:
+            return redirect(next_page)
+        else:
+            return redirect('home')
+    else:
+        if next_page:
+            return render(request, 'login.html', {'request': request,
+                'page_title': 'Login', 'next': next_page, 'errors': True})
+        else:
+            return render(request, 'login.html', {'request': request,
+                'page_title': 'Login', 'errors': True})
+
+
+def view_logout(request):
+    logout(request)
+    return redirect('home')
+
+@login_required(login_url='/login/')
 def view_data_submissions(request):
     data_submissions = DataSubmission.objects.all()
     return render(request, 'data_submissions.html', {'request': request,
