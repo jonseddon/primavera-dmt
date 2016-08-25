@@ -11,6 +11,10 @@ admin.autodiscover()
 urlpatterns = [
     url(r'^admin/', include(admin.site.urls)),
 
+    url(r'^login/$', pdata_app.views.view_login, name='login'),
+
+    url(r'^logout/$', pdata_app.views.view_logout, name='logout'),
+
     url(r'^files/$', pdata_app.views.view_data_files, name='data_files'),
 
     url(r'^submissions/$', pdata_app.views.view_data_submissions,
@@ -34,7 +38,7 @@ urlpatterns = [
     url(r'^outstanding_query/$', pdata_app.views.view_outstanding_query,
         name='outstanding_query'),
 
-    url(r'.*', pdata_app.views.view_home),
+    url(r'.*', pdata_app.views.view_home, name='home'),
 ]
 
 urlpatterns += staticfiles_urlpatterns()
