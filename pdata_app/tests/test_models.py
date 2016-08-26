@@ -16,34 +16,6 @@ from pdata_app.utils.dbapi import get_or_create
 from test.test_datasets import test_data_submission
 
 
-def _extract_file_metadata(file_path):
-    """
-    Extracts metadata from file name and returns dictionary.
-    """
-    # e.g. tasmax_day_IPSL-CM5A-LR_amip4K_r1i1p1_18590101-18591230.nc
-    keys = ("var_id", "frequency", "climate_model", "experiment", "ensemble", "time_range")
-
-    items = os.path.splitext(os.path.basename(file_path))[0].split("_")
-    data = {}
-
-    for i in range(len(items)):
-        key = keys[i]
-        value = items[i]
-
-        if key == "time_range":
-            start_time, end_time = value.split("-")
-            data["start_time"] = make_aware(
-                datetime.datetime.strptime(start_time, "%Y%m%d"),
-                timezone=pytz.utc, is_dst=False)
-            data["end_time"] = make_aware(
-                datetime.datetime.strptime(end_time, "%Y%m%d"),
-                timezone=pytz.utc, is_dst=False)
-        else:
-            data[key] = value
-
-    return data
-
-
 class TestProject(TestCase):
     """
     Test Project class
@@ -92,16 +64,21 @@ class TestExperiment(TestCase):
         self.assertEqual(unicode(expt), u't')
 
 
-class TestVariable(TestCase):
+class TestVariableRequest(TestCase):
     """
-    Test Variable class
+    Test VariableRequest class
     """
     def setUp(self):
-        _p = get_or_create(models.Variable, var_id='test_var', units='1')
+        _p = get_or_create(models.VariableRequest, table_name='Amon',
+            long_name='very descriptive', units='1', var_name='var1',
+            standard_name='var_name', cell_methods='time:mean',
+            positive='optimistic', variable_type=VARIABLE_TYPES['real'],
+            dimensions='massive', cmor_name='var1', modeling_realm='atmos',
+            frequency=FREQUENCY_VALUES['ann'], cell_measures='', uid='123abc')
 
     def test_unicode(self):
-        vble = models.Variable.objects.first()
-        self.assertEqual(unicode(vble), u'test_var')
+        vble = models.VariableRequest.objects.first()
+        self.assertEqual(unicode(vble), u'VariableRequest: var1 (Amon)')
 
 
 class TestDataFileAggregationBaseMethods(TestCase):
@@ -127,14 +104,20 @@ class TestDataFileAggregationBaseMethods(TestCase):
                 short_name=metadata["climate_model"], full_name="Really good model")
             experiment = get_or_create(models.Experiment, short_name="experiment",
                 full_name="Really good experiment")
-            var = get_or_create(models.Variable, var_id=metadata["var_id"],
-                long_name="Really good variable", units="1")
+            var = get_or_create(models.VariableRequest, table_name='Amon',
+                long_name='very descriptive', units='1',
+                var_name=metadata['var_id'], standard_name='var_name',
+                cell_methods='time:mean', positive='optimistic',
+                variable_type=VARIABLE_TYPES['real'], dimensions='massive',
+                cmor_name=metadata['var_id'], modeling_realm='atmos',
+                frequency=FREQUENCY_VALUES['ann'], cell_measures='',
+                uid='123abc')
 
             models.DataFile.objects.create(name=dfile_name,
                 incoming_directory=self.example_files.INCOMING_DIR,
                 directory=self.example_files.INCOMING_DIR, size=1, project=self.proj,
                 climate_model=climate_model, experiment=experiment,
-                variable=var, frequency=metadata["frequency"],
+                variable_request=var, frequency=metadata["frequency"],
                 rip_code=metadata["ensemble"], online=True,
                 start_time=metadata["start_time"], end_time=metadata["end_time"],
                 data_submission=self.dsub)
@@ -169,7 +152,7 @@ class TestDataFileAggregationBaseMethods(TestCase):
 
     def test_variables(self):
         variables = self.dsub.variables()
-        var_names = [v.var_id for v in variables]
+        var_names = [v.cmor_name for v in variables]
         var_names.sort()
 
         expected = ['rsds', 'tasmax', 'zos']
@@ -350,14 +333,18 @@ class TestDataFile(TestCase):
             short_name='climate_model', full_name='Really good model')
         experiment = get_or_create(models.Experiment, short_name='experiment',
             full_name='Really good experiment')
-        var = get_or_create(models.Variable, var_id='mine',
-            long_name='Really good variable', units='1')
+        var = get_or_create(models.VariableRequest, table_name='Amon',
+            long_name='very descriptive', units='1', var_name='var1',
+            standard_name='var_name', cell_methods='time:mean',
+            positive='optimistic', variable_type=VARIABLE_TYPES['real'],
+            dimensions='massive', cmor_name='var1', modeling_realm='atmos',
+            frequency=FREQUENCY_VALUES['ann'], cell_measures='', uid='123abc')
 
         # Make the data file
         data_file = get_or_create(models.DataFile, name='filename.nc',
             incoming_directory='/some/dir', directory='/other/dir', size=1,
             project=proj, climate_model=climate_model, experiment=experiment,
-            variable=var, frequency=FREQUENCY_VALUES['mon'], rip_code='r1i1p1',
+            variable_request=var, frequency=FREQUENCY_VALUES['mon'], rip_code='r1i1p1',
             data_submission=data_submission, online=True)
 
     def test_unicode(self):
@@ -397,14 +384,18 @@ class TestChecksum(TestCase):
             short_name='climate_model', full_name='Really good model')
         experiment = get_or_create(models.Experiment, short_name='experiment',
             full_name='Really good experiment')
-        var = get_or_create(models.Variable, var_id='mine',
-            long_name='Really good variable', units='1')
+        var = get_or_create(models.VariableRequest, table_name='Amon',
+            long_name='very descriptive', units='1', var_name='var1',
+            standard_name='var_name', cell_methods='time:mean',
+            positive='optimistic', variable_type=VARIABLE_TYPES['real'],
+            dimensions='massive', cmor_name='var1', modeling_realm='atmos',
+            frequency=FREQUENCY_VALUES['ann'], cell_measures='', uid='123abc')
 
         # Make a data file in this submission
         data_file = get_or_create(models.DataFile, name='filename.nc',
             incoming_directory='/some/dir', directory='/some/dir', size=1,
             project=proj, climate_model=climate_model, experiment=experiment,
-            variable=var, frequency=FREQUENCY_VALUES['mon'], rip_code='r1i1p1',
+            variable_request=var, frequency=FREQUENCY_VALUES['mon'], rip_code='r1i1p1',
             data_submission=data_submission, online=True)
 
         # Make a checksum
@@ -430,3 +421,30 @@ class TestVariableRequest(TestCase):
     def test_unicode(self):
         var_req = models.VariableRequest.objects.first()
         self.assertEqual(unicode(var_req), u'VariableRequest: a (Amon)')
+
+def _extract_file_metadata(file_path):
+    """
+    Extracts metadata from file name and returns dictionary.
+    """
+    # e.g. tasmax_day_IPSL-CM5A-LR_amip4K_r1i1p1_18590101-18591230.nc
+    keys = ("var_id", "frequency", "climate_model", "experiment", "ensemble", "time_range")
+
+    items = os.path.splitext(os.path.basename(file_path))[0].split("_")
+    data = {}
+
+    for i in range(len(items)):
+        key = keys[i]
+        value = items[i]
+
+        if key == "time_range":
+            start_time, end_time = value.split("-")
+            data["start_time"] = make_aware(
+                datetime.datetime.strptime(start_time, "%Y%m%d"),
+                timezone=pytz.utc, is_dst=False)
+            data["end_time"] = make_aware(
+                datetime.datetime.strptime(end_time, "%Y%m%d"),
+                timezone=pytz.utc, is_dst=False)
+        else:
+            data[key] = value
+
+    return data

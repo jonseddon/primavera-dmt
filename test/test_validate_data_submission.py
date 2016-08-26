@@ -71,7 +71,9 @@ class TestPdtToDatetime(TestCase):
 
         self.assertEqual(actual, expected)
 
-    def test_year(self):
+    @mock.patch('scripts.validate_data_submission.logger')
+    def test_year(self, mock_logger):
+        # logger mocked to prevent error from appearing on screen
         pdt = PartialDateTime(2016)
         self.assertRaises(ValueError, _pdt_to_datetime, pdt)
 

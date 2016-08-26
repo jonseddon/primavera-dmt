@@ -18,7 +18,7 @@ import test.test_datasets as datasets
 from vocabs.vocabs import FREQUENCY_VALUES, STATUS_VALUES, VARIABLE_TYPES
 from pdata_app.utils.dbapi import get_or_create
 from pdata_app.models import (ClimateModel, Institute, Experiment, Project,
-    Variable, DataSubmission, DataFile, DataRequest, ESGFDataset, CEDADataset,
+    DataSubmission, DataFile, DataRequest, ESGFDataset, CEDADataset,
     DataIssue, Settings, VariableRequest)
 
 
@@ -86,7 +86,6 @@ class TestWorkflows(PdataBaseTest):
         institute = get_or_create(Institute, short_name='u', full_name='University')
         climate_model = get_or_create(ClimateModel, short_name='my_model', full_name='Really big model')
         experiment = get_or_create(Experiment, short_name='my_expt', full_name='Really detailed experiment')
-        variable = get_or_create(Variable, var_id='var1', units='1')
         var_req = get_or_create(VariableRequest, table_name='Amon',
             long_name='very descriptive', units='1', var_name='var1',
             standard_name='var_name', cell_methods='time:mean',

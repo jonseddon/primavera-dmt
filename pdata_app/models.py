@@ -12,7 +12,7 @@ from vocabs import (STATUS_VALUES, FREQUENCY_VALUES, ONLINE_STATUS,
 
 print "REMEMBER: Add in the DREQUEST identifiers"
 
-model_names = ['Project', 'Institute', 'ClimateModel', 'Experiment', 'Variable',
+model_names = ['Project', 'Institute', 'ClimateModel', 'Experiment',
                'DataSubmission', 'DataFile', 'ESGFDataset', 'CEDADataset',
                'DataRequest', 'DataIssue', 'Checksum', 'Settings',
                'VariableRequest']
@@ -79,23 +79,6 @@ class Experiment(models.Model):
         return self.short_name
 
 
-class Variable(models.Model):
-    """
-    A variable
-    """
-    # RFK Relationships
-    # DataFile
-    # DataRequest
-
-    var_id = models.CharField(max_length=100, verbose_name='Variable Id', blank=False, null=False)
-    units = models.CharField(max_length=100, verbose_name='Units', blank=False, null=False)
-    long_name = models.CharField(max_length=100, verbose_name='Long Name', blank=True, null=True)
-    standard_name = models.CharField(max_length=100, verbose_name='CF Standard Name', blank=True, null=True)
-
-    def __unicode__(self):
-        return self.var_id
-
-
 class VariableRequest(models.Model):
     """
     A variable requested in the CMIP6 data request
@@ -147,7 +130,7 @@ class DataFileAggregationBase(models.Model):
         return self._file_aggregation("frequency")
 
     def variables(self):
-        return self._file_aggregation("variable")
+        return self._file_aggregation("variable_request")
 
     def get_data_issues(self):
         records = []
@@ -327,7 +310,6 @@ class DataRequest(models.Model):
     climate_model = models.ForeignKey(ClimateModel, null=False,
         on_delete=PROTECT)
     experiment = models.ForeignKey(Experiment, null=False, on_delete=PROTECT)
-    variable = models.ForeignKey(Variable, null=False, on_delete=PROTECT)
     variable_request = models.ForeignKey(VariableRequest, null=False,
         on_delete=PROTECT)
     frequency = models.CharField(max_length=20, choices=FREQUENCY_VALUES.items(), verbose_name="Time frequency",
@@ -359,7 +341,7 @@ class DataFile(models.Model):
     project = models.ForeignKey(Project, null=False, on_delete=PROTECT)
     climate_model = models.ForeignKey(ClimateModel, null=False, on_delete=PROTECT)
     experiment = models.ForeignKey(Experiment, null=False, on_delete=PROTECT)
-    variable = models.ForeignKey(Variable, null=False, on_delete=PROTECT)
+    variable_request = models.ForeignKey(VariableRequest, null=False, on_delete=PROTECT)
     frequency = models.CharField(max_length=20, choices=FREQUENCY_VALUES.items(),
         verbose_name="Time frequency", null=False, blank=False)
     rip_code = models.CharField(max_length=20, verbose_name="RIP code",

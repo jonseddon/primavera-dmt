@@ -8,7 +8,7 @@ from django.db import connection
 from django.db.models import Min, Max
 
 from pdata_app.models import (DataFile, DataSubmission, ESGFDataset, CEDADataset,
-    DataRequest, DataIssue, Variable)
+    DataRequest, DataIssue, VariableRequest)
 from vocabs.vocabs import ONLINE_STATUS
 
 
@@ -107,7 +107,7 @@ def view_variable_query(request):
     # TODO: add some defensive coding to handle no results returned, etc.
 
     # see if any files contain the variable requested
-    files = DataFile.objects.filter(variable__var_id=var_id)
+    files = DataFile.objects.filter(variable_request__cmor_name=var_id)
     if not files:
         return render(request, 'variable_query.html', {'request': request,
         'page_title': 'Variable Query',
@@ -116,7 +116,7 @@ def view_variable_query(request):
     file_sets_found = []
 
     # get the variable_id primary key from the var_id name
-    variable_id = Variable.objects.filter(var_id=var_id).first().id
+    variable_id = VariableRequest.objects.filter(cmor_name=var_id).first().id
 
     # loop through the unique combinations
     cursor = connection.cursor()
@@ -128,7 +128,7 @@ def view_variable_query(request):
         # unpack the four items from each distinct set of files
         frequency, climate_model, experiment, project, rip_code = row
         # find all of the files that contain these distinct items
-        row_files = DataFile.objects.filter(variable__var_id=var_id,
+        row_files = DataFile.objects.filter(variable_request__var_id=var_id,
             frequency=frequency, climate_model_id=climate_model,
             experiment_id=experiment, project_id=project, rip_code=rip_code)
         # generate some summary info about the files
@@ -212,7 +212,7 @@ def view_outstanding_query(request):
         req_files = DataFile.objects.filter(
             climate_model__id=req.climate_model_id,
             experiment__id=req.experiment_id,
-            variable__id=req.variable_id,
+            variable_request__id=req.variable_request_id,
             frequency=req.frequency)
 
         if not req_files:
@@ -220,7 +220,7 @@ def view_outstanding_query(request):
             outstanding_reqs.append(req)
 
     # TODO: sort the results by table and then variable
-    outstanding_reqs.sort(key=attrgetter('variable.var_id'))
+    outstanding_reqs.sort(key=attrgetter('variable_request.cmor_name'))
 
     return render(request, 'outstanding_query_results.html', {'request': request,
         'page_title': 'Outstanding Data Query', 'records': outstanding_reqs})
