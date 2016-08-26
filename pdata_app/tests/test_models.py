@@ -155,7 +155,7 @@ class TestDataFileAggregationBaseMethods(TestCase):
         var_names = [v.cmor_name for v in variables]
         var_names.sort()
 
-        expected = ['rsds', 'tasmax', 'zos']
+        expected = ['ps', 'rsds', 'tasmax']
 
         self.assertEqual(var_names, expected)
 
