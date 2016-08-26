@@ -6,7 +6,8 @@ from django.db.utils import IntegrityError
 
 from pdata_app.utils import dbapi
 from pdata_app import models
-from vocabs.vocabs import STATUS_VALUES, CHECKSUM_TYPES
+from vocabs.vocabs import (STATUS_VALUES, CHECKSUM_TYPES,
+    FREQUENCY_VALUES, VARIABLE_TYPES)
 
 
 class TestGetOrCreate(TestCase):
@@ -145,7 +146,13 @@ def _create_file_object():
         full_name='test')
     expt = dbapi.get_or_create(models.Experiment, short_name='t',
         full_name='test')
-    vble = dbapi.get_or_create(models.Variable, var_id='t', units='t')
+    vble = dbapi.get_or_create(models.VariableRequest, table_name='Amon',
+        long_name='very descriptive', units='1', var_name='var1',
+        standard_name='var_name', cell_methods='time:mean',
+        positive='optimistic', variable_type=VARIABLE_TYPES['real'],
+        dimensions='massive', cmor_name='var1', modeling_realm='atmos',
+        frequency=FREQUENCY_VALUES['ann'], cell_measures='', uid='123abc')
+
 
     dsub = dbapi.get_or_create(models.DataSubmission,
         status=STATUS_VALUES['EXPECTED'], incoming_directory='/some/dir',
@@ -154,7 +161,7 @@ def _create_file_object():
     data_file = dbapi.get_or_create(models.DataFile, name='test',
         incoming_directory='/some/dir', directory='/some/dir', size=1,
         project=project, climate_model=clim_mod, experiment=expt,
-        variable=vble, frequency='t', rip_code='r1i1p1', data_submission=dsub,
+        variable_request=vble, frequency='t', rip_code='r1i1p1', data_submission=dsub,
         online=False)
 
     return data_file
