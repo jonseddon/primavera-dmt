@@ -406,21 +406,6 @@ class TestChecksum(TestCase):
         chk_sum = models.Checksum.objects.all()[0]
         self.assertEqual(unicode(chk_sum), u'ADLER32: 12345678 (filename.nc)')
 
-class TestVariableRequest(TestCase):
-    """
-    Test the VariableRequest class
-    """
-    def setUp(self):
-        _vr = get_or_create(models.VariableRequest, table_name='Amon',
-            long_name='very descriptive', units='1', var_name='a',
-            standard_name='var_name', cell_methods='time:mean',
-            positive='optimistic', variable_type=VARIABLE_TYPES['real'],
-            dimensions='massive', cmor_name='a', modeling_realm='atmos',
-            frequency=FREQUENCY_VALUES['mon'], cell_measures='', uid='123abc')
-
-    def test_unicode(self):
-        var_req = models.VariableRequest.objects.first()
-        self.assertEqual(unicode(var_req), u'VariableRequest: a (Amon)')
 
 def _extract_file_metadata(file_path):
     """

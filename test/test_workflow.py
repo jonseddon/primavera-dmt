@@ -95,7 +95,7 @@ class TestWorkflows(PdataBaseTest):
 
         data_req = get_or_create(DataRequest, institute=institute,
             climate_model=climate_model, experiment=experiment,
-            variable_request=var_req, frequency=FREQUENCY_VALUES['ann'],
+            variable_request=var_req,
             start_time=datetime.datetime(1900, 1, 1, 0, 0, 0, 0, pytz.utc),
             end_time=datetime.datetime(2000, 1, 1, 0, 0, 0, 0, pytz.utc))
 

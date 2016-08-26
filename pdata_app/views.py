@@ -212,8 +212,7 @@ def view_outstanding_query(request):
         req_files = DataFile.objects.filter(
             climate_model__id=req.climate_model_id,
             experiment__id=req.experiment_id,
-            variable_request__id=req.variable_request_id,
-            frequency=req.frequency)
+            variable_request__id=req.variable_request_id)
 
         if not req_files:
             # no files found so request not satisfied
