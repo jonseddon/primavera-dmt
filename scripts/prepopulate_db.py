@@ -17,7 +17,7 @@ def main():
     Populate the database
     """
     proj = get_or_create(Project, short_name='CMIP6',
-        full_name='6th Climate Model Intercomparison Project')
+        full_name='6th Coupled Model Intercomparison Project')
 
     expt = get_or_create(Experiment, short_name='historical',
         full_name='historical')
