@@ -10,7 +10,7 @@
                 <th>Institute</th>
                 <th>Climate Model</th>
                 <th>Experiment</th>
-                <th>Variable ID</th>
+                <th>Variable Name</th>
                 <th>Frequency</th>
                 <th>Start</th>
                 <th>End</th>
@@ -20,7 +20,7 @@
                     <td>{{ record.institute.short_name }}</td>
                     <td>{{ record.climate_model.short_name }}</td>
                     <td>{{ record.experiment.short_name }}</td>
-                    <td>{{ record.variable.var_id }}</td>
+                    <td>{{ record.variable_request.cmor_name }}</td>
                     <td>{{ record.frequency }}</td>
                     <td>{{ record.start_time|date:"Y-m-d" }}</td>
                     <td>{{ record.end_time|date:"Y-m-d" }}</td>

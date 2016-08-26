@@ -16,9 +16,9 @@ import pytz
 from django.utils.timezone import make_aware
 
 import test.test_datasets as datasets
-from pdata_app.utils.dbapi import get_or_create
+from pdata_app.utils.dbapi import get_or_create, match_one
 from pdata_app.models import (DataSubmission, DataFile, ClimateModel,
-    Experiment, Project, Variable, ESGFDataset, CEDADataset, DataRequest,
+    Experiment, Project, ESGFDataset, CEDADataset, DataRequest,
     Institute, VariableRequest)
 from vocabs import STATUS_VALUES, FREQUENCY_VALUES, VARIABLE_TYPES
 
@@ -27,49 +27,42 @@ def make_data_request():
     """
     Create a DataRequest that matches files in the later submission
     """
-    # Make the variable zos for which all data is available
+    # Make the variable chips from the Monty model for which all data is available
     institute = get_or_create(Institute, short_name='MOHC', full_name='Met Office Hadley Centre')
-    climate_model = get_or_create(ClimateModel, short_name='HadGEM2-ES', full_name='Really good model')
+    climate_model = get_or_create(ClimateModel, short_name='Monty', full_name='Really good model')
     experiment = get_or_create(Experiment, short_name='rcp45', full_name='Really good experiment')
-    variable = get_or_create(Variable, var_id='zos', units='1',
-        long_name='Really good variable')
-    var_req = get_or_create(VariableRequest, table_name='Amon',
-        long_name='Really good variable', units='1', var_name='zos',
+    var_req = get_or_create(VariableRequest, table_name='cfDay',
+        long_name='Really good variable', units='1', var_name='chips',
         standard_name='really_good_variable', cell_methods='time:mean',
         positive='optimistic', variable_type=VARIABLE_TYPES['real'],
-        dimensions='massive', cmor_name='zos', modeling_realm='atmos',
+        dimensions='massive', cmor_name='chips', modeling_realm='atmos',
         frequency=FREQUENCY_VALUES['day'], cell_measures='', uid='123abc')
 
     data_req = get_or_create(DataRequest, institute=institute,
         climate_model=climate_model, experiment=experiment,
-        variable=variable, variable_request=var_req,
-        frequency=FREQUENCY_VALUES['day'],
+        variable_request=var_req, frequency=FREQUENCY_VALUES['day'],
         start_time=datetime.datetime(1991, 1, 1, 0, 0, 0, 0, pytz.utc),
         end_time=datetime.datetime(1993, 12, 30, 0, 0, 0, 0, pytz.utc))
 
-    # Make the variable rsds for which one year is missing
+    # Make the variable spam from the Python model for which one year is missing
     institute = get_or_create(Institute, short_name='IPSL', full_name='Institut Pierre Simon Laplace')
-    climate_model = get_or_create(ClimateModel, short_name='IPSL-CM5A-LR', full_name='Really good model')
+    climate_model = get_or_create(ClimateModel, short_name='Python', full_name='Really good model')
     experiment = get_or_create(Experiment, short_name='abrupt4xCO2', full_name='Really good experiment')
-    variable = get_or_create(Variable, var_id='rsds', units='1',
-        long_name='Really good variable')
-    var_req = get_or_create(VariableRequest, table_name='Amon',
-        long_name='Really good variable', units='1', var_name='rsds',
+    var_req = get_or_create(VariableRequest, table_name='cfDay',
+        long_name='Really good variable', units='1', var_name='spam',
         standard_name='really_good_variable', cell_methods='time:mean',
         positive='optimistic', variable_type=VARIABLE_TYPES['real'],
-        dimensions='massive', cmor_name='rsds', modeling_realm='atmos',
+        dimensions='massive', cmor_name='spam', modeling_realm='atmos',
         frequency=FREQUENCY_VALUES['day'], cell_measures='', uid='123abc')
 
     data_req = get_or_create(DataRequest, institute=institute,
         climate_model=climate_model, experiment=experiment,
-        variable=variable, variable_request=var_req,
-        frequency=FREQUENCY_VALUES['day'],
+        variable_request=var_req, frequency=FREQUENCY_VALUES['day'],
         start_time=datetime.datetime(1991, 1, 1, 0, 0, 0, 0, pytz.utc),
         end_time=datetime.datetime(1994, 12, 30, 0, 0, 0, 0, pytz.utc))
 
     # Make two requests that are entirely missing
-    variable = get_or_create(Variable, var_id='pie', units='1', long_name='Really good variable')
-    var_req = get_or_create(VariableRequest, table_name='Amon',
+    var_req = get_or_create(VariableRequest, table_name='Aday',
         long_name='Really good variable', units='1', var_name='pie',
         standard_name='really_good_variable', cell_methods='time:mean',
         positive='optimistic', variable_type=VARIABLE_TYPES['real'],
@@ -78,13 +71,11 @@ def make_data_request():
 
     data_req = get_or_create(DataRequest, institute=institute,
         climate_model=climate_model, experiment=experiment,
-        variable=variable, variable_request=var_req,
-        frequency=FREQUENCY_VALUES['day'],
+        variable_request=var_req, frequency=FREQUENCY_VALUES['day'],
         start_time=datetime.datetime(1991, 1, 1, 0, 0, 0, 0, pytz.utc),
         end_time=datetime.datetime(1994, 12, 30, 0, 0, 0, 0, pytz.utc))
 
-    variable = get_or_create(Variable, var_id='cake', units='1', long_name='Really good variable')
-    var_req = get_or_create(VariableRequest, table_name='Amon',
+    var_req = get_or_create(VariableRequest, table_name='Aday',
         long_name='Really good variable', units='1', var_name='cake',
         standard_name='really_good_variable', cell_methods='time:mean',
         positive='optimistic', variable_type=VARIABLE_TYPES['real'],
@@ -93,10 +84,17 @@ def make_data_request():
 
     data_req = get_or_create(DataRequest, institute=institute,
         climate_model=climate_model, experiment=experiment,
-        variable=variable, variable_request=var_req,
-        frequency=FREQUENCY_VALUES['day'],
+        variable_request=var_req, frequency=FREQUENCY_VALUES['day'],
         start_time=datetime.datetime(1991, 1, 1, 0, 0, 0, 0, pytz.utc),
         end_time=datetime.datetime(1994, 12, 30, 0, 0, 0, 0, pytz.utc))
+
+    # generate variable requests for the remaining files in the later submission
+    var_req = get_or_create(VariableRequest, table_name='day',
+        long_name='Really good variable', units='1', var_name='beans',
+        standard_name='really_good_variable', cell_methods='time:mean',
+        positive='smelly', variable_type=VARIABLE_TYPES['real'],
+        dimensions='massive', cmor_name='beans', modeling_realm='atmos',
+        frequency=FREQUENCY_VALUES['day'], cell_measures='', uid='123abc')
 
 
 def make_data_submission():
@@ -115,15 +113,24 @@ def make_data_submission():
         metadata = _extract_file_metadata(path)
 
         proj = get_or_create(Project, short_name="CMIP6", full_name="6th Coupled Model Intercomparison Project")
-        var = get_or_create(Variable, var_id=metadata["var_id"], long_name="Really good variable", units="1")
         climate_model = get_or_create(ClimateModel, short_name=metadata["climate_model"], full_name="Really good model")
         experiment = get_or_create(Experiment, short_name=metadata["experiment"], full_name="Really good experiment")
+
+        var_match = match_one(VariableRequest, cmor_name=metadata['var_id'],
+                              table_name=metadata['table'])
+        if var_match:
+            variable = var_match
+        else:
+            msg = ('No variable request found for file: {}. Please create a '
+                   'variable request and resubmit.'.format(dfile_name))
+            print 'ERROR: ' + msg
+            raise ValueError(msg)
 
         _dfile = DataFile.objects.create(name=dfile_name, incoming_directory=test_dsub.INCOMING_DIR,
             directory=test_dsub.INCOMING_DIR, size=os.path.getsize(path),
             project=proj, climate_model=climate_model,
-            experiment=experiment, variable=var, frequency=metadata["frequency"],
-            rip_code=metadata["ensemble"],
+            experiment=experiment, frequency=metadata["frequency"],
+            rip_code=metadata["ensemble"], variable_request=variable,
             start_time=make_aware(metadata["start_time"], timezone=pytz.utc, is_dst=False),
             end_time=make_aware(metadata["end_time"], timezone=pytz.utc, is_dst=False),
             data_submission=dsub, online=True)
@@ -171,6 +178,7 @@ def _extract_file_metadata(file_path):
             data["start_time"] = datetime.datetime.strptime(start_time, "%Y%m%d")
             data["end_time"] = datetime.datetime.strptime(end_time, "%Y%m%d")
         elif key == "table":
+            data['table'] = value
             for fv in FREQUENCY_VALUES:
                 if fv.lower() in value.lower():
                     data['frequency'] = fv

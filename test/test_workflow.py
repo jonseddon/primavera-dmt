@@ -18,7 +18,7 @@ import test.test_datasets as datasets
 from vocabs.vocabs import FREQUENCY_VALUES, STATUS_VALUES, VARIABLE_TYPES
 from pdata_app.utils.dbapi import get_or_create
 from pdata_app.models import (ClimateModel, Institute, Experiment, Project,
-    Variable, DataSubmission, DataFile, DataRequest, ESGFDataset, CEDADataset,
+    DataSubmission, DataFile, DataRequest, ESGFDataset, CEDADataset,
     DataIssue, Settings, VariableRequest)
 
 
@@ -43,7 +43,7 @@ def _create_test_data_dirs():
 def _extract_file_metadata(file_path):
     "Extracts metadata from file name and returns dictionary."
     # e.g. tasmax_day_IPSL-CM5A-LR_amip4K_r1i1p1_18590101-18591230.nc
-    keys = ("var_id", "frequency", "climate_model", "experiment", "ensemble", "time_range")
+    keys = ("var_id", "table", "climate_model", "experiment", "ensemble", "time_range")
 
     items = os.path.splitext(os.path.basename(file_path))[0].split("_")
     data = {}
@@ -86,7 +86,6 @@ class TestWorkflows(PdataBaseTest):
         institute = get_or_create(Institute, short_name='u', full_name='University')
         climate_model = get_or_create(ClimateModel, short_name='my_model', full_name='Really big model')
         experiment = get_or_create(Experiment, short_name='my_expt', full_name='Really detailed experiment')
-        variable = get_or_create(Variable, var_id='var1', units='1')
         var_req = get_or_create(VariableRequest, table_name='Amon',
             long_name='very descriptive', units='1', var_name='var1',
             standard_name='var_name', cell_methods='time:mean',
@@ -96,8 +95,7 @@ class TestWorkflows(PdataBaseTest):
 
         data_req = get_or_create(DataRequest, institute=institute,
             climate_model=climate_model, experiment=experiment,
-            variable=variable, variable_request=var_req,
-            frequency=FREQUENCY_VALUES['ann'],
+            variable_request=var_req, frequency=FREQUENCY_VALUES['ann'],
             start_time=datetime.datetime(1900, 1, 1, 0, 0, 0, 0, pytz.utc),
             end_time=datetime.datetime(2000, 1, 1, 0, 0, 0, 0, pytz.utc))
 
@@ -106,7 +104,7 @@ class TestWorkflows(PdataBaseTest):
         self.assertEqual(data_req.institute.full_name, 'University')
         self.assertEqual(data_req.climate_model.short_name, 'my_model')
         self.assertEqual(data_req.experiment.short_name, 'my_expt')
-        self.assertEqual(data_req.variable.var_id, 'var1')
+        self.assertEqual(data_req.variable_request.cmor_name, 'var1')
         self.assertEqual(data_req.variable_request.modeling_realm, 'atmos')
 
     def test_02_data_submission(self):
@@ -256,14 +254,21 @@ def _make_data_submission():
         m = metadata = _extract_file_metadata(path)
 
         proj = get_or_create(Project, short_name="CMIP6", full_name="6th Coupled Model Intercomparison Project")
-        var = get_or_create(Variable, var_id=m["var_id"], long_name="Really good variable", units="1")
         climate_model = get_or_create(ClimateModel, short_name=m["climate_model"], full_name="Really good model")
         experiment = get_or_create(Experiment, short_name=m["experiment"], full_name="Really good experiment")
+        var = get_or_create(VariableRequest, table_name=metadata['table'],
+            long_name='very descriptive', units='1', var_name=metadata['var_id'],
+            standard_name='var_name', cell_methods='time: mean',
+            positive='optimistic', variable_type=VARIABLE_TYPES['real'],
+            dimensions='massive', cmor_name=metadata['var_id'],
+            modeling_realm='atmos', frequency=FREQUENCY_VALUES['ann'],
+            cell_measures='', uid='123abc')
 
         dfile = DataFile.objects.create(name=dfile_name, incoming_directory=test_dsub.INCOMING_DIR,
             directory=test_dsub.INCOMING_DIR, size=os.path.getsize(path),
             project=proj, climate_model=climate_model,
-            experiment=experiment, variable=var, frequency=m["frequency"], rip_code=m["ensemble"],
+            experiment=experiment, variable_request=var,
+            frequency=FREQUENCY_VALUES['ann'], rip_code=m["ensemble"],
             start_time=make_aware(m["start_time"], timezone=pytz.utc, is_dst=False),
             end_time=make_aware(m["end_time"], timezone=pytz.utc, is_dst=False),
             data_submission=dsub, online=True)

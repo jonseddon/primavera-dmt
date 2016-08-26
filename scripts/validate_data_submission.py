@@ -21,7 +21,7 @@ django.setup()
 import pytz
 
 from pdata_app.models import (Project, ClimateModel, Experiment, DataSubmission,
-    DataFile, Variable, Checksum)
+    DataFile, VariableRequest, Checksum)
 from pdata_app.utils.dbapi import get_or_create, match_one
 from pdata_app.utils.common import adler32
 from vocabs.vocabs import FREQUENCY_VALUES, STATUS_VALUES, CHECKSUM_TYPES
@@ -342,13 +342,19 @@ def create_database_file_object(metadata, data_submission):
             logger.error(msg)
             raise SubmissionError(msg)
 
-    variable = get_or_create(Variable, var_id=metadata['var_name'],
-        units=metadata['units'], long_name=metadata['long_name'],
-        standard_name=metadata['standard_name'])
+    var_match = match_one(VariableRequest, cmor_name=metadata['var_name'],
+        table_name=metadata['table'])
+    if var_match:
+        variable = var_match
+    else:
+        msg = ('No variable request found for file: {}. Please create a '
+            'variable request and resubmit.'.format(metadata['basename']))
+        logger.error(msg)
+        raise SubmissionError(msg)
 
     # create a data file. If the file already exists in the database with
     # identical metadata then nothing happens. If the file exists but with
-    # slighly different metadata then django.db.utils.IntegrityError is
+    # slightly different metadata then django.db.utils.IntegrityError is
     # raised which may or may not be what we want to happen
     # TODO: sort the above
     try:
@@ -358,7 +364,7 @@ def create_database_file_object(metadata, data_submission):
             project=metadata_objs['project'],
             climate_model=metadata_objs['climate_model'],
             experiment=metadata_objs['experiment'],
-            variable=variable, frequency=metadata['frequency'],
+            variable_request=variable, frequency=metadata['frequency'],
             rip_code=metadata['rip_code'],
             start_time=_pdt_to_datetime(metadata['start_date']),
             end_time=_pdt_to_datetime(metadata['end_date'], start_of_period=False),

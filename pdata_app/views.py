@@ -8,7 +8,7 @@ from django.db import connection
 from django.db.models import Min, Max
 
 from pdata_app.models import (DataFile, DataSubmission, ESGFDataset, CEDADataset,
-    DataRequest, DataIssue, Variable)
+    DataRequest, DataIssue, VariableRequest)
 from vocabs.vocabs import ONLINE_STATUS
 
 
@@ -107,7 +107,7 @@ def view_variable_query(request):
     # TODO: add some defensive coding to handle no results returned, etc.
 
     # see if any files contain the variable requested
-    files = DataFile.objects.filter(variable__var_id=var_id)
+    files = DataFile.objects.filter(variable_request__cmor_name=var_id)
     if not files:
         return render(request, 'variable_query.html', {'request': request,
         'page_title': 'Variable Query',
@@ -116,19 +116,19 @@ def view_variable_query(request):
     file_sets_found = []
 
     # get the variable_id primary key from the var_id name
-    variable_id = Variable.objects.filter(var_id=var_id).first().id
+    variable_id = VariableRequest.objects.filter(cmor_name=var_id).first().id
 
     # loop through the unique combinations
     cursor = connection.cursor()
     uniq_rows = cursor.execute('SELECT DISTINCT frequency, climate_model_id, '
         'experiment_id, project_id, rip_code FROM pdata_app_datafile WHERE '
-        'variable_id=%s', [variable_id])
+        'variable_request_id=%s', [variable_id])
 
     for row in uniq_rows.fetchall():
         # unpack the four items from each distinct set of files
         frequency, climate_model, experiment, project, rip_code = row
         # find all of the files that contain these distinct items
-        row_files = DataFile.objects.filter(variable__var_id=var_id,
+        row_files = DataFile.objects.filter(variable_request__cmor_name=var_id,
             frequency=frequency, climate_model_id=climate_model,
             experiment_id=experiment, project_id=project, rip_code=rip_code)
         # generate some summary info about the files
@@ -212,7 +212,7 @@ def view_outstanding_query(request):
         req_files = DataFile.objects.filter(
             climate_model__id=req.climate_model_id,
             experiment__id=req.experiment_id,
-            variable__id=req.variable_id,
+            variable_request__id=req.variable_request_id,
             frequency=req.frequency)
 
         if not req_files:
@@ -220,7 +220,7 @@ def view_outstanding_query(request):
             outstanding_reqs.append(req)
 
     # TODO: sort the results by table and then variable
-    outstanding_reqs.sort(key=attrgetter('variable.var_id'))
+    outstanding_reqs.sort(key=attrgetter('variable_request.cmor_name'))
 
     return render(request, 'outstanding_query_results.html', {'request': request,
         'page_title': 'Outstanding Data Query', 'records': outstanding_reqs})
@@ -236,11 +236,14 @@ def _find_common_directory(query_set, attribute, separator='/'):
     :param django.db.models.query.QuerySet query_set: The query set to search through.
     :param str attribute: The name of the attribute to find.
     :param str separator: The separator between directories.
-    :returns: The prefix that is common to all attributes.
+    :returns: The prefix that is common to all attributes or None if attribute
+        has not been set on any items.
     :raises AttributeError: If attribute does not exist.
     """
-    common_prefix = os.path.commonprefix(sorted(set(
-        [getattr(qi, attribute) for qi in query_set])))
-    common_dir, __ = common_prefix.rsplit(separator, 1)
-
-    return common_dir
+    uniq_query_items = sorted(set([getattr(qi, attribute) for qi in query_set]))
+    if uniq_query_items and uniq_query_items != [None]:
+        common_prefix = os.path.commonprefix(uniq_query_items)
+        common_dir, __ = common_prefix.rsplit(separator, 1)
+        return common_dir
+    else:
+        return None
