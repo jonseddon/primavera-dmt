@@ -104,20 +104,20 @@ class TestDataFileAggregationBaseMethods(TestCase):
                 short_name=metadata["climate_model"], full_name="Really good model")
             experiment = get_or_create(models.Experiment, short_name="experiment",
                 full_name="Really good experiment")
-            var = get_or_create(models.VariableRequest, table_name='Amon',
+            var = get_or_create(models.VariableRequest, table_name=metadata['table'],
                 long_name='very descriptive', units='1',
                 var_name=metadata['var_id'], standard_name='var_name',
-                cell_methods='time:mean', positive='optimistic',
+                cell_methods='time: mean', positive='optimistic',
                 variable_type=VARIABLE_TYPES['real'], dimensions='massive',
                 cmor_name=metadata['var_id'], modeling_realm='atmos',
-                frequency=FREQUENCY_VALUES['ann'], cell_measures='',
-                uid='123abc')
+                frequency=FREQUENCY_VALUES['ann'],
+                cell_measures='', uid='123abc')
 
             models.DataFile.objects.create(name=dfile_name,
                 incoming_directory=self.example_files.INCOMING_DIR,
                 directory=self.example_files.INCOMING_DIR, size=1, project=self.proj,
                 climate_model=climate_model, experiment=experiment,
-                variable_request=var, frequency=metadata["frequency"],
+                variable_request=var, frequency=FREQUENCY_VALUES['ann'],
                 rip_code=metadata["ensemble"], online=True,
                 start_time=metadata["start_time"], end_time=metadata["end_time"],
                 data_submission=self.dsub)
@@ -146,7 +146,7 @@ class TestDataFileAggregationBaseMethods(TestCase):
         frequencies = self.dsub.frequency()
         frequencies.sort()
 
-        expected = [u'cfDay', u'day']
+        expected = [u'ann']
 
         self.assertEqual(frequencies, expected)
 
@@ -427,7 +427,7 @@ def _extract_file_metadata(file_path):
     Extracts metadata from file name and returns dictionary.
     """
     # e.g. tasmax_day_IPSL-CM5A-LR_amip4K_r1i1p1_18590101-18591230.nc
-    keys = ("var_id", "frequency", "climate_model", "experiment", "ensemble", "time_range")
+    keys = ("var_id", "table", "climate_model", "experiment", "ensemble", "time_range")
 
     items = os.path.splitext(os.path.basename(file_path))[0].split("_")
     data = {}
