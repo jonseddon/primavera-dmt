@@ -20,7 +20,7 @@ class TestIdentifyFilenameMetadata(TestCase):
     def setUp(self, mock_getsize):
         mock_getsize.return_value = 1234
 
-        filename = 'clt_Amon_HadGEM2-ES_historical_r1i1p1_185912-188411.nc'
+        filename = 'clt_Amon_Monty_historical_r1i1p1_185912-188411.nc'
 
         self.metadata = identify_filename_metadata(filename)
 
@@ -31,7 +31,7 @@ class TestIdentifyFilenameMetadata(TestCase):
         self.assertEqual(self.metadata['table'], 'Amon')
 
     def test_climate_model(self):
-        self.assertEqual(self.metadata['climate_model'], 'HadGEM2-ES')
+        self.assertEqual(self.metadata['climate_model'], 'Monty')
 
     def test_experiment(self):
         self.assertEqual(self.metadata['experiment'], 'historical')
@@ -49,7 +49,7 @@ class TestIdentifyFilenameMetadata(TestCase):
 
     @mock.patch('scripts.validate_data_submission.logger')
     def test_bad_date_format(self, mock_logger):
-        filename = 'clt_Amon_HadGEM2-ES_historical_r1i1p1_1859-1884.nc'
+        filename = 'clt_Amon_Monty_historical_r1i1p1_1859-1884.nc'
         self.assertRaises(FileValidationError,
             identify_filename_metadata, filename)
 

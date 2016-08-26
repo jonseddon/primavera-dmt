@@ -138,7 +138,7 @@ class TestDataFileAggregationBaseMethods(TestCase):
         model_names = [cm.short_name for cm in clim_models]
         model_names.sort()
 
-        expected = [u'HadGEM2-ES', u'IPSL-CM5A-LR']
+        expected = [u'Monty', u'Python']
 
         self.assertEqual(model_names, expected)
 
@@ -155,9 +155,9 @@ class TestDataFileAggregationBaseMethods(TestCase):
         var_names = [v.cmor_name for v in variables]
         var_names.sort()
 
-        expected = ['ps', 'rsds', 'tasmax']
+        expected = ['chips', 'spam', 'beans']
 
-        self.assertEqual(var_names, expected)
+        self.assertEqual(var_names.sort(), expected.sort())
 
     def test_start_time(self):
         start_time = self.dsub.start_time()

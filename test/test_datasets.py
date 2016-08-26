@@ -41,49 +41,49 @@ class DatasetForTests(object):
 
 # Define datasets
 # d1 - 3 good files
-d1 = DatasetForTests("cmip5.output1.MOHC.HadGEM2-ES.abrupt4xCO2.day.atmos.cfDay.r1i1p1.v20120114",
-                     ("rsds_cfDay_HadGEM2-ES_abrupt4xCO2_r1i1p1_19910101-19911230.nc",
-                      "rsds_cfDay_HadGEM2-ES_abrupt4xCO2_r1i1p1_19920101-19921230.nc",
-                      "rsds_cfDay_HadGEM2-ES_abrupt4xCO2_r1i1p1_19930101-19931230.nc"))
+d1 = DatasetForTests("cmip5.output1.MOHC.Monty.abrupt4xCO2.day.atmos.cfDay.r1i1p1.v20120114",
+                     ("spam_cfDay_Monty_abrupt4xCO2_r1i1p1_19910101-19911230.nc",
+                      "spam_cfDay_Monty_abrupt4xCO2_r1i1p1_19920101-19921230.nc",
+                      "spam_cfDay_Monty_abrupt4xCO2_r1i1p1_19930101-19931230.nc"))
 
 # d2 - 2 good files, 1 bad file
-d2 = DatasetForTests("cmip5.output1.IPSL.IPSL-CM5A-LR.historical.day.atmos.day.r1i1p1.v20140430",
-                     ("tas_day_IPSL-CM5A-LR_historical_r1i1p1_18590101-18591230.nc",
-                      "tas_day_IPSL-CM5A-LR_historical_r1i1p1_18600101-18601230.nc",
-                      "tas_day_IPSL-CM5A-LR_historical_r1i1p1_18610101-18611230.nc"),
+d2 = DatasetForTests("cmip5.output1.IPSL.Python.historical.day.atmos.day.r1i1p1.v20140430",
+                     ("eggs_day_Python_historical_r1i1p1_18590101-18591230.nc",
+                      "eggs_day_Python_historical_r1i1p1_18600101-18601230.nc",
+                      "eggs_day_Python_historical_r1i1p1_18610101-18611230.nc"),
                      bad_file=1)
 
 # d3 - 3 good files, but IOError raised during Ingest process
-d3 = DatasetForTests("cmip5.output1.IPSL.IPSL-CM5A-LR.amip4K.day.atmos.day.r1i1p1.v20140430",
-                     ("tasmax_day_IPSL-CM5A-LR_amip4K_r1i1p1_18590101-18591230.nc",
-                      "tasmax_day_IPSL-CM5A-LR_amip4K_r1i1p1_18600101-18601230.nc",
-                      "tasmax_day_IPSL-CM5A-LR_amip4K_r1i1p1_18610101-18611230.nc"),
+d3 = DatasetForTests("cmip5.output1.IPSL.Python.amip4K.day.atmos.day.r1i1p1.v20140430",
+                     ("beans_day_Python_amip4K_r1i1p1_18590101-18591230.nc",
+                      "beans_day_Python_amip4K_r1i1p1_18600101-18601230.nc",
+                      "beans_day_Python_amip4K_r1i1p1_18610101-18611230.nc"),
                      simulate_action="PUBLICATION FAILS")
 
 # d4 - 3 good files, but withdraw afterwards
-d4 = DatasetForTests("cmip5.output1.MOHC.HadGEM2-ES.rcp45.day.atmos.cfDay.r1i1p1.v20120114",
-                     ("rsds_cfDay_HadGEM2-ES_rcp45_r1i1p1_19910101-19911230.nc",
-                      "rsds_cfDay_HadGEM2-ES_rcp45_r1i1p1_19920101-19921230.nc",
-                      "rsds_cfDay_HadGEM2-ES_rcp45_r1i1p1_19930101-19931230.nc"),
+d4 = DatasetForTests("cmip5.output1.MOHC.Monty.rcp45.day.atmos.cfDay.r1i1p1.v20120114",
+                     ("spam_cfDay_Monty_rcp45_r1i1p1_19910101-19911230.nc",
+                      "spam_cfDay_Monty_rcp45_r1i1p1_19920101-19921230.nc",
+                      "spam_cfDay_Monty_rcp45_r1i1p1_19930101-19931230.nc"),
                      simulate_action="WITHDRAW ON SUCCESS")
 
 # d5 - 3 good files, but withdraw during ingest
-d5 = DatasetForTests("cmip5.output1.MOHC.HadGEM2-ES.rcp45.day.atmos.cfDay.r1i1p1.v20120114",
-                     ("ps_cfDay_HadGEM2-ES_rcp45_r1i1p1_19910101-19911230.nc",
-                      "ps_cfDay_HadGEM2-ES_rcp45_r1i1p1_19920101-19921230.nc",
-                      "ps_cfDay_HadGEM2-ES_rcp45_r1i1p1_19930101-19931230.nc"),
+d5 = DatasetForTests("cmip5.output1.MOHC.Monty.rcp45.day.atmos.cfDay.r1i1p1.v20120114",
+                     ("chips_cfDay_Monty_rcp45_r1i1p1_19910101-19911230.nc",
+                      "chips_cfDay_Monty_rcp45_r1i1p1_19920101-19921230.nc",
+                      "chips_cfDay_Monty_rcp45_r1i1p1_19930101-19931230.nc"),
                      simulate_action="WITHDRAW DURING INGEST")
 
-d6 = DatasetForTests("cmip5.output1.IPSL.IPSL-CM5A-LR.abrupt4xCO2.day.atmos.cfDay.r1i1p1.v20120114",
-                     ("rsds_cfDay_IPSL-CM5A-LR_abrupt4xCO2_r1i1p1_19910101-19911230.nc",
-                      "rsds_cfDay_IPSL-CM5A-LR_abrupt4xCO2_r1i1p1_19920101-19921230.nc",
-                      "rsds_cfDay_IPSL-CM5A-LR_abrupt4xCO2_r1i1p1_19930101-19931230.nc"))
+d6 = DatasetForTests("cmip5.output1.IPSL.Python.abrupt4xCO2.day.atmos.cfDay.r1i1p1.v20120114",
+                     ("spam_cfDay_Python_abrupt4xCO2_r1i1p1_19910101-19911230.nc",
+                      "spam_cfDay_Python_abrupt4xCO2_r1i1p1_19920101-19921230.nc",
+                      "spam_cfDay_Python_abrupt4xCO2_r1i1p1_19930101-19931230.nc"))
 
 # d7 - Same as d3 but files provided by MOHC
-d7 = DatasetForTests("cmip5.output1.MOHC.HadGEM2-ES.amip4K.day.atmos.day.r1i1p1.v20140430",
-                     ("tasmax_day_HadGEM2-ES_amip4K_r1i1p1_18590101-18591230.nc",
-                      "tasmax_day_HadGEM2-ES_amip4K_r1i1p1_18600101-18601230.nc",
-                      "tasmax_day_HadGEM2-ES_amip4K_r1i1p1_18610101-18611230.nc"),
+d7 = DatasetForTests("cmip5.output1.MOHC.Monty.amip4K.day.atmos.day.r1i1p1.v20140430",
+                     ("beans_day_Monty_amip4K_r1i1p1_18590101-18591230.nc",
+                      "beans_day_Monty_amip4K_r1i1p1_18600101-18601230.nc",
+                      "beans_day_Monty_amip4K_r1i1p1_18610101-18611230.nc"),
                      simulate_action="PUBLICATION FAILS")
 
 
