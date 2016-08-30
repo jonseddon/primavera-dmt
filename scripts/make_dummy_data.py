@@ -4,7 +4,10 @@ make_dummy_data.py
 
 Uses test_dataset.py to create some dummy files with a .nc extension. A dummy
 data submission is created, which contains these files. Dummy data requests
-that would be completely and partially fulfilled by these files are also created.
+that would be completely and partially fulfilled by these files are also
+created. The data created uses unrealistic variable and model names, which
+prevents it from getting tangled up with live data from the genuine
+VariableRequests.
 
 The reset_db.sh script can be used by the user to clear the database before
 running this script if desired.
@@ -40,7 +43,7 @@ def make_data_request():
 
     data_req = get_or_create(DataRequest, institute=institute,
         climate_model=climate_model, experiment=experiment,
-        variable_request=var_req, frequency=FREQUENCY_VALUES['day'],
+        variable_request=var_req,
         start_time=datetime.datetime(1991, 1, 1, 0, 0, 0, 0, pytz.utc),
         end_time=datetime.datetime(1993, 12, 30, 0, 0, 0, 0, pytz.utc))
 
@@ -57,7 +60,7 @@ def make_data_request():
 
     data_req = get_or_create(DataRequest, institute=institute,
         climate_model=climate_model, experiment=experiment,
-        variable_request=var_req, frequency=FREQUENCY_VALUES['day'],
+        variable_request=var_req,
         start_time=datetime.datetime(1991, 1, 1, 0, 0, 0, 0, pytz.utc),
         end_time=datetime.datetime(1994, 12, 30, 0, 0, 0, 0, pytz.utc))
 
@@ -71,7 +74,7 @@ def make_data_request():
 
     data_req = get_or_create(DataRequest, institute=institute,
         climate_model=climate_model, experiment=experiment,
-        variable_request=var_req, frequency=FREQUENCY_VALUES['day'],
+        variable_request=var_req,
         start_time=datetime.datetime(1991, 1, 1, 0, 0, 0, 0, pytz.utc),
         end_time=datetime.datetime(1994, 12, 30, 0, 0, 0, 0, pytz.utc))
 
@@ -84,7 +87,7 @@ def make_data_request():
 
     data_req = get_or_create(DataRequest, institute=institute,
         climate_model=climate_model, experiment=experiment,
-        variable_request=var_req, frequency=FREQUENCY_VALUES['day'],
+        variable_request=var_req,
         start_time=datetime.datetime(1991, 1, 1, 0, 0, 0, 0, pytz.utc),
         end_time=datetime.datetime(1994, 12, 30, 0, 0, 0, 0, pytz.utc))
 

@@ -312,11 +312,8 @@ class DataRequest(models.Model):
     experiment = models.ForeignKey(Experiment, null=False, on_delete=PROTECT)
     variable_request = models.ForeignKey(VariableRequest, null=False,
         on_delete=PROTECT)
-    frequency = models.CharField(max_length=20, choices=FREQUENCY_VALUES.items(), verbose_name="Time frequency",
-                                 null=False, blank=False)
     start_time = models.DateTimeField(verbose_name="Start time", null=False, blank=False)
     end_time = models.DateTimeField(verbose_name="End time", null=False, blank=False)
-# TODO - what else is needed here?
 
 
 class DataFile(models.Model):
