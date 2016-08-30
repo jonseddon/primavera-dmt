@@ -26,7 +26,8 @@ class Project(models.Model):
     # RFK Relationships
     # DataFile
 
-    short_name = models.CharField(max_length=100, null=False, blank=False)
+    short_name = models.CharField(max_length=100, null=False,
+        blank=False, unique=True)
     full_name = models.CharField(max_length=300, null=False, blank=False)
 
     def __unicode__(self):
@@ -40,7 +41,8 @@ class Institute(models.Model):
     # RFK Relationships
     # DataRequest
 
-    short_name = models.CharField(max_length=100, null=False, blank=False)
+    short_name = models.CharField(max_length=100, null=False,
+        blank=False, unique=True)
     full_name = models.CharField(max_length=300, null=False, blank=False)
 
     def __unicode__(self):
@@ -57,7 +59,8 @@ class ClimateModel(models.Model):
     # DataFile
     # DataRequest
 
-    short_name = models.CharField(max_length=100, null=False, blank=False)
+    short_name = models.CharField(max_length=100, null=False,
+        blank=False, unique=True)
     full_name = models.CharField(max_length=300, null=False, blank=False)
 
     def __unicode__(self):
@@ -72,7 +75,8 @@ class Experiment(models.Model):
     # DataFile
     # DataRequest
 
-    short_name = models.CharField(max_length=100, null=False, blank=False)
+    short_name = models.CharField(max_length=100, null=False,
+        blank=False, unique=True)
     full_name = models.CharField(max_length=300, null=False, blank=False)
 
     def __unicode__(self):
