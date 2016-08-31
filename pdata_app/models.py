@@ -145,22 +145,24 @@ class DataFileAggregationBase(models.Model):
         records.sort(key=lambda di: di.date_time, reverse=True)
         return records
 
-    def assign_data_issue(self, issue_text, reporter, date_time=None):
+    def assign_data_issue(self, issue_text, reporter, date_time=None, time_units=None):
         """
         Creates a DataIssue and attaches it to all related DataFile records.
         """
         date_time = date_time or timezone.now()
         data_issue, _tf = DataIssue.objects.get_or_create(issue=issue_text,
-            reporter=reporter, date_time=date_time)
+            reporter=reporter, date_time=date_time, time_units=time_units)
         data_issue.save()
 
         data_files = self.get_data_files()
         data_issue.data_file.add(*data_files)
 
     def start_time(self):
+        # TODO this assumes that the time_units are the same for all rows
         return self.datafile_set.aggregate(Min('start_time'))['start_time__min']
 
     def end_time(self):
+        # TODO this assumes that the time_units are the same for all rows
         return self.datafile_set.aggregate(Max('end_time'))['end_time__max']
 
     def online_status(self):
@@ -316,8 +318,9 @@ class DataRequest(models.Model):
     experiment = models.ForeignKey(Experiment, null=False, on_delete=PROTECT)
     variable_request = models.ForeignKey(VariableRequest, null=False,
         on_delete=PROTECT)
-    start_time = models.DateTimeField(verbose_name="Start time", null=False, blank=False)
-    end_time = models.DateTimeField(verbose_name="End time", null=False, blank=False)
+    start_time = models.FloatField(verbose_name="Start time", null=False, blank=False)
+    end_time = models.FloatField(verbose_name="End time", null=False, blank=False)
+    time_units = models.CharField(verbose_name='Time units', max_length=50, null=False, blank=False)
 
 
 class DataFile(models.Model):
@@ -350,8 +353,9 @@ class DataFile(models.Model):
 
     # DateTimes are allowed to be null/blank because some fields (such as orography)
     # are time-independent
-    start_time = models.DateTimeField(verbose_name="Start time", null=True, blank=True)
-    end_time = models.DateTimeField(verbose_name="End time", null=True, blank=True)
+    start_time = models.FloatField(verbose_name="Start time", null=True, blank=True)
+    end_time = models.FloatField(verbose_name="End time", null=True, blank=True)
+    time_units = models.CharField(verbose_name='Time units', max_length=50, null=False, blank=False)
 
     data_submission = models.ForeignKey(DataSubmission, null=False, blank=False,
         on_delete=CASCADE)
@@ -390,8 +394,8 @@ class DataIssue(models.Model):
     """
     issue = models.CharField(max_length=500, verbose_name="Issue reported", null=False, blank=False)
     reporter = models.CharField(max_length=60, verbose_name="Reporter", null=False, blank=False)
-    date_time = models.DateTimeField(verbose_name="Date and time of report", default=timezone.now,
-                                     null=False, blank=False)
+    date_time = models.FloatField(verbose_name="Date and time of report", null=False, blank=False)
+    time_units = models.CharField(verbose_name='Time units', max_length=50, null=False, blank=False)
 
     # DataFile that the Data Issue corresponds to
     data_file = models.ManyToManyField(DataFile)
