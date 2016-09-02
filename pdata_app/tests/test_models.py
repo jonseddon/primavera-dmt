@@ -4,7 +4,8 @@ Unit tests for pdata_app.models
 import os
 import re
 
-from cf_units import netcdftime
+from numpy.testing import assert_almost_equal
+import cf_units
 import pytz
 
 from django.test import TestCase
@@ -13,7 +14,7 @@ from django.utils.timezone import make_aware
 
 from pdata_app import models
 from vocabs import (STATUS_VALUES, ONLINE_STATUS, FREQUENCY_VALUES,
-    CHECKSUM_TYPES, VARIABLE_TYPES)
+    CHECKSUM_TYPES, VARIABLE_TYPES, CALENDARS)
 from pdata_app.utils.dbapi import get_or_create
 from test.test_datasets import test_data_submission
 
@@ -127,6 +128,7 @@ class TestDataFileAggregationBaseMethods(TestCase):
                 start_time=metadata["start_time"],
                 end_time=metadata["end_time"],
                 time_units=metadata["time_units"],
+                calendar=CALENDARS['360_day'],
                 data_submission=self.dsub)
 
     def test_get_data_files(self):
@@ -169,14 +171,14 @@ class TestDataFileAggregationBaseMethods(TestCase):
     def test_start_time(self):
         start_time = self.dsub.start_time()
 
-        expected = _cmpts2num(1859, 1, 1, 0, 0, 0, 0, TIME_UNITS)
+        expected = cf_units.netcdftime.datetime(1859, 1 ,1)
 
         self.assertEqual(start_time, expected)
 
     def test_end_time(self):
         end_time = self.dsub.end_time()
 
-        expected = _cmpts2num(1993, 12, 30, 0, 0, 0, 0, TIME_UNITS)
+        expected = cf_units.netcdftime.datetime(1993, 12, 30)
 
         self.assertEqual(end_time, expected)
 
@@ -208,7 +210,7 @@ class TestDataFileAggregationBaseMethods(TestCase):
 
     def test_get_data_issues_with_single_issue(self):
         di = models.DataIssue(issue='unit test', reporter='bob',
-            date_time=_cmpts2num(1950, 12, 13, 0, 0, 0, 0, TIME_UNITS),
+            date_time=_cmpts2num(1950, 12, 13, 0, 0, 0, 0, TIME_UNITS, '360_day'),
                 time_units=TIME_UNITS)
         di.save()
 
@@ -221,7 +223,7 @@ class TestDataFileAggregationBaseMethods(TestCase):
 
     def test_get_data_issues_with_single_issue_on_all_files(self):
         di = models.DataIssue(issue='unit test', reporter='bob',
-            date_time=_cmpts2num(1950, 12, 13, 0, 0, 0, 0, TIME_UNITS),
+            date_time=_cmpts2num(1950, 12, 13, 0, 0, 0, 0, TIME_UNITS, '360_day'),
                 time_units=TIME_UNITS)
         di.save()
 
@@ -234,11 +236,11 @@ class TestDataFileAggregationBaseMethods(TestCase):
 
     def test_get_data_issues_with_many_issues(self):
         di1 = models.DataIssue(issue='2nd test', reporter='bill',
-            date_time=_cmpts2num(1805, 7, 5, 0, 0, 0, 0, TIME_UNITS),
+            date_time=_cmpts2num(1805, 7, 5, 0, 0, 0, 0, TIME_UNITS, '360_day'),
                 time_units=TIME_UNITS)
         di1.save()
         di2 = models.DataIssue(issue='unit test', reporter='bob',
-            date_time=_cmpts2num(1950, 12, 13, 0, 0, 0, 0, TIME_UNITS),
+            date_time=_cmpts2num(1950, 12, 13, 0, 0, 0, 0, TIME_UNITS, '360_day'),
                 time_units=TIME_UNITS)
         di2.save()
 
@@ -254,7 +256,7 @@ class TestDataFileAggregationBaseMethods(TestCase):
 
     def test_assign_data_issue(self):
         self.dsub.assign_data_issue('all files', 'Lewis',
-            _cmpts2num(1881, 10, 11, 0, 0, 0, 0, TIME_UNITS), TIME_UNITS)
+            _cmpts2num(1881, 10, 11, 0, 0, 0, 0, TIME_UNITS, '360_day'), TIME_UNITS)
 
         for df in self.dsub.get_data_files():
             di = df.dataissue_set.filter(issue='all files')[0]
@@ -418,6 +420,27 @@ class TestChecksum(TestCase):
         self.assertEqual(unicode(chk_sum), u'ADLER32: 12345678 (filename.nc)')
 
 
+class TestStandardiseTimeUnit(TestCase):
+    """
+    Test _standardise_time_unit()
+    """
+    def test_same_units(self):
+        time_unit = 'days since 2000-01-01'
+        time_num = 3.14159
+
+        actual = models._standardise_time_unit(time_num, time_unit, time_unit, '360_day')
+        assert_almost_equal(actual, time_num)
+
+    def test_different_units(self):
+        old_unit = 'days since 2000-01-01'
+        new_unit = 'days since 2000-02-01'
+        time_num = 33.14159
+
+        actual = models._standardise_time_unit(time_num, old_unit, new_unit, '360_day')
+        expected = 3.14159
+        assert_almost_equal(actual, expected, decimal=5)
+
+
 def _extract_file_metadata(file_path):
     """
     Extracts metadata from file name and returns dictionary.
@@ -434,8 +457,8 @@ def _extract_file_metadata(file_path):
 
         if key == "time_range":
             start_time, end_time = value.split("-")
-            data["start_time"] = netcdftime.date2num(_date_from_string(start_time), TIME_UNITS)
-            data["end_time"] = netcdftime.date2num(_date_from_string(end_time), TIME_UNITS)
+            data["start_time"] = cf_units.netcdftime.date2num(_date_from_string(start_time), TIME_UNITS, '360_day')
+            data["end_time"] = cf_units.netcdftime.date2num(_date_from_string(end_time), TIME_UNITS, '360_day')
             data["time_units"] = TIME_UNITS
         else:
             data[key] = value
@@ -457,7 +480,7 @@ def _date_from_string(date_str):
     components = re.match(r'(\d{4})(\d{2})(\d{2})', date_str)
 
     if components:
-        date_obj = netcdftime.datetime(int(components.group(1)), int(components.group(2)),
+        date_obj = cf_units.netcdftime.datetime(int(components.group(1)), int(components.group(2)),
             int(components.group(3)))
     else:
         msg = 'Unable to parse date string (expecting YYYYMMDD): {}'.format(date_str)
@@ -466,23 +489,24 @@ def _date_from_string(date_str):
     return date_obj
 
 
-def _cmpts2num(year, month, day, hour, minute, second, microsecond, time_units):
+def _cmpts2num(year, month, day, hour, minute, second, microsecond, time_units, calendar):
     """
     Convert the specified date and time into a floating point number relative to
     `time_units`.
 
-    :param int year:
-    :param int month:
-    :param int day:
-    :param int hour:
-    :param int minute:
-    :param int second:
-    :param int microsecond:
-    :param str time_units:
+    :param int year: The year
+    :param int month: The month
+    :param int day: The day
+    :param int hour: The hour
+    :param int minute: The minute
+    :param int second: The second
+    :param int microsecond: The microsecond
+    :param str time_units: A string representing the time units to use
+    :param str calendar: The calendar to use
     :returns: The specified date as a floating point number relative to
         `time_units`
     """
-    dt_obj = netcdftime.datetime(year, month, day, hour, minute,
+    dt_obj = cf_units.netcdftime.datetime(year, month, day, hour, minute,
         second, microsecond)
 
-    return netcdftime.date2num(dt_obj, time_units)
+    return cf_units.date2num(dt_obj, time_units, calendar)

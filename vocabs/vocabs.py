@@ -1,5 +1,7 @@
 from .base import CodeList
 
+import cf_units
+
 STATUS_VALUES = CodeList(
         (('EXPECTED', 'EXPECTED'),
          ('ARRIVED', 'ARRIVED'),
@@ -27,14 +29,23 @@ ONLINE_STATUS = CodeList(
          ('partial', 'partial'))
 )
 
+
 CHECKSUM_TYPES = CodeList(
         (('SHA256', 'SHA256'),
          ('MD5', 'MD5'),
          ('ADLER32', 'ADLER32'))
 )
 
+
 VARIABLE_TYPES = CodeList(
         (('real', 'real'),
          ('None', 'None'),
          ('', ''))
+)
+
+
+CALENDARS = CodeList(
+    (('360_day', cf_units.CALENDAR_360_DAY),
+     ('365_day', cf_units.CALENDAR_365_DAY),
+     ('gregorian', cf_units.CALENDAR_GREGORIAN))
 )

@@ -23,7 +23,7 @@ from pdata_app.utils.dbapi import get_or_create, match_one
 from pdata_app.models import (DataSubmission, DataFile, ClimateModel,
     Experiment, Project, ESGFDataset, CEDADataset, DataRequest,
     Institute, VariableRequest)
-from vocabs import STATUS_VALUES, FREQUENCY_VALUES, VARIABLE_TYPES
+from vocabs import STATUS_VALUES, FREQUENCY_VALUES, VARIABLE_TYPES, CALENDARS
 
 
 def make_data_request():
@@ -44,8 +44,12 @@ def make_data_request():
     data_req = get_or_create(DataRequest, institute=institute,
         climate_model=climate_model, experiment=experiment,
         variable_request=var_req,
-        start_time=datetime.datetime(1991, 1, 1, 0, 0, 0, 0, pytz.utc),
-        end_time=datetime.datetime(1993, 12, 30, 0, 0, 0, 0, pytz.utc))
+        # start_time=datetime.datetime(1991, 1, 1, 0, 0, 0, 0, pytz.utc),
+        # end_time=datetime.datetime(1993, 12, 30, 0, 0, 0, 0, pytz.utc))
+        start_time = 1.0,
+        end_time = 10.0,
+        time_units='days since 1950-01-01',
+                             calendar=CALENDARS['360_day'])
 
     # Make the variable spam from the Python model for which one year is missing
     institute = get_or_create(Institute, short_name='IPSL', full_name='Institut Pierre Simon Laplace')
@@ -61,8 +65,12 @@ def make_data_request():
     data_req = get_or_create(DataRequest, institute=institute,
         climate_model=climate_model, experiment=experiment,
         variable_request=var_req,
-        start_time=datetime.datetime(1991, 1, 1, 0, 0, 0, 0, pytz.utc),
-        end_time=datetime.datetime(1994, 12, 30, 0, 0, 0, 0, pytz.utc))
+        # start_time=datetime.datetime(1991, 1, 1, 0, 0, 0, 0, pytz.utc),
+        # end_time=datetime.datetime(1994, 12, 30, 0, 0, 0, 0, pytz.utc))
+        start_time=1.0,
+        end_time=10.0,
+        time_units='days since 1950-01-01',
+                             calendar=CALENDARS['360_day'])
 
     # Make two requests that are entirely missing
     var_req = get_or_create(VariableRequest, table_name='Aday',
@@ -75,8 +83,12 @@ def make_data_request():
     data_req = get_or_create(DataRequest, institute=institute,
         climate_model=climate_model, experiment=experiment,
         variable_request=var_req,
-        start_time=datetime.datetime(1991, 1, 1, 0, 0, 0, 0, pytz.utc),
-        end_time=datetime.datetime(1994, 12, 30, 0, 0, 0, 0, pytz.utc))
+        # start_time=datetime.datetime(1991, 1, 1, 0, 0, 0, 0, pytz.utc),
+        # end_time=datetime.datetime(1994, 12, 30, 0, 0, 0, 0, pytz.utc))
+                             start_time=1.0,
+                             end_time=10.0,
+        time_units='days since 1950-01-01',
+                             calendar=CALENDARS['360_day'])
 
     var_req = get_or_create(VariableRequest, table_name='Aday',
         long_name='Really good variable', units='1', var_name='cake',
@@ -88,8 +100,12 @@ def make_data_request():
     data_req = get_or_create(DataRequest, institute=institute,
         climate_model=climate_model, experiment=experiment,
         variable_request=var_req,
-        start_time=datetime.datetime(1991, 1, 1, 0, 0, 0, 0, pytz.utc),
-        end_time=datetime.datetime(1994, 12, 30, 0, 0, 0, 0, pytz.utc))
+        # start_time=datetime.datetime(1991, 1, 1, 0, 0, 0, 0, pytz.utc),
+        # end_time=datetime.datetime(1994, 12, 30, 0, 0, 0, 0, pytz.utc))
+                             start_time=1.0,
+                             end_time=10.0,
+        time_units='days since 1950-01-01',
+                             calendar=CALENDARS['360_day'])
 
     # generate variable requests for the remaining files in the later submission
     var_req = get_or_create(VariableRequest, table_name='day',
@@ -134,9 +150,13 @@ def make_data_submission():
             project=proj, climate_model=climate_model,
             experiment=experiment, frequency=metadata["frequency"],
             rip_code=metadata["ensemble"], variable_request=variable,
-            start_time=make_aware(metadata["start_time"], timezone=pytz.utc, is_dst=False),
-            end_time=make_aware(metadata["end_time"], timezone=pytz.utc, is_dst=False),
-            data_submission=dsub, online=True)
+            # start_time=make_aware(metadata["start_time"], timezone=pytz.utc, is_dst=False),
+            # end_time=make_aware(metadata["end_time"], timezone=pytz.utc, is_dst=False),
+            data_submission=dsub, online=True,
+                             start_time=1.0,
+                             end_time=10.0,
+        time_units='days since 1950-01-01',
+                             calendar=CALENDARS['360_day'])
 
     ceda_ds = get_or_create(CEDADataset, catalogue_url='http://www.metoffice.gov.uk',
         directory=test_dsub.INCOMING_DIR)
