@@ -91,7 +91,7 @@ class TestInsert(TestCase):
 
     def test_insert_two_objects(self):
         _i = dbapi.insert(models.Institute, short_name='t', full_name='test')
-        _j = dbapi.insert(models.Institute, short_name='t', full_name='test')
+        _j = dbapi.insert(models.Institute, short_name='z', full_name='zest')
 
         self.assertEqual(models.Institute.objects.count(), 2)
 

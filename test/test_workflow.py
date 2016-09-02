@@ -5,8 +5,9 @@ The workflows that will occur are documented in:
 https://docs.google.com/document/d/1qnIg2pHqF1I1tuP_iCVzb6yL_bXZoheBBUQ9RuGWPlQ
 """
 import os
-import datetime
-import pytz
+import re
+
+import cf_units
 
 from django.conf import settings
 from django.test import TestCase
@@ -15,11 +16,16 @@ from django.utils.timezone import make_aware
 
 import test.test_datasets as datasets
 
-from vocabs.vocabs import FREQUENCY_VALUES, STATUS_VALUES, VARIABLE_TYPES
+from vocabs.vocabs import (FREQUENCY_VALUES, STATUS_VALUES, VARIABLE_TYPES,
+    CALENDARS)
 from pdata_app.utils.dbapi import get_or_create
 from pdata_app.models import (ClimateModel, Institute, Experiment, Project,
     DataSubmission, DataFile, DataRequest, ESGFDataset, CEDADataset,
     DataIssue, Settings, VariableRequest)
+
+
+TIME_UNITS = 'days since 1900-01-01'
+CALENDAR = CALENDARS['360_day']
 
 
 # Utility functions for test workflow
@@ -54,8 +60,10 @@ def _extract_file_metadata(file_path):
 
         if key == "time_range":
             start_time, end_time = value.split("-")
-            data["start_time"] = datetime.datetime.strptime(start_time, "%Y%m%d")
-            data["end_time"] = datetime.datetime.strptime(end_time, "%Y%m%d")
+            data["start_time"] = cf_units.netcdftime.date2num(_date_from_string(start_time), TIME_UNITS, CALENDAR)
+            data["end_time"] = cf_units.netcdftime.date2num(_date_from_string(end_time), TIME_UNITS, CALENDAR)
+            data["time_units"] = TIME_UNITS
+            data["calendar"] = CALENDAR
         else:
             data[key] = value
 
@@ -96,8 +104,8 @@ class TestWorkflows(PdataBaseTest):
         data_req = get_or_create(DataRequest, institute=institute,
             climate_model=climate_model, experiment=experiment,
             variable_request=var_req,
-            start_time=datetime.datetime(1900, 1, 1, 0, 0, 0, 0, pytz.utc),
-            end_time=datetime.datetime(2000, 1, 1, 0, 0, 0, 0, pytz.utc))
+            start_time=_cmpts2num(1900, 1, 1, 0, 0, 0, 0, TIME_UNITS, CALENDAR),
+            end_time=_cmpts2num(2000, 1, 1, 0, 0, 0, 0, TIME_UNITS, CALENDAR))
 
         # Make some assertions
         data_req = DataRequest.objects.all()[0]
@@ -165,7 +173,9 @@ class TestWorkflows(PdataBaseTest):
 
         # Now, create the data issue
         data_issue = get_or_create(DataIssue, issue='test issue',
-            reporter='Jon Seddon')
+            reporter='Jon Seddon',
+            date_time=_cmpts2num(1978, 7, 19, 0, 0, 0, 0, TIME_UNITS, CALENDAR),
+            time_units=TIME_UNITS, calendar=CALENDAR)
 
         # Add the issue to all files in the submission
         for df in data_submission.get_data_files():
@@ -269,11 +279,57 @@ def _make_data_submission():
             project=proj, climate_model=climate_model,
             experiment=experiment, variable_request=var,
             frequency=FREQUENCY_VALUES['ann'], rip_code=m["ensemble"],
-            start_time=make_aware(m["start_time"], timezone=pytz.utc, is_dst=False),
-            end_time=make_aware(m["end_time"], timezone=pytz.utc, is_dst=False),
+            start_time=m["start_time"], end_time=m["end_time"],
+            time_units=m["time_units"], calendar=m["calendar"],
             data_submission=dsub, online=True)
 
     return test_dsub
+
+
+def _date_from_string(date_str):
+    """
+    Make a datetime like object from a string in the form YYYYMMDD
+
+    :param date_str: The string to convert
+    :return: A datetime like object
+    :raises ValueError: if unable to parse `date_str`
+    """
+    if len(date_str) != 8:
+        msg = 'Date string does not contain 8 characters: {}'.format(date_str)
+        raise ValueError(msg)
+    components = re.match(r'(\d{4})(\d{2})(\d{2})', date_str)
+
+    if components:
+        date_obj = cf_units.netcdftime.datetime(int(components.group(1)), int(components.group(2)),
+            int(components.group(3)))
+    else:
+        msg = 'Unable to parse date string (expecting YYYYMMDD): {}'.format(date_str)
+        raise ValueError(msg)
+
+    return date_obj
+
+
+def _cmpts2num(year, month, day, hour, minute, second, microsecond, time_units, calendar):
+    """
+    Convert the specified date and time into a floating point number relative to
+    `time_units`.
+
+    :param int year: The year
+    :param int month: The month
+    :param int day: The day
+    :param int hour: The hour
+    :param int minute: The minute
+    :param int second: The second
+    :param int microsecond: The microsecond
+    :param str time_units: A string representing the time units to use
+    :param str calendar: The calendar to use
+    :returns: The specified date as a floating point number relative to
+        `time_units`
+    """
+    dt_obj = cf_units.netcdftime.datetime(year, month, day, hour, minute,
+        second, microsecond)
+
+    return cf_units.date2num(dt_obj, time_units, calendar)
 
 
 if __name__ == "__main__":

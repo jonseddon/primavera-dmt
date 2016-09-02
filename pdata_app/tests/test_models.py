@@ -372,12 +372,13 @@ class TestDataIssue(TestCase):
     """
     def setUp(self):
         _p = get_or_create(models.DataIssue, issue='test', reporter='me',
-            date_time=datetime.datetime(2016, 8, 8, 8, 42, 37, 0, pytz.utc))
+            date_time=_cmpts2num(2016, 8, 8, 8, 42, 37, 0, TIME_UNITS, '360_day'),
+            time_units=TIME_UNITS, calendar='360_day')
 
     def test_unicode(self):
         data_issue = models.DataIssue.objects.first()
         self.assertEqual(unicode(data_issue),
-            u'Data Issue (2016-08-08 08:42:37+00:00): test (me)')
+            u'Data Issue (2016-08-08 08:42:37): test (me)')
 
 
 class TestChecksum(TestCase):

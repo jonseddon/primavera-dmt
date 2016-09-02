@@ -400,9 +400,9 @@ class DataFile(models.Model):
     # are time-independent
     start_time = models.FloatField(verbose_name="Start time", null=True, blank=True)
     end_time = models.FloatField(verbose_name="End time", null=True, blank=True)
-    time_units = models.CharField(verbose_name='Time units', max_length=50, null=False, blank=False)
+    time_units = models.CharField(verbose_name='Time units', max_length=50, null=True, blank=True)
     calendar = models.CharField(verbose_name='Calendar', max_length=20,
-        null=False, blank=False, choices=CALENDARS.items())
+        null=True, blank=True, choices=CALENDARS.items())
 
     data_submission = models.ForeignKey(DataSubmission, null=False, blank=False,
         on_delete=CASCADE)
@@ -450,7 +450,9 @@ class DataIssue(models.Model):
     data_file = models.ManyToManyField(DataFile)
 
     def __unicode__(self):
-        return "Data Issue (%s): %s (%s)" % (self.date_time, self.issue, self.reporter)
+        return "Data Issue (%s): %s (%s)" % (
+            cf_units.num2date(self.date_time, self.time_units, self.calendar).
+            strftime('%Y-%m-%d %H:%M:%S'), self.issue, self.reporter)
 
 
 class Checksum(models.Model):
