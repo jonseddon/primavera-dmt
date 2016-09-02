@@ -13,10 +13,9 @@ The reset_db.sh script can be used by the user to clear the database before
 running this script if desired.
 """
 import os
-import datetime
-import pytz
+import re
 
-from django.utils.timezone import make_aware
+import cf_units
 
 import test.test_datasets as datasets
 from pdata_app.utils.dbapi import get_or_create, match_one
@@ -24,6 +23,10 @@ from pdata_app.models import (DataSubmission, DataFile, ClimateModel,
     Experiment, Project, ESGFDataset, CEDADataset, DataRequest,
     Institute, VariableRequest)
 from vocabs import STATUS_VALUES, FREQUENCY_VALUES, VARIABLE_TYPES, CALENDARS
+
+
+TIME_UNITS = 'days since 1900-01-01'
+CALENDAR=CALENDARS['360_day']
 
 
 def make_data_request():
@@ -44,12 +47,9 @@ def make_data_request():
     data_req = get_or_create(DataRequest, institute=institute,
         climate_model=climate_model, experiment=experiment,
         variable_request=var_req,
-        # start_time=datetime.datetime(1991, 1, 1, 0, 0, 0, 0, pytz.utc),
-        # end_time=datetime.datetime(1993, 12, 30, 0, 0, 0, 0, pytz.utc))
-        start_time = 1.0,
-        end_time = 10.0,
-        time_units='days since 1950-01-01',
-                             calendar=CALENDARS['360_day'])
+        start_time=_cmpts2num(1991, 1, 1, 0, 0, 0, 0, TIME_UNITS, CALENDAR),
+        end_time=_cmpts2num(1993, 12, 30, 0, 0, 0, 0, TIME_UNITS, CALENDAR),
+        time_units = TIME_UNITS, calendar=CALENDAR)
 
     # Make the variable spam from the Python model for which one year is missing
     institute = get_or_create(Institute, short_name='IPSL', full_name='Institut Pierre Simon Laplace')
@@ -65,12 +65,9 @@ def make_data_request():
     data_req = get_or_create(DataRequest, institute=institute,
         climate_model=climate_model, experiment=experiment,
         variable_request=var_req,
-        # start_time=datetime.datetime(1991, 1, 1, 0, 0, 0, 0, pytz.utc),
-        # end_time=datetime.datetime(1994, 12, 30, 0, 0, 0, 0, pytz.utc))
-        start_time=1.0,
-        end_time=10.0,
-        time_units='days since 1950-01-01',
-                             calendar=CALENDARS['360_day'])
+        start_time=_cmpts2num(1991, 1, 1, 0, 0, 0, 0, TIME_UNITS, CALENDAR),
+        end_time=_cmpts2num(1994, 12, 30, 0, 0, 0, 0, TIME_UNITS, CALENDAR),
+        time_units=TIME_UNITS, calendar=CALENDAR)
 
     # Make two requests that are entirely missing
     var_req = get_or_create(VariableRequest, table_name='Aday',
@@ -83,12 +80,9 @@ def make_data_request():
     data_req = get_or_create(DataRequest, institute=institute,
         climate_model=climate_model, experiment=experiment,
         variable_request=var_req,
-        # start_time=datetime.datetime(1991, 1, 1, 0, 0, 0, 0, pytz.utc),
-        # end_time=datetime.datetime(1994, 12, 30, 0, 0, 0, 0, pytz.utc))
-                             start_time=1.0,
-                             end_time=10.0,
-        time_units='days since 1950-01-01',
-                             calendar=CALENDARS['360_day'])
+        start_time=_cmpts2num(1991, 1, 1, 0, 0, 0, 0, TIME_UNITS, CALENDAR),
+        end_time=_cmpts2num(1994, 12, 30, 0, 0, 0, 0, TIME_UNITS, CALENDAR),
+        time_units=TIME_UNITS, calendar=CALENDAR)
 
     var_req = get_or_create(VariableRequest, table_name='Aday',
         long_name='Really good variable', units='1', var_name='cake',
@@ -100,12 +94,9 @@ def make_data_request():
     data_req = get_or_create(DataRequest, institute=institute,
         climate_model=climate_model, experiment=experiment,
         variable_request=var_req,
-        # start_time=datetime.datetime(1991, 1, 1, 0, 0, 0, 0, pytz.utc),
-        # end_time=datetime.datetime(1994, 12, 30, 0, 0, 0, 0, pytz.utc))
-                             start_time=1.0,
-                             end_time=10.0,
-        time_units='days since 1950-01-01',
-                             calendar=CALENDARS['360_day'])
+        start_time=_cmpts2num(1991, 1, 1, 0, 0, 0, 0, TIME_UNITS, CALENDAR),
+        end_time=_cmpts2num(1994, 12, 30, 0, 0, 0, 0, TIME_UNITS, CALENDAR),
+        time_units=TIME_UNITS, calendar=CALENDAR)
 
     # generate variable requests for the remaining files in the later submission
     var_req = get_or_create(VariableRequest, table_name='day',
@@ -150,13 +141,9 @@ def make_data_submission():
             project=proj, climate_model=climate_model,
             experiment=experiment, frequency=metadata["frequency"],
             rip_code=metadata["ensemble"], variable_request=variable,
-            # start_time=make_aware(metadata["start_time"], timezone=pytz.utc, is_dst=False),
-            # end_time=make_aware(metadata["end_time"], timezone=pytz.utc, is_dst=False),
-            data_submission=dsub, online=True,
-                             start_time=1.0,
-                             end_time=10.0,
-        time_units='days since 1950-01-01',
-                             calendar=CALENDARS['360_day'])
+            start_time=metadata["start_time"], end_time=metadata["end_time"],
+            time_units=metadata['time_units'], calendar=metadata['calendar'],
+            data_submission=dsub, online=True)
 
     ceda_ds = get_or_create(CEDADataset, catalogue_url='http://www.metoffice.gov.uk',
         directory=test_dsub.INCOMING_DIR)
@@ -187,7 +174,8 @@ def _extract_file_metadata(file_path):
     Extracts metadata from file name and returns dictionary.
     """
     # e.g. tasmax_day_IPSL-CM5A-LR_amip4K_r1i1p1_18590101-18591230.nc
-    keys = ("var_id", "table", "climate_model", "experiment", "ensemble", "time_range")
+    keys = ("var_id", "table", "climate_model", "experiment", "ensemble",
+        "time_range")
 
     items = os.path.splitext(os.path.basename(file_path))[0].split("_")
     data = {}
@@ -198,8 +186,16 @@ def _extract_file_metadata(file_path):
 
         if key == "time_range":
             start_time, end_time = value.split("-")
-            data["start_time"] = datetime.datetime.strptime(start_time, "%Y%m%d")
-            data["end_time"] = datetime.datetime.strptime(end_time, "%Y%m%d")
+
+            data["start_time"] = cf_units.netcdftime.date2num(
+                _date_from_string(start_time), TIME_UNITS, CALENDAR)
+
+            data["end_time"] = cf_units.netcdftime.date2num(
+                _date_from_string(end_time), TIME_UNITS, CALENDAR)
+
+            data["time_units"] = TIME_UNITS
+            data["calendar"] = CALENDAR
+
         elif key == "table":
             data['table'] = value
             for fv in FREQUENCY_VALUES:
@@ -212,6 +208,54 @@ def _extract_file_metadata(file_path):
             data[key] = value
 
     return data
+
+
+def _date_from_string(date_str):
+    """
+    Make a datetime like object from a string in the form YYYYMMDD
+
+    :param date_str: The string to convert
+    :return: A datetime like object
+    :raises ValueError: if unable to parse `date_str`
+    """
+    if len(date_str) != 8:
+        msg = 'Date string does not contain 8 characters: {}'.format(date_str)
+        raise ValueError(msg)
+    components = re.match(r'(\d{4})(\d{2})(\d{2})', date_str)
+
+    if components:
+        date_obj = cf_units.netcdftime.datetime(int(components.group(1)),
+            int(components.group(2)), int(components.group(3)))
+    else:
+        msg = 'Unable to parse date string (expecting YYYYMMDD): {}'.format(
+            date_str)
+        raise ValueError(msg)
+
+    return date_obj
+
+
+def _cmpts2num(year, month, day, hour, minute, second, microsecond, time_units,
+        calendar):
+    """
+    Convert the specified date and time into a floating point number relative to
+    `time_units`.
+
+    :param int year: The year
+    :param int month: The month
+    :param int day: The day
+    :param int hour: The hour
+    :param int minute: The minute
+    :param int second: The second
+    :param int microsecond: The microsecond
+    :param str time_units: A string representing the time units to use
+    :param str calendar: The calendar to use
+    :returns: The specified date as a floating point number relative to
+        `time_units`
+    """
+    dt_obj = cf_units.netcdftime.datetime(year, month, day, hour, minute,
+        second, microsecond)
+
+    return cf_units.date2num(dt_obj, time_units, calendar)
 
 
 if __name__ == "__main__":
