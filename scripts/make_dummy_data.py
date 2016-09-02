@@ -21,7 +21,7 @@ import test.test_datasets as datasets
 from pdata_app.utils.dbapi import get_or_create, match_one
 from pdata_app.models import (DataSubmission, DataFile, ClimateModel,
     Experiment, Project, ESGFDataset, CEDADataset, DataRequest,
-    Institute, VariableRequest)
+    Institute, VariableRequest, DataIssue)
 from vocabs import STATUS_VALUES, FREQUENCY_VALUES, VARIABLE_TYPES, CALENDARS
 
 
@@ -164,9 +164,25 @@ def make_data_submission():
     dsub.save()
 
 
+def make_data_issue():
+    """
+    Create a dummy data issue
+    """
+    di = get_or_create(DataIssue, issue='Beans are good for your heart',
+        reporter='Jon Seddon',
+        date_time=_cmpts2num(2016, 9, 2, 14, 38, 49, 0, TIME_UNITS, CALENDAR),
+        time_units=TIME_UNITS, calendar=CALENDAR)
+
+    bean_files = DataFile.objects.filter(name__istartswith='beans_')
+    for data_file in bean_files:
+        di.data_file.add(data_file)
+        di.save()
+
+
 def main():
     make_data_request()
     make_data_submission()
+    make_data_issue()
 
 
 def _extract_file_metadata(file_path):

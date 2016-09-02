@@ -15,7 +15,7 @@
             <tr>
                 <td>{{ record.issue }}</td>
                 <td>{{ record.reporter }}</td>
-                <td>{{ record.date_time|date:"Y-m-d" }}T{{ record.date_time|time:"H:i:s" }}</td>
+                <td>{{ record.date_time_string }}</td>
                 <td>{{ record.data_file.all|length }}</td>
             </tr>
         {% endfor %}

@@ -367,6 +367,16 @@ class DataRequest(models.Model):
     calendar = models.CharField(verbose_name='Calendar', max_length=20,
         null=False, blank=False, choices=CALENDARS.items())
 
+    def start_date_string(self):
+        """Return a string containing the start date"""
+        dto = cf_units.num2date(self.start_time, self.time_units, self.calendar)
+        return dto.strftime('%Y-%m-%d')
+
+    def end_date_string(self):
+        """Return a string containing the end date"""
+        dto = cf_units.num2date(self.end_time, self.time_units, self.calendar)
+        return dto.strftime('%Y-%m-%d')
+
 
 class DataFile(models.Model):
     """
@@ -453,6 +463,11 @@ class DataIssue(models.Model):
         return "Data Issue (%s): %s (%s)" % (
             cf_units.num2date(self.date_time, self.time_units, self.calendar).
             strftime('%Y-%m-%d %H:%M:%S'), self.issue, self.reporter)
+
+    def date_time_string(self):
+        """Return a string containing the issue date and time"""
+        dto = cf_units.num2date(self.date_time, self.time_units, self.calendar)
+        return dto.strftime('%Y-%m-%d %H:%M:%S')
 
 
 class Checksum(models.Model):

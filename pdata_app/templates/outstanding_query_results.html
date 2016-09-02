@@ -11,7 +11,6 @@
                 <th>Climate Model</th>
                 <th>Experiment</th>
                 <th>Variable Name</th>
-                <th>Frequency</th>
                 <th>Start</th>
                 <th>End</th>
             </tr>
@@ -21,9 +20,8 @@
                     <td>{{ record.climate_model.short_name }}</td>
                     <td>{{ record.experiment.short_name }}</td>
                     <td>{{ record.variable_request.cmor_name }}</td>
-                    <td>{{ record.frequency }}</td>
-                    <td>{{ record.start_time|date:"Y-m-d" }}</td>
-                    <td>{{ record.end_time|date:"Y-m-d" }}</td>
+                    <td>{{ record.start_date_string }}</td>
+                    <td>{{ record.end_date_string }}</td>
                 </tr>
             {% endfor %}
             </table>

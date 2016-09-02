@@ -1,6 +1,8 @@
 import os
 from operator import attrgetter
 
+import cf_units
+
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.decorators import login_required
 from django.shortcuts import render, redirect
@@ -8,7 +10,7 @@ from django.db import connection
 from django.db.models import Min, Max
 
 from pdata_app.models import (DataFile, DataSubmission, ESGFDataset, CEDADataset,
-    DataRequest, DataIssue, VariableRequest)
+    DataRequest, DataIssue, VariableRequest, Settings, _standardise_time_unit)
 from vocabs.vocabs import ONLINE_STATUS
 
 
@@ -146,9 +148,28 @@ def view_variable_query(request):
         directories = ', '.join(sorted(set([df.directory for df in row_files])))
         # get first file in the set
         first_file = row_files.first()
+
         # find the earliest start and latest end times of the set
-        start_time = row_files.aggregate(Min('start_time'))['start_time__min']
-        end_time = row_files.aggregate(Max('end_time'))['end_time__max']
+        std_units = Settings.get_solo().standard_time_units
+
+        start_times = row_files.values_list('start_time', 'time_units',
+            'calendar')
+        std_start_times = [
+            (_standardise_time_unit(time, unit, std_units, cal), cal)
+            for time, unit, cal in start_times
+        ]
+        start_float, calendar = min(std_start_times, key=lambda x: x[0])
+        start_obj = cf_units.num2date(start_float, std_units, calendar)
+
+        end_times = row_files.values_list('end_time', 'time_units',
+            'calendar')
+        std_end_times = [
+            (_standardise_time_unit(time, unit, std_units, cal), cal)
+            for time, unit, cal in end_times
+        ]
+        end_float, calendar = max(std_end_times, key=lambda x: x[0])
+        end_obj = cf_units.num2date(end_float, std_units, calendar)
+
         # save the information in a dictionary
         file_sets_found.append({
             'project': first_file.project.short_name,
@@ -159,10 +180,10 @@ def view_variable_query(request):
             'num_files': num_files,
             'online_status': online_status,
             'directory': directories,
-            'start_date': '{:04d}-{:02d}-{:02d}'.format(start_time.year,
-                start_time.month, start_time.day),
-            'end_date': '{:04d}-{:02d}-{:02d}'.format(end_time.year,
-                end_time.month, end_time.day),
+            'start_date': '{:04d}-{:02d}-{:02d}'.format(start_obj.year,
+                start_obj.month, start_obj.day),
+            'end_date': '{:04d}-{:02d}-{:02d}'.format(end_obj.year,
+                end_obj.month, end_obj.day),
             'ceda_dl_url': _find_common_directory(row_files, 'ceda_download_url'),
             'ceda_od_url': _find_common_directory(row_files, 'ceda_opendap_url'),
             'esgf_dl_url': _find_common_directory(row_files, 'esgf_download_url'),
