@@ -6,7 +6,6 @@ This script is run by users to validate submitted data files and to create a
 data submission in the Data Management Tool.
 """
 import argparse
-import datetime
 import itertools
 import logging
 from multiprocessing import Process, Manager
@@ -16,12 +15,13 @@ import sys
 
 import iris
 from iris.time import PartialDateTime
+import cf_units
+
 import django
 django.setup()
-import pytz
 
 from pdata_app.models import (Project, ClimateModel, Experiment, DataSubmission,
-    DataFile, VariableRequest, Checksum)
+    DataFile, VariableRequest, Checksum, Settings)
 from pdata_app.utils.dbapi import get_or_create, match_one
 from pdata_app.utils.common import adler32
 from vocabs.vocabs import FREQUENCY_VALUES, STATUS_VALUES, CHECKSUM_TYPES
@@ -255,6 +255,8 @@ def identify_contents_metadata(cube):
     metadata['units'] = str(cube.units)
     metadata['long_name'] = cube.long_name
     metadata['standard_name'] = cube.standard_name
+    metadata['time_units'] = cube.coord('time').units.origin
+    metadata['calendar'] = cube.coord('time').units.calendar
 
     return metadata
 
@@ -352,6 +354,8 @@ def create_database_file_object(metadata, data_submission):
         logger.error(msg)
         raise SubmissionError(msg)
 
+    time_units = Settings.get_solo().standard_time_units
+
     # create a data file. If the file already exists in the database with
     # identical metadata then nothing happens. If the file exists but with
     # slightly different metadata then django.db.utils.IntegrityError is
@@ -366,8 +370,11 @@ def create_database_file_object(metadata, data_submission):
             experiment=metadata_objs['experiment'],
             variable_request=variable, frequency=metadata['frequency'],
             rip_code=metadata['rip_code'],
-            start_time=_pdt_to_datetime(metadata['start_date']),
-            end_time=_pdt_to_datetime(metadata['end_date'], start_of_period=False),
+            start_time=_pdt2num(metadata['start_date'], time_units,
+                                metadata['calendar']),
+            end_time=_pdt2num(metadata['end_date'], time_units,
+                              metadata['calendar'], start_of_period=False),
+            time_units=time_units, calendar=metadata['calendar'],
             data_submission=data_submission, online=True)
     except django.db.utils.IntegrityError:
         msg = ('Unable to submit file because it already exists in the '
@@ -381,7 +388,7 @@ def create_database_file_object(metadata, data_submission):
         checksum_value=checksum_value, checksum_type=CHECKSUM_TYPES['ADLER32'])
 
 
-def _pdt_to_datetime(pdt, start_of_period=True):
+def _pdt2num(pdt, time_units, calendar, start_of_period=True):
     """
     Convert an Iris PartialDateTime object into a Python datetime object. If
     the day of the month is not specified in `pdt` then it is set as 1 in the
@@ -389,9 +396,11 @@ def _pdt_to_datetime(pdt, start_of_period=True):
     month (because a 360 day calendar is assumed).
 
     :param iris.time.PartialDateTime pdt: The partial date time to convert
+    :param str time_units: The units used in this time
+    :param str calendar:
     :param bool start_of_period: If true and no day is specified then day is
         set to 1, otherwise day is set to 30.
-    :returns: A Python datetime representation of `pdt`
+    :returns: A float representation of `pdt` relative to `time_units`
     """
     datetime_attrs = {}
 
@@ -412,7 +421,8 @@ def _pdt_to_datetime(pdt, start_of_period=True):
         if start_of_period:
             datetime_attrs['day'] = 1
         else:
-            datetime_attrs['day'] = 30
+            datetime_attrs['day'] = _calc_last_day_in_month(pdt.year, pdt.month,
+                calendar)
 
     optional_attrs = ['hour', 'minute', 'second', 'microsecond']
     for attr in optional_attrs:
@@ -420,9 +430,9 @@ def _pdt_to_datetime(pdt, start_of_period=True):
         if attr_value:
             datetime_attrs[attr] = attr_value
 
-    datetime_attrs['tzinfo'] = pytz.UTC
+    dt_obj = cf_units.netcdftime.datetime(**datetime_attrs)
 
-    return datetime.datetime(**datetime_attrs)
+    return cf_units.date2num(dt_obj, time_units, calendar)
 
 
 def _check_start_end_times(cube, metadata):
@@ -526,6 +536,33 @@ def _make_partial_date_time(date_string):
         raise ValueError('Unknown date string format')
 
     return pdt_str
+
+
+def _calc_last_day_in_month(year, month, calendar):
+    """
+    Calculate the last day of the specified month using the calendar given.
+
+    :param str year: The year
+    :param str month: The month
+    :param str calendar: The calendar to use, which must be supported by
+        cf_units
+    :returns: The last day of the specified month
+    :rtype: int
+    """
+    ref_units = 'days since 1969-07-21'
+
+    if month == 12:
+        start_next_month_obj = cf_units.netcdftime.datetime(year + 1, 1, 1)
+    else:
+        start_next_month_obj = cf_units.netcdftime.datetime(year, month + 1, 1)
+
+    start_next_month = cf_units.date2num(start_next_month_obj, ref_units,
+        calendar)
+
+    end_this_month = cf_units.num2date(start_next_month - 1, ref_units,
+        calendar)
+
+    return end_this_month.day
 
 
 def parse_args():

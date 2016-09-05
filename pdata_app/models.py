@@ -1,5 +1,7 @@
 import re
 
+import cf_units
+
 from django.db import models
 from django.utils import timezone
 from solo.models import SingletonModel
@@ -7,7 +9,7 @@ from django.db.models import Min, Max, PROTECT, SET_NULL, CASCADE
 from django.core.exceptions import ValidationError
 
 from vocabs import (STATUS_VALUES, FREQUENCY_VALUES, ONLINE_STATUS,
-    CHECKSUM_TYPES, VARIABLE_TYPES)
+    CHECKSUM_TYPES, VARIABLE_TYPES, CALENDARS)
 
 
 print "REMEMBER: Add in the DREQUEST identifiers"
@@ -17,6 +19,21 @@ model_names = ['Project', 'Institute', 'ClimateModel', 'Experiment',
                'DataRequest', 'DataIssue', 'Checksum', 'Settings',
                'VariableRequest']
 __all__ = model_names
+
+
+class Settings(SingletonModel):
+    """
+    Global settings for the app (that can be changed within the app
+    """
+    is_paused = models.BooleanField(default=False, null=False)
+    standard_time_units = models.CharField(max_length=50,
+        verbose_name='Standard Time Units', default='days since 1950-01-01')
+
+    class Meta:
+        verbose_name = "Settings"
+
+    def __unicode__(self):
+        return u"App Settings"
 
 
 class Project(models.Model):
@@ -145,23 +162,51 @@ class DataFileAggregationBase(models.Model):
         records.sort(key=lambda di: di.date_time, reverse=True)
         return records
 
-    def assign_data_issue(self, issue_text, reporter, date_time=None):
+    def assign_data_issue(self, issue_text, reporter, date_time=None, time_units=None):
         """
         Creates a DataIssue and attaches it to all related DataFile records.
         """
         date_time = date_time or timezone.now()
         data_issue, _tf = DataIssue.objects.get_or_create(issue=issue_text,
-            reporter=reporter, date_time=date_time)
+            reporter=reporter, date_time=date_time, time_units=time_units)
         data_issue.save()
 
         data_files = self.get_data_files()
         data_issue.data_file.add(*data_files)
 
     def start_time(self):
-        return self.datafile_set.aggregate(Min('start_time'))['start_time__min']
+        std_units = Settings.get_solo().standard_time_units
+
+        start_times = self.datafile_set.values_list('start_time', 'time_units',
+            'calendar')
+
+        std_times = [
+            (_standardise_time_unit(time, unit, std_units, cal), cal)
+            for time, unit, cal in start_times
+        ]
+
+        earliest_time, calendar = min(std_times, key=lambda x: x[0])
+
+        earliest_obj = cf_units.num2date(earliest_time, std_units, calendar)
+
+        return earliest_obj
 
     def end_time(self):
-        return self.datafile_set.aggregate(Max('end_time'))['end_time__max']
+        std_units = Settings.get_solo().standard_time_units
+
+        end_times = self.datafile_set.values_list('end_time', 'time_units',
+            'calendar')
+
+        std_times = [
+            (_standardise_time_unit(time, unit, std_units, cal), cal)
+            for time, unit, cal in end_times
+        ]
+
+        latest_time, calendar = max(std_times, key=lambda x: x[0])
+
+        latest_obj = cf_units.num2date(latest_time, std_units, calendar)
+
+        return latest_obj
 
     def online_status(self):
         """
@@ -316,8 +361,21 @@ class DataRequest(models.Model):
     experiment = models.ForeignKey(Experiment, null=False, on_delete=PROTECT)
     variable_request = models.ForeignKey(VariableRequest, null=False,
         on_delete=PROTECT)
-    start_time = models.DateTimeField(verbose_name="Start time", null=False, blank=False)
-    end_time = models.DateTimeField(verbose_name="End time", null=False, blank=False)
+    start_time = models.FloatField(verbose_name="Start time", null=False, blank=False)
+    end_time = models.FloatField(verbose_name="End time", null=False, blank=False)
+    time_units = models.CharField(verbose_name='Time units', max_length=50, null=False, blank=False)
+    calendar = models.CharField(verbose_name='Calendar', max_length=20,
+        null=False, blank=False, choices=CALENDARS.items())
+
+    def start_date_string(self):
+        """Return a string containing the start date"""
+        dto = cf_units.num2date(self.start_time, self.time_units, self.calendar)
+        return dto.strftime('%Y-%m-%d')
+
+    def end_date_string(self):
+        """Return a string containing the end date"""
+        dto = cf_units.num2date(self.end_time, self.time_units, self.calendar)
+        return dto.strftime('%Y-%m-%d')
 
 
 class DataFile(models.Model):
@@ -350,8 +408,11 @@ class DataFile(models.Model):
 
     # DateTimes are allowed to be null/blank because some fields (such as orography)
     # are time-independent
-    start_time = models.DateTimeField(verbose_name="Start time", null=True, blank=True)
-    end_time = models.DateTimeField(verbose_name="End time", null=True, blank=True)
+    start_time = models.FloatField(verbose_name="Start time", null=True, blank=True)
+    end_time = models.FloatField(verbose_name="End time", null=True, blank=True)
+    time_units = models.CharField(verbose_name='Time units', max_length=50, null=True, blank=True)
+    calendar = models.CharField(verbose_name='Calendar', max_length=20,
+        null=True, blank=True, choices=CALENDARS.items())
 
     data_submission = models.ForeignKey(DataSubmission, null=False, blank=False,
         on_delete=CASCADE)
@@ -390,14 +451,23 @@ class DataIssue(models.Model):
     """
     issue = models.CharField(max_length=500, verbose_name="Issue reported", null=False, blank=False)
     reporter = models.CharField(max_length=60, verbose_name="Reporter", null=False, blank=False)
-    date_time = models.DateTimeField(verbose_name="Date and time of report", default=timezone.now,
-                                     null=False, blank=False)
+    date_time = models.FloatField(verbose_name="Date and time of report", null=False, blank=False)
+    time_units = models.CharField(verbose_name='Time units', max_length=50, null=False, blank=False)
+    calendar = models.CharField(verbose_name='Calendar', max_length=20,
+        null=False, blank=False, choices=CALENDARS.items())
 
     # DataFile that the Data Issue corresponds to
     data_file = models.ManyToManyField(DataFile)
 
     def __unicode__(self):
-        return "Data Issue (%s): %s (%s)" % (self.date_time, self.issue, self.reporter)
+        return "Data Issue (%s): %s (%s)" % (
+            cf_units.num2date(self.date_time, self.time_units, self.calendar).
+            strftime('%Y-%m-%d %H:%M:%S'), self.issue, self.reporter)
+
+    def date_time_string(self):
+        """Return a string containing the issue date and time"""
+        dto = cf_units.num2date(self.date_time, self.time_units, self.calendar)
+        return dto.strftime('%Y-%m-%d %H:%M:%S')
 
 
 class Checksum(models.Model):
@@ -415,14 +485,21 @@ class Checksum(models.Model):
                                 self.data_file.name)
 
 
-class Settings(SingletonModel):
+def _standardise_time_unit(time_float, time_unit, standard_unit, calendar):
     """
-    Global settings for the app (that can be changed within the app
+    Standardise a floating point time in one time unit by returning the
+    corresponding time in the `standard_unit`. The original value is returned if
+    it is already in the `standard_unit`.
+
+    :param float time_float:
+    :param str time_unit:
+    :param str standard_unit:
+    :returns: A floating point representation of the old time in `new_unit`
     """
-    is_paused = models.BooleanField(default=False, null=False)
+    if time_unit == standard_unit:
+        return time_float
 
-    class Meta:
-        verbose_name = "Settings"
+    date_time = cf_units.num2date(time_float, time_unit, calendar)
+    corrected_time = cf_units.date2num(date_time, standard_unit, calendar)
 
-    def __unicode__(self):
-        return u"App Settings"
+    return corrected_time
