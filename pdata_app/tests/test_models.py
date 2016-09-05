@@ -6,7 +6,6 @@ import re
 
 from numpy.testing import assert_almost_equal
 import cf_units
-import pytz
 
 from django.test import TestCase
 from django.core.exceptions import ValidationError
