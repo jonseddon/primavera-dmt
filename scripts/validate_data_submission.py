@@ -277,12 +277,17 @@ def load_cube(filename):
         msg = 'Unable to load data from file: {}'.format(filename)
         logger.debug(msg)
         raise FileValidationError(msg)
-    if len(cubes) != 1:
-        msg = "Filename '{}' does not load to a single variable"
+
+    var_name = os.path.basename(filename).split('_')[0]
+
+    var_cubes = cubes.extract(iris.Constraint(cube_func=lambda cube: cube.var_name == var_name))
+
+    if not var_cubes:
+        msg = "Filename '{}' does not load to a single variable".format(filename)
         logger.debug(msg)
         raise FileValidationError(msg)
 
-    return cubes[0]
+    return var_cubes[0]
 
 
 def validate_file_contents(cube, metadata):
@@ -294,11 +299,11 @@ def validate_file_contents(cube, metadata):
     :returns: A boolean
     """
     _check_start_end_times(cube, metadata)
-    _check_contiguity(cube, metadata)
+    # _check_contiguity(cube, metadata)
     _check_data_point(cube, metadata)
 
 
-def create_database_submission(validated_metadata, directory):
+def update_database_submission(validated_metadata, directory):
     """
     Create an entry in the database for this submission
 
@@ -307,8 +312,17 @@ def create_database_submission(validated_metadata, directory):
     :param str directory: The directory that the files were uploaded to
     :returns:
     """
-    data_sub = get_or_create(DataSubmission, status=STATUS_VALUES['ARRIVED'],
-        incoming_directory=directory, directory=directory)
+    # TODO: check the status of the submission to check that it's not yet validated?
+    try:
+        data_sub = DataSubmission.objects.get(incoming_directory=directory)
+    except django.core.exceptions.MultipleObjectsReturned:
+        msg = 'Multiple DataSubmissions found for directory: {}'.format(directory)
+        logger.error(msg)
+        raise SubmissionError(msg)
+    except django.core.exceptions.ObjectDoesNotExist:
+        msg = 'No DataSubmissions found for directory: {}'.format(directory)
+        logger.error(msg)
+        raise SubmissionError(msg)
 
     for data_file in validated_metadata:
         create_database_file_object(data_file, data_sub)
@@ -619,7 +633,7 @@ def main(args):
             logger.error(msg)
             raise SubmissionError(msg)
 
-        create_database_submission(validated_metadata, args.directory)
+        update_database_submission(validated_metadata, args.directory)
 
         logger.debug('%s files submitted successfully',
             match_one(DataSubmission, incoming_directory=args.directory).get_data_files().count())

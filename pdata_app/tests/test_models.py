@@ -98,7 +98,7 @@ class TestDataFileAggregationBaseMethods(TestCase):
         self.example_files = test_data_submission
         self.dsub = get_or_create(models.DataSubmission, status=STATUS_VALUES.ARRIVED,
             incoming_directory=test_data_submission.INCOMING_DIR,
-            directory=test_data_submission.INCOMING_DIR)
+            directory=test_data_submission.INCOMING_DIR, user='primavera')
 
         for dfile_name in self.example_files.files:
             metadata = _extract_file_metadata(os.path.join(
@@ -173,6 +173,14 @@ class TestDataFileAggregationBaseMethods(TestCase):
         expected = cf_units.netcdftime.datetime(1859, 1 ,1)
 
         self.assertEqual(start_time, expected)
+
+    def test_times_are_none(self):
+        empty_sub = get_or_create(models.DataSubmission,
+            status=STATUS_VALUES.ARRIVED, incoming_directory='/some/dir',
+            directory='/some/dir', user='primavera')
+
+        self.assertIsNone(empty_sub.start_time())
+        self.assertIsNone(empty_sub.end_time())
 
     def test_end_time(self):
         end_time = self.dsub.end_time()

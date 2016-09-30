@@ -116,7 +116,7 @@ def make_data_submission():
 
     dsub = get_or_create(DataSubmission, status=STATUS_VALUES.ARRIVED,
                incoming_directory=test_dsub.INCOMING_DIR,
-               directory=test_dsub.INCOMING_DIR)
+               directory=test_dsub.INCOMING_DIR, user='primavera')
 
     for dfile_name in test_dsub.files:
         path = os.path.join(test_dsub.INCOMING_DIR, dfile_name)
