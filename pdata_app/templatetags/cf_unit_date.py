@@ -10,5 +10,8 @@ def strftime(value, arg):
     """
     Calls an object's strftime function.
     """
-    return value.strftime(arg)
+    if value:
+        return value.strftime(arg)
+    else:
+        return None
 

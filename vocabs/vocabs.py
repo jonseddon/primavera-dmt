@@ -4,6 +4,7 @@ import cf_units
 
 STATUS_VALUES = CodeList(
         (('EXPECTED', 'EXPECTED'),
+         ('PENDING_PROCESSING', 'PENDING_PROCESSING'),
          ('ARRIVED', 'ARRIVED'),
          ('VALIDATED', 'VALIDATED'),
          ('ARCHIVED', 'ARCHIVED'),
