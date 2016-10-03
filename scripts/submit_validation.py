@@ -6,8 +6,10 @@ This script is run by a cron job. It checks the ownership of the files in
 DataSubmission's with a status of PENDING_PROCESSING and if they are all now
 owned by the administrotor then it submits a LOTUS job to run the validation.
 """
+from __future__ import print_function
 import os
 import pwd
+import subprocess
 
 import django
 django.setup()
@@ -16,7 +18,11 @@ from vocabs.vocabs import STATUS_VALUES
 
 STATUS_TO_PROCESS = STATUS_VALUES['PENDING_PROCESSING']
 ADMIN_USER = 'jseddon'
-
+VALIDATE_SCRIPT = ('/home/users/jseddon/primavera/primavera-dmt/scripts/'
+    'validate_data_submission.sh')
+NUM_PROCS_USE_LOTUS = 8
+LOTUS_OPTIONS = ('-o ~/%J.o -q lotus -n {} -R "span[hosts=1]" -W 01:00'.
+    format(NUM_PROCS_USE_LOTUS))
 
 def are_files_chowned(submission):
     """
@@ -44,10 +50,17 @@ def are_files_chowned(submission):
 
 def submit_validation(submission):
     """
+    Submit a LOTUS job to run the validation.
 
     :param submission:
     :return:
     """
+    cmd = 'bsub {} {} --log-level DEBUG --processes {} {}'.format(
+        LOTUS_OPTIONS, VALIDATE_SCRIPT, NUM_PROCS_USE_LOTUS, submission)
+    bsub_output = subprocess.check_output(cmd)
+    print('Sunmission: {}'.format(submission))
+    print(bsub_output)
+
 
 
 def list_files(directory, suffix='.nc'):
@@ -70,7 +83,6 @@ def list_files(directory, suffix='.nc'):
             nc_files.append(file_path)
 
     return nc_files
-
 
 
 def main():
