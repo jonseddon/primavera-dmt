@@ -88,6 +88,11 @@ def view_home(request):
         'page_title': 'The PRIMAVERA DMT'})
 
 
+def view_retrieval_request(request):
+    return render(request, 'retrieval_request.html', {'request': request,
+        'page_title': 'Retrieval Request'})
+
+
 def view_variable_query(request):
     request_params = request.GET
 

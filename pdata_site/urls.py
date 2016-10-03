@@ -40,6 +40,9 @@ urlpatterns = [
     url(r'^create_submission/$', pdata_app.views.create_submission,
         name='create_submission'),
 
+    url(r'^retrieval_request/$', pdata_app.views.view_retrieval_request,
+        name='retrieval_request'),
+
     url(r'.*', pdata_app.views.view_home, name='home'),
 ]
 
