@@ -58,7 +58,7 @@ def submit_validation(submission):
     """
     cmd = 'bsub {} {} --log-level DEBUG --processes {} {}'.format(
         LOTUS_OPTIONS, VALIDATE_SCRIPT, NUM_PROCS_USE_LOTUS, submission)
-    bsub_output = subprocess.check_output(cmd)
+    bsub_output = subprocess.check_output(cmd, shell=True)
     print('Sunmission: {}'.format(submission))
     print(bsub_output)
 
@@ -93,7 +93,7 @@ def main():
         if are_files_chowned(submission):
             submission.status = STATUS_VALUES['ARRIVED']
             submission.save()
-            submit_validation(submission)
+            submit_validation(submission.directory)
 
 
 if __name__ == "__main__":
