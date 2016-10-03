@@ -21,10 +21,14 @@ def main():
 
     expt = get_or_create(Experiment, short_name='historical',
         full_name='historical')
+    expt = get_or_create(Experiment, short_name='present_day',
+        full_name='present_day')
 
     # TODO update this for CMIP6, current value is for testing with CMIP5 data
     clim_model = get_or_create(ClimateModel, short_name='HadGEM2-ES',
         full_name='HadGEM2 Earth System')
+    clim_model = get_or_create(ClimateModel, short_name='HadGEM3-GC2',
+        full_name='HadGEM3 GC2')
 
 
 if __name__ == '__main__':

@@ -8,6 +8,7 @@ owned by the administrotor then it submits a LOTUS job to run the validation.
 """
 import os
 import pwd
+import stat
 
 import django
 django.setup()
@@ -33,7 +34,7 @@ def are_files_chowned(submission):
 
     if file_names:
         for file_name in file_names:
-            uid = os.stat(file_name)['st_uid']
+            uid = os.stat(file_name)[stat.ST_UID]
             user_name = pwd.getpwuid(uid)[0]
 
             if user_name != ADMIN_USER:
