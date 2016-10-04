@@ -17,14 +17,18 @@ def main():
     Populate the database
     """
     proj = get_or_create(Project, short_name='CMIP6',
-        full_name='6th Coupled Model Intercomparison Project')
+        full_name='Coupled Model Intercomparison Project Phase 6')
 
     expt = get_or_create(Experiment, short_name='historical',
         full_name='historical')
+    expt = get_or_create(Experiment, short_name='present_day',
+        full_name='present_day')
 
     # TODO update this for CMIP6, current value is for testing with CMIP5 data
     clim_model = get_or_create(ClimateModel, short_name='HadGEM2-ES',
         full_name='HadGEM2 Earth System')
+    clim_model = get_or_create(ClimateModel, short_name='HadGEM3-GC2',
+        full_name='HadGEM3 GC2')
 
 
 if __name__ == '__main__':

@@ -91,6 +91,8 @@ class TestWorkflows(PdataBaseTest):
         pass
 
     def test_01_data_request(self):
+        project = get_or_create(Project, short_name='CMIP6',
+            full_name='Coupled Model Intercomparison Project Phase 6')
         institute = get_or_create(Institute, short_name='u', full_name='University')
         climate_model = get_or_create(ClimateModel, short_name='my_model', full_name='Really big model')
         experiment = get_or_create(Experiment, short_name='my_expt', full_name='Really detailed experiment')
@@ -101,7 +103,7 @@ class TestWorkflows(PdataBaseTest):
             dimensions='massive', cmor_name='var1', modeling_realm='atmos',
             frequency=FREQUENCY_VALUES['ann'], cell_measures='', uid='123abc')
 
-        data_req = get_or_create(DataRequest, institute=institute,
+        data_req = get_or_create(DataRequest, project=project, institute=institute,
             climate_model=climate_model, experiment=experiment,
             variable_request=var_req,
             start_time=_cmpts2num(1900, 1, 1, 0, 0, 0, 0, TIME_UNITS, CALENDAR),

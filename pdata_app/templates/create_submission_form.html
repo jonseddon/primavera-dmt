@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+
+    {% block contents %}
+        <p>
+        When a data submission has finished uploading to JASMIN please specify
+        the submission's directory here and the validation process will begin.
+        </p>
+
+        <p>
+            <form method="POST">
+                {% csrf_token %}
+                {{ form.as_p }}
+
+                <button type="submit" class="save btn btn-default">Create Submission</button>
+            </form>
+        </p>
+    {% endblock %}

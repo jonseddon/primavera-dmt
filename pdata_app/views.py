@@ -7,11 +7,11 @@ from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.decorators import login_required
 from django.shortcuts import render, redirect
 from django.db import connection
-from django.db.models import Min, Max
 
-from pdata_app.models import (DataFile, DataSubmission, ESGFDataset, CEDADataset,
+from .models import (DataFile, DataSubmission, ESGFDataset, CEDADataset,
     DataRequest, DataIssue, VariableRequest, Settings, _standardise_time_unit)
-from vocabs.vocabs import ONLINE_STATUS
+from .forms import CreateSubmissionForm
+from vocabs.vocabs import ONLINE_STATUS, STATUS_VALUES
 
 
 def view_login(request):
@@ -47,9 +47,8 @@ def view_logout(request):
     logout(request)
     return redirect('home')
 
-@login_required(login_url='/login/')
 def view_data_submissions(request):
-    data_submissions = DataSubmission.objects.all()
+    data_submissions = DataSubmission.objects.all().order_by('-date_submitted')
     return render(request, 'data_submissions.html', {'request': request,
         'page_title': 'Data Submissions', 'records': data_submissions})
 
@@ -87,6 +86,11 @@ def view_data_issues(request):
 def view_home(request):
     return render(request, 'home.html', {'request': request,
         'page_title': 'The PRIMAVERA DMT'})
+
+
+def view_retrieval_request(request):
+    return render(request, 'retrieval_request.html', {'request': request,
+        'page_title': 'Retrieval Request'})
 
 
 def view_variable_query(request):
@@ -244,6 +248,23 @@ def view_outstanding_query(request):
 
     return render(request, 'outstanding_query_results.html', {'request': request,
         'page_title': 'Outstanding Data Query', 'records': outstanding_reqs})
+
+
+@login_required(login_url='/login/')
+def create_submission(request):
+    if request.method == 'POST':
+        form = CreateSubmissionForm(request.POST)
+        if form.is_valid():
+            submission = form.save(commit=False)
+            submission.directory = submission.incoming_directory
+            submission.status = STATUS_VALUES['PENDING_PROCESSING']
+            submission.user = request.user
+            submission.save()
+            return redirect('data_submissions')
+    else:
+        form = CreateSubmissionForm()
+    return render(request, 'create_submission_form.html', {'form': form,
+        'page_title': 'Create Data Submission'})
 
 
 def _find_common_directory(query_set, attribute, separator='/'):

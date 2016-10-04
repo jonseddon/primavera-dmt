@@ -1,7 +1,6 @@
 from django.conf.urls import include, url
 from django.contrib.staticfiles.urls import staticfiles_urlpatterns
 
-from rest_framework.urlpatterns import format_suffix_patterns
 import pdata_app.views
 
 
@@ -37,6 +36,12 @@ urlpatterns = [
 
     url(r'^outstanding_query/$', pdata_app.views.view_outstanding_query,
         name='outstanding_query'),
+
+    url(r'^create_submission/$', pdata_app.views.create_submission,
+        name='create_submission'),
+
+    url(r'^retrieval_request/$', pdata_app.views.view_retrieval_request,
+        name='retrieval_request'),
 
     url(r'.*', pdata_app.views.view_home, name='home'),
 ]

@@ -180,6 +180,9 @@ class DataFileAggregationBase(models.Model):
         start_times = self.datafile_set.values_list('start_time', 'time_units',
             'calendar')
 
+        if not start_times:
+            return None
+
         std_times = [
             (_standardise_time_unit(time, unit, std_units, cal), cal)
             for time, unit, cal in start_times
@@ -196,6 +199,9 @@ class DataFileAggregationBase(models.Model):
 
         end_times = self.datafile_set.values_list('end_time', 'time_units',
             'calendar')
+
+        if not end_times:
+            return None
 
         std_times = [
             (_standardise_time_unit(time, unit, std_units, cal), cal)
@@ -252,6 +258,8 @@ class DataSubmission(DataFileAggregationBase):
     incoming_directory = models.CharField(max_length=500, verbose_name='Incoming Directory', blank=False, null=False)
     # Current directory
     directory = models.CharField(max_length=500, verbose_name='Main Directory', blank=False, null=False)
+    user = models.CharField(max_length=100, blank=False, null=False)
+    date_submitted = models.DateTimeField(auto_now_add=True, null=False, blank=False)
 
     def __unicode__(self):
         return "Data Submission: %s" % self.directory
@@ -355,6 +363,7 @@ class DataRequest(models.Model):
     A Data Request for a given set of inputs
     """
 
+    project = models.ForeignKey(Project, null=False, on_delete=PROTECT)
     institute = models.ForeignKey(Institute, null=False, on_delete=PROTECT)
     climate_model = models.ForeignKey(ClimateModel, null=False,
         on_delete=PROTECT)
