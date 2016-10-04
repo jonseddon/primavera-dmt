@@ -21,7 +21,7 @@
                 <td>{{ record.directory }}</td>
                 <td>{{ record.status }}</td>
                 <td>{{ record.date_submitted|date:"Y-m-d" }} {{ record.date_submitted|time:"H:i" }}</td>
-                {% if record.status == 'PENDING_PROCESSING' %}
+                {% if record.status == 'PENDING_PROCESSING' or record.status == 'ARRIVED' %}
                     <td>--</td>
                     <td>--</td>
                     <td>--</td>
