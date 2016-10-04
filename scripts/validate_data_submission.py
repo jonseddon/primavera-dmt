@@ -95,7 +95,7 @@ def identify_and_validate(filenames, project, num_processes):
     """
     jobs = []
     manager = Manager()
-    params = manager.Queue(num_processes)
+    params = manager.Queue()
     result_list = manager.list()
     error_event = manager.Event()
     for i in range(num_processes):
@@ -114,7 +114,7 @@ def identify_and_validate(filenames, project, num_processes):
     for j in jobs:
         j.join()
 
-    if error_event.set():
+    if error_event.is_set():
         raise SubmissionError()
 
     return result_list
