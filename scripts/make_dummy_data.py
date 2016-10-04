@@ -34,6 +34,8 @@ def make_data_request():
     Create a DataRequest that matches files in the later submission
     """
     # Make the variable chips from the Monty model for which all data is available
+    project = get_or_create(Project, short_name='CMIP6',
+        full_name='Coupled Model Intercomparison Project Phase 6')
     institute = get_or_create(Institute, short_name='MOHC', full_name='Met Office Hadley Centre')
     climate_model = get_or_create(ClimateModel, short_name='Monty', full_name='Really good model')
     experiment = get_or_create(Experiment, short_name='rcp45', full_name='Really good experiment')
@@ -44,7 +46,7 @@ def make_data_request():
         dimensions='massive', cmor_name='chips', modeling_realm='atmos',
         frequency=FREQUENCY_VALUES['day'], cell_measures='', uid='123abc')
 
-    data_req = get_or_create(DataRequest, institute=institute,
+    data_req = get_or_create(DataRequest, project=project, institute=institute,
         climate_model=climate_model, experiment=experiment,
         variable_request=var_req,
         start_time=_cmpts2num(1991, 1, 1, 0, 0, 0, 0, TIME_UNITS, CALENDAR),
@@ -62,7 +64,7 @@ def make_data_request():
         dimensions='massive', cmor_name='spam', modeling_realm='atmos',
         frequency=FREQUENCY_VALUES['day'], cell_measures='', uid='123abc')
 
-    data_req = get_or_create(DataRequest, institute=institute,
+    data_req = get_or_create(DataRequest, project=project, institute=institute,
         climate_model=climate_model, experiment=experiment,
         variable_request=var_req,
         start_time=_cmpts2num(1991, 1, 1, 0, 0, 0, 0, TIME_UNITS, CALENDAR),
@@ -77,7 +79,7 @@ def make_data_request():
         dimensions='massive', cmor_name='pie', modeling_realm='atmos',
         frequency=FREQUENCY_VALUES['day'], cell_measures='', uid='123abc')
 
-    data_req = get_or_create(DataRequest, institute=institute,
+    data_req = get_or_create(DataRequest, project=project, institute=institute,
         climate_model=climate_model, experiment=experiment,
         variable_request=var_req,
         start_time=_cmpts2num(1991, 1, 1, 0, 0, 0, 0, TIME_UNITS, CALENDAR),
@@ -91,7 +93,7 @@ def make_data_request():
         dimensions='massive', cmor_name='cake', modeling_realm='atmos',
         frequency=FREQUENCY_VALUES['day'], cell_measures='', uid='123abc')
 
-    data_req = get_or_create(DataRequest, institute=institute,
+    data_req = get_or_create(DataRequest, project=project, institute=institute,
         climate_model=climate_model, experiment=experiment,
         variable_request=var_req,
         start_time=_cmpts2num(1991, 1, 1, 0, 0, 0, 0, TIME_UNITS, CALENDAR),
@@ -122,7 +124,7 @@ def make_data_submission():
         path = os.path.join(test_dsub.INCOMING_DIR, dfile_name)
         metadata = _extract_file_metadata(path)
 
-        proj = get_or_create(Project, short_name="CMIP6", full_name="6th Coupled Model Intercomparison Project")
+        proj = get_or_create(Project, short_name="CMIP6", full_name="Coupled Model Intercomparison Project Phase 6")
         climate_model = get_or_create(ClimateModel, short_name=metadata["climate_model"], full_name="Really good model")
         experiment = get_or_create(Experiment, short_name=metadata["experiment"], full_name="Really good experiment")
 

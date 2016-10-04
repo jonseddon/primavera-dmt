@@ -363,6 +363,7 @@ class DataRequest(models.Model):
     A Data Request for a given set of inputs
     """
 
+    project = models.ForeignKey(Project, null=False, on_delete=PROTECT)
     institute = models.ForeignKey(Institute, null=False, on_delete=PROTECT)
     climate_model = models.ForeignKey(ClimateModel, null=False,
         on_delete=PROTECT)
