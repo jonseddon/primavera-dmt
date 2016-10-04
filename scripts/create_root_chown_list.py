@@ -19,8 +19,7 @@ from pdata_app.models import DataSubmission
 from vocabs.vocabs import STATUS_VALUES
 
 STATUS_TO_PROCESS = STATUS_VALUES['PENDING_PROCESSING']
-OUTPUT_DIRECTORY = '/home/h04/jseddon/primavera/root_cron'
-# OUTPUT_DIRECTORY = '/home/users/jseddon/primavera/root_cron'
+OUTPUT_DIRECTORY = '/home/users/jseddon/primavera/root_cron'
 TIME_STRING = '%Y%m%d-%H%M'
 OUTPUT_FILENAME_FORMAT = 'primavera_chown_list_{}.txt'
 
