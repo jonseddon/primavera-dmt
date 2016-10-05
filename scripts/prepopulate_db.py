@@ -8,7 +8,7 @@ expected climate models, experiments, etc.
 import django
 django.setup()
 
-from pdata_app.models import Project, ClimateModel, Experiment
+from pdata_app.models import Project, ClimateModel, Experiment, Institute
 from pdata_app.utils.dbapi import get_or_create
 
 
@@ -23,6 +23,9 @@ def main():
         full_name='historical')
     expt = get_or_create(Experiment, short_name='present_day',
         full_name='present_day')
+
+    inst = get_or_create(Institute, short_name='MOHC',
+        full_name='Met Office Hadley Centre')
 
     # TODO update this for CMIP6, current value is for testing with CMIP5 data
     clim_model = get_or_create(ClimateModel, short_name='HadGEM2-ES',

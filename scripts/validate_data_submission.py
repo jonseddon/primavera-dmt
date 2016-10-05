@@ -21,7 +21,7 @@ import django
 django.setup()
 
 from pdata_app.models import (Project, ClimateModel, Experiment, DataSubmission,
-    DataFile, VariableRequest, Checksum, Settings)
+    DataFile, VariableRequest, Checksum, Settings, Institute)
 from pdata_app.utils.dbapi import get_or_create, match_one
 from pdata_app.utils.common import adler32
 from vocabs.vocabs import FREQUENCY_VALUES, STATUS_VALUES, CHECKSUM_TYPES
@@ -256,6 +256,7 @@ def identify_contents_metadata(cube):
     metadata['standard_name'] = cube.standard_name
     metadata['time_units'] = cube.coord('time').units.origin
     metadata['calendar'] = cube.coord('time').units.calendar
+    metadata['institute'] = cube.attributes['institute_id']
 
     return metadata
 
@@ -342,7 +343,8 @@ def create_database_file_object(metadata, data_submission):
     foreign_key_types = [
         (Project, 'project'),
         (ClimateModel, 'climate_model'),
-        (Experiment, 'experiment')]
+        (Experiment, 'experiment'),
+        (Institute, 'institute')]
 
     metadata_objs = {}
 
@@ -379,6 +381,7 @@ def create_database_file_object(metadata, data_submission):
             incoming_directory=metadata['directory'],
             directory=metadata['directory'], size=metadata['filesize'],
             project=metadata_objs['project'],
+            institute=metadata_objs['institute'],
             climate_model=metadata_objs['climate_model'],
             experiment=metadata_objs['experiment'],
             variable_request=variable, frequency=metadata['frequency'],
