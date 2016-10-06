@@ -407,6 +407,7 @@ class DataFile(models.Model):
 
     # Scientific metadata
     project = models.ForeignKey(Project, null=False, on_delete=PROTECT)
+    institute = models.ForeignKey(Institute, null=False, on_delete=PROTECT)
     climate_model = models.ForeignKey(ClimateModel, null=False, on_delete=PROTECT)
     experiment = models.ForeignKey(Experiment, null=False, on_delete=PROTECT)
     variable_request = models.ForeignKey(VariableRequest, null=False, on_delete=PROTECT)

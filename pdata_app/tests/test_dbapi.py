@@ -72,7 +72,7 @@ class TestCount(TestCase):
             checksum_value='4321DCBA', checksum_type=CHECKSUM_TYPES['SHA256'])
 
     def test_no_objects(self):
-        self.assertEqual(dbapi.count(models.Institute), 0)
+        self.assertEqual(dbapi.count(models.DataIssue), 0)
 
     def test_one_object(self):
         self.assertEqual(dbapi.count(models.DataFile), 1)
@@ -144,6 +144,8 @@ def _create_file_object():
         full_name='test')
     clim_mod = dbapi.get_or_create(models.ClimateModel, short_name='t',
         full_name='test')
+    institute = dbapi.get_or_create(models.Institute, short_name='MOHC',
+                              full_name='Met Office Hadley Centre')
     expt = dbapi.get_or_create(models.Experiment, short_name='t',
         full_name='test')
     vble = dbapi.get_or_create(models.VariableRequest, table_name='Amon',
@@ -153,15 +155,14 @@ def _create_file_object():
         dimensions='massive', cmor_name='var1', modeling_realm='atmos',
         frequency=FREQUENCY_VALUES['ann'], cell_measures='', uid='123abc')
 
-
     dsub = dbapi.get_or_create(models.DataSubmission,
         status=STATUS_VALUES['EXPECTED'], incoming_directory='/some/dir',
         directory='/some/dir')
 
     data_file = dbapi.get_or_create(models.DataFile, name='test',
         incoming_directory='/some/dir', directory='/some/dir', size=1,
-        project=project, climate_model=clim_mod, experiment=expt,
-        variable_request=vble, frequency='t', rip_code='r1i1p1', data_submission=dsub,
-        online=False)
+        project=project, climate_model=clim_mod, institute=institute,
+        experiment=expt, variable_request=vble, frequency='t',
+        rip_code='r1i1p1', data_submission=dsub, online=False)
 
     return data_file

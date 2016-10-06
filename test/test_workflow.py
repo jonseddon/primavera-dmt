@@ -267,6 +267,8 @@ def _make_data_submission():
 
         proj = get_or_create(Project, short_name="CMIP6", full_name="6th Coupled Model Intercomparison Project")
         climate_model = get_or_create(ClimateModel, short_name=m["climate_model"], full_name="Really good model")
+        institute = get_or_create(Institute, short_name='MOHC',
+            full_name='Met Office Hadley Centre')
         experiment = get_or_create(Experiment, short_name=m["experiment"], full_name="Really good experiment")
         var = get_or_create(VariableRequest, table_name=metadata['table'],
             long_name='very descriptive', units='1', var_name=metadata['var_id'],
@@ -278,7 +280,7 @@ def _make_data_submission():
 
         dfile = DataFile.objects.create(name=dfile_name, incoming_directory=test_dsub.INCOMING_DIR,
             directory=test_dsub.INCOMING_DIR, size=os.path.getsize(path),
-            project=proj, climate_model=climate_model,
+            project=proj, climate_model=climate_model, institute=institute,
             experiment=experiment, variable_request=var,
             frequency=FREQUENCY_VALUES['ann'], rip_code=m["ensemble"],
             start_time=m["start_time"], end_time=m["end_time"],

@@ -107,6 +107,8 @@ class TestDataFileAggregationBaseMethods(TestCase):
                 "Coupled Model Intercomparison Project")
             climate_model = get_or_create(models.ClimateModel,
                 short_name=metadata["climate_model"], full_name="Really good model")
+            institute = get_or_create(models.Institute, short_name='MOHC',
+                full_name='Met Office Hadley Centre')
             experiment = get_or_create(models.Experiment, short_name="experiment",
                 full_name="Really good experiment")
             var = get_or_create(models.VariableRequest, table_name=metadata['table'],
@@ -122,7 +124,8 @@ class TestDataFileAggregationBaseMethods(TestCase):
                 incoming_directory=self.example_files.INCOMING_DIR,
                 directory=self.example_files.INCOMING_DIR, size=1, project=self.proj,
                 climate_model=climate_model, experiment=experiment,
-                variable_request=var, frequency=FREQUENCY_VALUES['ann'],
+                institute=institute, variable_request=var,
+                frequency=FREQUENCY_VALUES['ann'],
                 rip_code=metadata["ensemble"], online=True,
                 start_time=metadata["start_time"],
                 end_time=metadata["end_time"],
@@ -351,6 +354,8 @@ class TestDataFile(TestCase):
             full_name='6th Coupled Model Intercomparison Project')
         climate_model = get_or_create(models.ClimateModel,
             short_name='climate_model', full_name='Really good model')
+        institute = get_or_create(models.Institute, short_name='MOHC',
+            full_name='Met Office Hadley Centre')
         experiment = get_or_create(models.Experiment, short_name='experiment',
             full_name='Really good experiment')
         var = get_or_create(models.VariableRequest, table_name='Amon',
@@ -363,8 +368,9 @@ class TestDataFile(TestCase):
         # Make the data file
         data_file = get_or_create(models.DataFile, name='filename.nc',
             incoming_directory='/some/dir', directory='/other/dir', size=1,
-            project=proj, climate_model=climate_model, experiment=experiment,
-            variable_request=var, frequency=FREQUENCY_VALUES['mon'], rip_code='r1i1p1',
+            project=proj, climate_model=climate_model, institute=institute,
+            experiment=experiment, variable_request=var,
+            frequency=FREQUENCY_VALUES['mon'], rip_code='r1i1p1',
             data_submission=data_submission, online=True)
 
     def test_unicode(self):
@@ -403,6 +409,8 @@ class TestChecksum(TestCase):
             full_name='6th Coupled Model Intercomparison Project')
         climate_model = get_or_create(models.ClimateModel,
             short_name='climate_model', full_name='Really good model')
+        institute = get_or_create(models.Institute, short_name='MOHC',
+            full_name='Met Office Hadley Centre')
         experiment = get_or_create(models.Experiment, short_name='experiment',
             full_name='Really good experiment')
         var = get_or_create(models.VariableRequest, table_name='Amon',
@@ -415,8 +423,9 @@ class TestChecksum(TestCase):
         # Make a data file in this submission
         data_file = get_or_create(models.DataFile, name='filename.nc',
             incoming_directory='/some/dir', directory='/some/dir', size=1,
-            project=proj, climate_model=climate_model, experiment=experiment,
-            variable_request=var, frequency=FREQUENCY_VALUES['mon'], rip_code='r1i1p1',
+            institute=institute, project=proj, climate_model=climate_model,
+            experiment=experiment, variable_request=var,
+            frequency=FREQUENCY_VALUES['mon'], rip_code='r1i1p1',
             data_submission=data_submission, online=True)
 
         # Make a checksum
