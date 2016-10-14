@@ -188,7 +188,11 @@ class DataFileAggregationBase(models.Model):
             for time, unit, cal in start_times
         ]
 
-        earliest_time, calendar = min(std_times, key=lambda x: x[0])
+        none_values_removed = [(std_time, cal)
+                               for std_time, cal in std_times
+                               if std_time is not None]
+
+        earliest_time, calendar = min(none_values_removed, key=lambda x: x[0])
 
         earliest_obj = cf_units.num2date(earliest_time, std_units, calendar)
 
@@ -499,13 +503,17 @@ def _standardise_time_unit(time_float, time_unit, standard_unit, calendar):
     """
     Standardise a floating point time in one time unit by returning the
     corresponding time in the `standard_unit`. The original value is returned if
-    it is already in the `standard_unit`.
+    it is already in the `standard_unit`. None is returned if the `time_float`
+    is None.
 
     :param float time_float:
     :param str time_unit:
     :param str standard_unit:
     :returns: A floating point representation of the old time in `new_unit`
     """
+    if time_float is None:
+        return None
+
     if time_unit == standard_unit:
         return time_float
 

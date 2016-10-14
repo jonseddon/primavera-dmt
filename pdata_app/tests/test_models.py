@@ -177,6 +177,18 @@ class TestDataFileAggregationBaseMethods(TestCase):
 
         self.assertEqual(start_time, expected)
 
+    def test_start_time_handles_missing_date(self):
+        null_file = models.DataFile.objects.all()[3]
+        null_file.start_time = None
+        null_file.end_time = None
+        null_file.save()
+
+        start_time = self.dsub.start_time()
+
+        expected = cf_units.netcdftime.datetime(1859, 1, 1)
+
+        self.assertEqual(start_time, expected)
+
     def test_times_are_none(self):
         empty_sub = get_or_create(models.DataSubmission,
             status=STATUS_VALUES.ARRIVED, incoming_directory='/some/dir',
@@ -456,6 +468,11 @@ class TestStandardiseTimeUnit(TestCase):
         actual = models._standardise_time_unit(time_num, old_unit, new_unit, '360_day')
         expected = 3.14159
         assert_almost_equal(actual, expected, decimal=5)
+
+    def test_none(self):
+        time_unit = 'days since 2000-01-01'
+        self.assertIsNone(models._standardise_time_unit(None, time_unit,
+            time_unit, '360_day'))
 
 
 def _extract_file_metadata(file_path):

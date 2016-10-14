@@ -162,8 +162,16 @@ def view_variable_query(request):
             (_standardise_time_unit(time, unit, std_units, cal), cal)
             for time, unit, cal in start_times
         ]
-        start_float, calendar = min(std_start_times, key=lambda x: x[0])
-        start_obj = cf_units.num2date(start_float, std_units, calendar)
+        start_nones_removed = [(std_time, cal)
+                               for std_time, cal in std_start_times
+                               if std_time is not None]
+        if start_nones_removed:
+            start_float, calendar = min(start_nones_removed, key=lambda x: x[0])
+            start_obj = cf_units.num2date(start_float, std_units, calendar)
+            start_string = '{:04d}-{:02d}-{:02d}'.format(start_obj.year,
+                start_obj.month, start_obj.day)
+        else:
+            start_string = '--'
 
         end_times = row_files.values_list('end_time', 'time_units',
             'calendar')
@@ -171,8 +179,16 @@ def view_variable_query(request):
             (_standardise_time_unit(time, unit, std_units, cal), cal)
             for time, unit, cal in end_times
         ]
-        end_float, calendar = max(std_end_times, key=lambda x: x[0])
-        end_obj = cf_units.num2date(end_float, std_units, calendar)
+        end_nones_removed = [(std_time, cal)
+                               for std_time, cal in std_end_times
+                               if std_time is not None]
+        if end_nones_removed:
+            end_float, calendar = max(end_nones_removed, key=lambda x: x[0])
+            end_obj = cf_units.num2date(end_float, std_units, calendar)
+            end_string = '{:04d}-{:02d}-{:02d}'.format(end_obj.year,
+                end_obj.month, end_obj.day)
+        else:
+            end_string = '--'
 
         # save the information in a dictionary
         file_sets_found.append({
@@ -184,10 +200,8 @@ def view_variable_query(request):
             'num_files': num_files,
             'online_status': online_status,
             'directory': directories,
-            'start_date': '{:04d}-{:02d}-{:02d}'.format(start_obj.year,
-                start_obj.month, start_obj.day),
-            'end_date': '{:04d}-{:02d}-{:02d}'.format(end_obj.year,
-                end_obj.month, end_obj.day),
+            'start_date': start_string,
+            'end_date': end_string,
             'ceda_dl_url': _find_common_directory(row_files, 'ceda_download_url'),
             'ceda_od_url': _find_common_directory(row_files, 'ceda_opendap_url'),
             'esgf_dl_url': _find_common_directory(row_files, 'esgf_download_url'),
@@ -281,7 +295,9 @@ def _find_common_directory(query_set, attribute, separator='/'):
         has not been set on any items.
     :raises AttributeError: If attribute does not exist.
     """
-    uniq_query_items = sorted(set([getattr(qi, attribute) for qi in query_set]))
+    uniq_query_items = sorted(set([getattr(qi, attribute)
+                                   for qi in query_set
+                                   if getattr(qi, attribute)]))
     if uniq_query_items and uniq_query_items != [None]:
         common_prefix = os.path.commonprefix(uniq_query_items)
         common_dir, __ = common_prefix.rsplit(separator, 1)
