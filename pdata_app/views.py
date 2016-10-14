@@ -162,7 +162,10 @@ def view_variable_query(request):
             (_standardise_time_unit(time, unit, std_units, cal), cal)
             for time, unit, cal in start_times
         ]
-        start_float, calendar = min(std_start_times, key=lambda x: x[0])
+        none_values_removed = [(std_time, cal)
+                               for std_time, cal in std_start_times
+                               if std_time is not None]
+        start_float, calendar = min(none_values_removed, key=lambda x: x[0])
         start_obj = cf_units.num2date(start_float, std_units, calendar)
 
         end_times = row_files.values_list('end_time', 'time_units',
@@ -281,7 +284,9 @@ def _find_common_directory(query_set, attribute, separator='/'):
         has not been set on any items.
     :raises AttributeError: If attribute does not exist.
     """
-    uniq_query_items = sorted(set([getattr(qi, attribute) for qi in query_set]))
+    uniq_query_items = sorted(set([getattr(qi, attribute)
+                                   for qi in query_set
+                                   if getattr(qi, attribute)]))
     if uniq_query_items and uniq_query_items != [None]:
         common_prefix = os.path.commonprefix(uniq_query_items)
         common_dir, __ = common_prefix.rsplit(separator, 1)
