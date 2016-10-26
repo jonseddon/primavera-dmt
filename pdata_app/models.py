@@ -153,6 +153,9 @@ class DataFileAggregationBase(models.Model):
     def variables(self):
         return self._file_aggregation("variable_request")
 
+    def tape_urls(self):
+        return self._file_aggregation("tape_url")
+
     def get_data_issues(self):
         records = []
         for datafile in self.get_data_files():
@@ -450,7 +453,7 @@ class DataFile(models.Model):
 
     # Tape status
     online = models.BooleanField(default=True, verbose_name="Is the file online?", null=False, blank=False)
-    tape_url = models.URLField(verbose_name="Tape URL", null=True, blank=True)
+    tape_url = models.CharField(verbose_name="Tape URL", max_length=200, null=True, blank=True)
 
     def __unicode__(self):
         return "%s (Directory: %s)" % (self.name, self.directory)
