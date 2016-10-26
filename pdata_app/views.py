@@ -110,8 +110,6 @@ def view_variable_query(request):
 
     # Everything supplied so start processing
 
-    # TODO: add some defensive coding to handle no results returned, etc.
-
     # see if any files contain the variable requested
     files = DataFile.objects.filter(variable_request__cmor_name=var_id)
     if not files:
@@ -133,10 +131,12 @@ def view_variable_query(request):
     for row in uniq_rows.fetchall():
         # unpack the four items from each distinct set of files
         frequency, climate_model, experiment, project, rip_code = row
+
         # find all of the files that contain these distinct items
         row_files = DataFile.objects.filter(variable_request__cmor_name=var_id,
             frequency=frequency, climate_model_id=climate_model,
             experiment_id=experiment, project_id=project, rip_code=rip_code)
+
         # generate some summary info about the files
         files_online = row_files.filter(online=True).count()
         files_offline = row_files.filter(online=False).count()
@@ -148,12 +148,24 @@ def view_variable_query(request):
         else:
             online_status = ONLINE_STATUS.online
         num_files = row_files.count()
+
         # directories where the files currently are
         directories = ', '.join(sorted(set([df.directory for df in row_files])))
+
+        # the tape urls of these files
+        unique_tape_urls = sorted(set([df.tape_url for df in row_files]))
+        if len(unique_tape_urls) == 1:
+            if unique_tape_urls[0] is None:
+                tape_urls = '--'
+            else:
+                tape_urls = ', '.join(unique_tape_urls)
+        else:
+            tape_urls = ', '.join(unique_tape_urls)
+
         # get first file in the set
         first_file = row_files.first()
 
-        # find the earliest start and latest end times of the set
+        # find the earliest start time of the set
         std_units = Settings.get_solo().standard_time_units
 
         start_times = row_files.values_list('start_time', 'time_units',
@@ -173,6 +185,7 @@ def view_variable_query(request):
         else:
             start_string = '--'
 
+        # find the latest end time of the set
         end_times = row_files.values_list('end_time', 'time_units',
             'calendar')
         std_end_times = [
@@ -202,13 +215,12 @@ def view_variable_query(request):
             'directory': directories,
             'start_date': start_string,
             'end_date': end_string,
+            'tape_urls': tape_urls,
             'ceda_dl_url': _find_common_directory(row_files, 'ceda_download_url'),
             'ceda_od_url': _find_common_directory(row_files, 'ceda_opendap_url'),
             'esgf_dl_url': _find_common_directory(row_files, 'esgf_download_url'),
             'esgf_od_url': _find_common_directory(row_files, 'esgf_opendap_url')
         })
-        # TODO version
-        # TODO unit test
 
     return render(request, 'variable_query_results.html', {'request': request,
         'page_title': '{}: Variable Query Results'.format(var_id),

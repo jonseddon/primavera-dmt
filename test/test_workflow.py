@@ -131,14 +131,14 @@ class TestWorkflows(PdataBaseTest):
         data_submission = DataSubmission.objects.all()[0]
 
         for df in data_submission.get_data_files():
-            df.tape_url = 'batch_id:4037'
+            df.tape_url = 'et:4037'
             df.online = False
             df.save()
 
         # Make some assertions
         for dfile_name in test_dsub.files:
             self.assertFalse(DataFile.objects.filter(name=dfile_name).first().online)
-            self.assertEqual(DataFile.objects.filter(name=dfile_name).first().tape_url, 'batch_id:4037')
+            self.assertEqual(DataFile.objects.filter(name=dfile_name).first().tape_url, 'et:4037')
 
     def test_04_restore_from_tape(self):
         # Do everything that was done for moving to tape
@@ -147,14 +147,14 @@ class TestWorkflows(PdataBaseTest):
         data_submission = DataSubmission.objects.all()[0]
 
         for df in data_submission.get_data_files():
-            df.tape_url = 'batch_id:4037'
+            df.tape_url = 'et:4037'
             df.online = False
             df.save()
 
         # Check that data was moved to tape
         for dfile_name in test_dsub.files:
             self.assertFalse(DataFile.objects.filter(name=dfile_name).first().online)
-            self.assertEqual(DataFile.objects.filter(name=dfile_name).first().tape_url, 'batch_id:4037')
+            self.assertEqual(DataFile.objects.filter(name=dfile_name).first().tape_url, 'et:4037')
 
         # Restore from tape
         for df in data_submission.get_data_files():
@@ -165,7 +165,7 @@ class TestWorkflows(PdataBaseTest):
         for dfile_name in test_dsub.files:
             self.assertTrue(DataFile.objects.filter(name=dfile_name).first().online)
             # check that it's still held on tape
-            self.assertEqual(DataFile.objects.filter(name=dfile_name).first().tape_url, 'batch_id:4037')
+            self.assertEqual(DataFile.objects.filter(name=dfile_name).first().tape_url, 'et:4037')
 
     def test_05_create_data_issue(self):
         # Create a data submission to start with

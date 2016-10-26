@@ -15,6 +15,7 @@
             <th># Data Issues</th>
             <th>Earliest Date</th>
             <th>Latest Date</th>
+            <th>Tape URL</th>
         </tr>
         {% for record in records %}
             <tr>
@@ -27,12 +28,14 @@
                     <td>--</td>
                     <td>--</td>
                     <td>--</td>
+                    <td>--</td>
                 {% else %}
                     <td>{{ record.online_status }}</td>
                     <td>{{ record.get_data_files|length }}</td>
                     <td>{{ record.get_data_issues|length }}</td>
                     <td>{{ record.start_time|strftime:"%Y-%m-%d" }}</td>
                     <td>{{ record.end_time|strftime:"%Y-%m-%d" }}</td>
+                    <td>{{ record.tape_urls|join:', '}}</td>
                 {% endif %}
             </tr>
         {% endfor %}
