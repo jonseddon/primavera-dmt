@@ -6,11 +6,13 @@ This script is run by users to validate submitted data files and to create a
 data submission in the Data Management Tool.
 """
 import argparse
+import datetime
 import itertools
 import logging
 from multiprocessing import Process, Manager
 import os
 import random
+import re
 import sys
 
 import iris
@@ -232,8 +234,8 @@ def verify_fk_relationships(metadata):
     for check_type, check_str in checks:
         results = match_one(check_type, short_name=metadata[check_str])
         if not results:
-            msg = ('There is no existing entry for {}: {} in file: {}'.format(
-                check_str, metadata[check_str], metadata['basename']))
+            msg = ('There is no existing database entry for {}: {} in file: {}'.
+                format(check_str, metadata[check_str], metadata['basename']))
             logger.warning(msg)
             raise SubmissionError(msg)
 
@@ -348,6 +350,7 @@ def create_database_file_object(metadata, data_submission):
 
     metadata_objs = {}
 
+    # get values for each of the foreign key types
     for object_type, object_str in foreign_key_types:
         result = match_one(object_type, short_name=metadata[object_str])
         if result:
@@ -359,6 +362,7 @@ def create_database_file_object(metadata, data_submission):
             logger.error(msg)
             raise SubmissionError(msg)
 
+    # find the variable request
     var_match = match_one(VariableRequest, cmor_name=metadata['var_name'],
         table_name=metadata['table'])
     if var_match:
@@ -370,6 +374,15 @@ def create_database_file_object(metadata, data_submission):
         raise SubmissionError(msg)
 
     time_units = Settings.get_solo().standard_time_units
+
+    # find the version number from the date in the submission directory path
+    date_string = re.search(r'(?<=/incoming/)(\d{8})', metadata['directory'])
+    if date_string:
+        date_string = date_string.group(0)
+        version_string = 'v' + date_string
+    else:
+        today = datetime.datetime.utcnow()
+        version_string = today.strftime('v%Y%m%d')
 
     # create a data file. If the file already exists in the database with
     # identical metadata then nothing happens. If the file exists but with
@@ -391,6 +404,7 @@ def create_database_file_object(metadata, data_submission):
             end_time=_pdt2num(metadata['end_date'], time_units,
                               metadata['calendar'], start_of_period=False),
             time_units=time_units, calendar=metadata['calendar'],
+            version=version_string,
             data_submission=data_submission, online=True)
     except django.db.utils.IntegrityError:
         msg = ('Unable to submit file because it already exists in the '
@@ -610,11 +624,12 @@ def main(args):
     """
     Main entry point
     """
-    logger.debug('Submission directory: %s', args.directory)
+    submission_dir = os.path.normpath(args.directory)
+    logger.debug('Submission directory: %s', submission_dir)
     logger.debug('Project: %s', args.project)
     logger.debug('Processes requested: %s', args.processes)
 
-    data_files = list_files(args.directory)
+    data_files = list_files(submission_dir)
 
     logger.debug('%s files identified', len(data_files))
 
@@ -635,10 +650,10 @@ def main(args):
             logger.error(msg)
             raise SubmissionError(msg)
 
-        update_database_submission(validated_metadata, args.directory)
+        update_database_submission(validated_metadata, submission_dir)
 
         logger.debug('%s files submitted successfully',
-            match_one(DataSubmission, incoming_directory=args.directory).get_data_files().count())
+            match_one(DataSubmission, incoming_directory=submission_dir).get_data_files().count())
     except SubmissionError:
         sys.exit(1)
 

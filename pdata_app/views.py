@@ -270,6 +270,8 @@ def create_submission(request):
         form = CreateSubmissionForm(request.POST)
         if form.is_valid():
             submission = form.save(commit=False)
+            submission.incoming_directory = os.path.normpath(
+                submission.incoming_directory)
             submission.directory = submission.incoming_directory
             submission.status = STATUS_VALUES['PENDING_PROCESSING']
             submission.user = request.user

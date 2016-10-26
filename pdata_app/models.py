@@ -409,6 +409,10 @@ class DataFile(models.Model):
     directory = models.CharField(max_length=500, verbose_name="Current directory", null=False, blank=False)
     size = models.BigIntegerField(null=False, verbose_name="File size (bytes)")
 
+    # This is the file's version
+    version = models.CharField(max_length=10, verbose_name='File Version',
+                               null=True, blank=True)
+
     # Scientific metadata
     project = models.ForeignKey(Project, null=False, on_delete=PROTECT)
     institute = models.ForeignKey(Institute, null=False, on_delete=PROTECT)
