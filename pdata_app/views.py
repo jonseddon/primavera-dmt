@@ -47,6 +47,7 @@ def view_logout(request):
     logout(request)
     return redirect('home')
 
+
 def view_data_submissions(request):
     data_submissions = DataSubmission.objects.all().order_by('-date_submitted')
     return render(request, 'data_submissions.html', {'request': request,

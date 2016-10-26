@@ -1,6 +1,7 @@
 {% extends "base.html" %}
 {% load staticfiles %}
 {% load cf_unit_date %}
+{% load list_filters %}
 
     {% block contents %}
         <p>These are the data submissions that have been made so far...</p>
@@ -35,7 +36,7 @@
                     <td>{{ record.get_data_issues|length }}</td>
                     <td>{{ record.start_time|strftime:"%Y-%m-%d" }}</td>
                     <td>{{ record.end_time|strftime:"%Y-%m-%d" }}</td>
-                    <td>{{ record.tape_urls|join:', '}}</td>
+                    <td>{{ record.tape_urls|item_default:"--"|join:", " }}</td>
                 {% endif %}
             </tr>
         {% endfor %}
