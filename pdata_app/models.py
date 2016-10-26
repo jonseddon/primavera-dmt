@@ -153,8 +153,11 @@ class DataFileAggregationBase(models.Model):
     def variables(self):
         return self._file_aggregation("variable_request")
 
-    def tape_urls(self):
+    def get_tape_urls(self):
         return self._file_aggregation("tape_url")
+
+    def get_file_versions(self):
+        return self._file_aggregation("version")
 
     def get_data_issues(self):
         records = []

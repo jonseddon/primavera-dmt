@@ -36,7 +36,7 @@
                     <td>{{ record.get_data_issues|length }}</td>
                     <td>{{ record.start_time|strftime:"%Y-%m-%d" }}</td>
                     <td>{{ record.end_time|strftime:"%Y-%m-%d" }}</td>
-                    <td>{{ record.tape_urls|item_default:"--"|join:", " }}</td>
+                    <td>{{ record.get_tape_urls|item_default:"--"|join:", " }}</td>
                 {% endif %}
             </tr>
         {% endfor %}
