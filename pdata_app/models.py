@@ -380,6 +380,8 @@ class DataRequest(models.Model):
     experiment = models.ForeignKey(Experiment, null=False, on_delete=PROTECT)
     variable_request = models.ForeignKey(VariableRequest, null=False,
         on_delete=PROTECT)
+    rip_code = models.CharField(max_length=20, verbose_name="RIP code",
+        null=True, blank=True)
     start_time = models.FloatField(verbose_name="Start time", null=False, blank=False)
     end_time = models.FloatField(verbose_name="End time", null=False, blank=False)
     time_units = models.CharField(verbose_name='Time units', max_length=50, null=False, blank=False)
