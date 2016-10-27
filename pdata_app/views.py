@@ -47,6 +47,7 @@ def view_logout(request):
     logout(request)
     return redirect('home')
 
+
 def view_data_submissions(request):
     data_submissions = DataSubmission.objects.all().order_by('-date_submitted')
     return render(request, 'data_submissions.html', {'request': request,
@@ -153,14 +154,20 @@ def view_variable_query(request):
         directories = ', '.join(sorted(set([df.directory for df in row_files])))
 
         # the tape urls of these files
-        unique_tape_urls = sorted(set([df.tape_url for df in row_files]))
-        if len(unique_tape_urls) == 1:
-            if unique_tape_urls[0] is None:
-                tape_urls = '--'
-            else:
-                tape_urls = ', '.join(unique_tape_urls)
-        else:
+        unique_tape_urls = sorted(set([df.tape_url for df in row_files
+                                       if df.tape_url]))
+        if unique_tape_urls:
             tape_urls = ', '.join(unique_tape_urls)
+        else:
+            tape_urls = '--'
+
+        # the versions of these files
+        unique_versions = sorted(set([df.version for df in row_files
+                                       if df.version]))
+        if unique_versions:
+            versions = ', '.join(unique_versions)
+        else:
+            versions = '--'
 
         # get first file in the set
         first_file = row_files.first()
@@ -216,6 +223,7 @@ def view_variable_query(request):
             'start_date': start_string,
             'end_date': end_string,
             'tape_urls': tape_urls,
+            'versions': versions,
             'ceda_dl_url': _find_common_directory(row_files, 'ceda_download_url'),
             'ceda_od_url': _find_common_directory(row_files, 'ceda_opendap_url'),
             'esgf_dl_url': _find_common_directory(row_files, 'esgf_download_url'),

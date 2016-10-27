@@ -131,6 +131,7 @@ class TestDataFileAggregationBaseMethods(TestCase):
                 end_time=metadata["end_time"],
                 time_units=metadata["time_units"],
                 calendar=CALENDARS['360_day'],
+                version='v20161225', tape_url='et:1234',
                 data_submission=self.dsub)
 
     def test_get_data_files(self):
@@ -169,6 +170,24 @@ class TestDataFileAggregationBaseMethods(TestCase):
         expected = ['chips', 'spam', 'beans']
 
         self.assertEqual(var_names.sort(), expected.sort())
+
+    def test_get_tape_urls(self):
+        tape_urls = self.dsub.get_tape_urls()
+        tape_urls.sort()
+
+        expected = [u'et:1234']
+
+        self.assertEqual(tape_urls, expected)
+
+
+    def test_get_file_versions(self):
+        file_versions = self.dsub.get_file_versions()
+        file_versions.sort()
+
+        expected = [u'v20161225']
+
+        self.assertEqual(file_versions, expected)
+
 
     def test_start_time(self):
         start_time = self.dsub.start_time()
