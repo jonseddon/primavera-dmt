@@ -11,7 +11,7 @@
             <th>RIP Code</th><th>Number of Files</th><th>Online Status</th>
             <th>Earliest Start Date</th><th>Latest End Date</th>
             <th>Group Workspace Directory</th>
-            <th>Tape URL</th>
+            <th>Tape URL</th><th>File Versions</th>
             <th>CEDA Download URL</th><th>CEDA OpenDAP URL</th>
             <th>ESGF Download URL</th><th>ESGF OpenDAP URL</th>
         </tr>
@@ -24,6 +24,7 @@
                 <td>{{ file_set.start_date }}</td><td>{{ file_set.end_date }}</td>
                 <td style="white-space: nowrap;">{{ file_set.directory }}</td>
                 <td>{{ file_set.tape_urls }}</td>
+                <td>{{ file_set.versions }}</td>
                 <td>{{ file_set.ceda_dl_url|to_comma_sep|urlize }}</td>
                 <td>{{ file_set.ceda_od_url|to_comma_sep|urlize }}</td>
                 <td>{{ file_set.esgf_dl_url|to_comma_sep|urlize }}</td>

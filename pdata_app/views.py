@@ -161,6 +161,14 @@ def view_variable_query(request):
         else:
             tape_urls = '--'
 
+        # the versions of these files
+        unique_versions = sorted(set([df.version for df in row_files
+                                       if df.version]))
+        if unique_versions:
+            versions = ', '.join(unique_versions)
+        else:
+            versions = '--'
+
         # get first file in the set
         first_file = row_files.first()
 
@@ -215,6 +223,7 @@ def view_variable_query(request):
             'start_date': start_string,
             'end_date': end_string,
             'tape_urls': tape_urls,
+            'versions': versions,
             'ceda_dl_url': _find_common_directory(row_files, 'ceda_download_url'),
             'ceda_od_url': _find_common_directory(row_files, 'ceda_opendap_url'),
             'esgf_dl_url': _find_common_directory(row_files, 'esgf_download_url'),
