@@ -268,10 +268,17 @@ def view_outstanding_query(request):
     outstanding_reqs = []
 
     for req in data_reqs:
-        req_files = DataFile.objects.filter(
-            climate_model__id=req.climate_model_id,
-            experiment__id=req.experiment_id,
-            variable_request__id=req.variable_request_id)
+        if req.rip_code:
+            req_files = DataFile.objects.filter(
+                climate_model__id=req.climate_model_id,
+                experiment__id=req.experiment_id,
+                variable_request__id=req.variable_request_id,
+                rip_code=req.rip_code)
+        else:
+            req_files = DataFile.objects.filter(
+                climate_model__id=req.climate_model_id,
+                experiment__id=req.experiment_id,
+                variable_request__id=req.variable_request_id)
 
         if not req_files:
             # no files found so request not satisfied
