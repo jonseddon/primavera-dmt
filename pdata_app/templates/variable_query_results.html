@@ -25,10 +25,10 @@
                 <td style="white-space: nowrap;">{{ file_set.directory }}</td>
                 <td>{{ file_set.tape_urls }}</td>
                 <td>{{ file_set.versions }}</td>
-                <td>{{ file_set.ceda_dl_url|to_comma_sep|urlize }}</td>
-                <td>{{ file_set.ceda_od_url|to_comma_sep|urlize }}</td>
-                <td>{{ file_set.esgf_dl_url|to_comma_sep|urlize }}</td>
-                <td>{{ file_set.esgf_od_url|to_comma_sep|urlize }}</td>
+                <td>{{ file_set.ceda_dl_url|urlize }}</td>
+                <td>{{ file_set.ceda_od_url|urlize }}</td>
+                <td>{{ file_set.esgf_dl_url|urlize }}</td>
+                <td>{{ file_set.esgf_od_url|urlize }}</td>
             </tr>
         {% endfor %}
         </table></p>
