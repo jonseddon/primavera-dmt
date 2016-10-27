@@ -154,14 +154,12 @@ def view_variable_query(request):
         directories = ', '.join(sorted(set([df.directory for df in row_files])))
 
         # the tape urls of these files
-        unique_tape_urls = sorted(set([df.tape_url for df in row_files]))
-        if len(unique_tape_urls) == 1:
-            if unique_tape_urls[0] is None:
-                tape_urls = '--'
-            else:
-                tape_urls = ', '.join(unique_tape_urls)
-        else:
+        unique_tape_urls = sorted(set([df.tape_url for df in row_files
+                                       if df.tape_url]))
+        if unique_tape_urls:
             tape_urls = ', '.join(unique_tape_urls)
+        else:
+            tape_urls = '--'
 
         # get first file in the set
         first_file = row_files.first()

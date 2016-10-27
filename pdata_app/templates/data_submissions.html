@@ -17,6 +17,7 @@
             <th>Earliest Date</th>
             <th>Latest Date</th>
             <th>Tape URL</th>
+            <th>File Versions</th>
         </tr>
         {% for record in records %}
             <tr>
@@ -30,13 +31,15 @@
                     <td>--</td>
                     <td>--</td>
                     <td>--</td>
+                    <td>--</td>
                 {% else %}
                     <td>{{ record.online_status }}</td>
                     <td>{{ record.get_data_files|length }}</td>
                     <td>{{ record.get_data_issues|length }}</td>
                     <td>{{ record.start_time|strftime:"%Y-%m-%d" }}</td>
                     <td>{{ record.end_time|strftime:"%Y-%m-%d" }}</td>
-                    <td>{{ record.get_tape_urls|item_default:"--"|join:", " }}</td>
+                    <td>{{ record.get_tape_urls|to_comma_sep }}</td>
+                    <td>{{ record.get_file_versions|to_comma_sep }}</td>
                 {% endif %}
             </tr>
         {% endfor %}
