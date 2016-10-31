@@ -6,8 +6,8 @@ Populates the PRIMAVERA-DMT VariableRequest table with details from the PRIMAVER
 data request spreadsheet.
 
 Uses the Google Sheets API: https://developers.google.com/sheets/quickstart/python
-To load the spreadsheet at: https://docs.google.com/spreadsheets/d/1RyAtRixFpC5eMz94TyJE8QLbp1jxhrrKWGV_op5ch5Q
-Which is copied from Matthew Mizielinski's originhal at: https://docs.google.com/spreadsheets/d/12xidWhF2t1jZ4m_wGfZVIw5GHzckNWuhSvPLCS2BOQo
+To load the spreadsheet at: https://docs.google.com/spreadsheets/d/1bEDNnDTBQ93Nf6t-I675HJI64N96D76aaryrarHgPbI/edit#gid=1672172109
+Which is copied from Matthew Mizielinski's original at: https://docs.google.com/spreadsheets/d/1O48vmAhvOMmAKzjxHxQAKZRoYi3bFP52fkpMPxYdSqk/edit#gid=1495362375
 """
 import httplib2
 import os
@@ -28,6 +28,9 @@ django.setup()
 from pdata_app.models import VariableRequest
 from vocabs.vocabs import FREQUENCY_VALUES, VARIABLE_TYPES
 from pdata_app.utils.dbapi import get_or_create
+
+# The ID of thr Google Speadsheet (taken from the sheet's URL)
+SPREADSHEET_ID = '1bEDNnDTBQ93Nf6t-I675HJI64N96D76aaryrarHgPbI'
 
 # If modifying these scopes, delete your previously saved credentials
 # at ~/.credentials/sheets.googleapis.com-python-quickstart.json
@@ -79,19 +82,17 @@ def main():
     service = discovery.build('sheets', 'v4', http=http,
                               discoveryServiceUrl=discovery_url)
 
-    spreadsheet_id = '1RyAtRixFpC5eMz94TyJE8QLbp1jxhrrKWGV_op5ch5Q'
-
-    sheet_names = ['Amon', 'LImon', 'Lmon', 'Omon', 'SImon', 'aero', 'cfMon',
-        'emMon', 'emMonZ', 'primMon', 'primOmon', 'Oday', 'cfDay', 'day',
-        'emDay', 'emDayZ', 'emDaypt', 'primDay', 'primOday', 'primSIday',
+    sheet_names = ['Amon', 'LImon', 'Lmon', 'Omon', 'SImon', 'aermonthly',
+        'cfMon', 'emMon', 'emMonZ', 'primMon', 'primOmon', 'Oday', 'cfDay',
+        'day', 'emDay', 'emDayZ', 'emDaypt', 'primDay', 'primOday', 'primSIday',
         '6hrPlev', '6hrPlevpt', 'primO6hr', 'prim6hr', 'prim6hrpt', '3hr',
         'em3hr', 'em3hrpt', 'prim3hr', 'prim3hrpt', 'em1hr', 'emSubhr',
         'prim1hrpt', 'fx']
 
     for sheet in sheet_names:
-        range_name = '{}!A2:AD'.format(sheet)
+        range_name = '{}!A2:AI'.format(sheet)
         result = service.spreadsheets().values().get(
-            spreadsheetId=spreadsheet_id, range=range_name).execute()
+            spreadsheetId=SPREADSHEET_ID, range=range_name).execute()
         values = result.get('values', [])
 
         if not values:
@@ -106,7 +107,7 @@ def main():
                         cmor_name=row[11], modeling_realm=row[12],
                         frequency=FREQUENCY_VALUES[row[13]],
                         cell_measures=row[14], uid=row[21])
-                except KeyError:
+                except (KeyError, IndexError):
                     # display some information to work out where the error
                     # happened and then re-raise the exception to crash out
                     print 'cmor_name: {} table: {}'.format(row[11], sheet)
