@@ -23,6 +23,8 @@ def main():
         full_name='historical')
     expt = get_or_create(Experiment, short_name='present_day',
         full_name='present_day')
+    expt = get_or_create(Experiment, short_name='rcp26',
+        full_name='Representative Concentration Pathway 2.6 Wm - 2')
 
     inst = get_or_create(Institute, short_name='MOHC',
         full_name='Met Office Hadley Centre')
