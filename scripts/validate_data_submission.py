@@ -301,7 +301,7 @@ def validate_file_contents(cube, metadata):
     :returns: A boolean
     """
     _check_start_end_times(cube, metadata)
-    # _check_contiguity(cube, metadata)
+    _check_contiguity(cube, metadata)
     _check_data_point(cube, metadata)
 
 
