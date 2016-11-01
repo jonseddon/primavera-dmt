@@ -12,6 +12,7 @@ Which is copied from Matthew Mizielinski's original at: https://docs.google.com/
 from datetime import datetime
 import httplib2
 import os
+import re
 
 from apiclient import discovery
 import oauth2client
@@ -32,7 +33,7 @@ from pdata_app.models import (DataRequest, Institute, Project, Settings,
                               ClimateModel, Experiment, VariableRequest)
 from pdata_app.utils.dbapi import match_one, get_or_create
 
-# The ID of thr Google Speadsheet (taken from the sheet's URL)
+# The ID of the Google Speadsheet (taken from the sheet's URL)
 SPREADSHEET_ID = '1bEDNnDTBQ93Nf6t-I675HJI64N96D76aaryrarHgPbI'
 
 # If modifying these scopes, delete your previously saved credentials
@@ -56,62 +57,106 @@ def get_credentials():
     credential_dir = os.path.join(home_dir, '.credentials')
     if not os.path.exists(credential_dir):
         os.makedirs(credential_dir)
-    credential_path = os.path.join(credential_dir,
-        'sheets.googleapis.com-populate_variable_request.json')
+    credential_path = os.path.join(credential_dir, 'sheets.googleapis.'
+                                                   'com-populate_variable_'
+                                                   'request.json')
 
     store = oauth2client.file.Storage(credential_path)
     credentials = store.get()
     if not credentials or credentials.invalid:
         curr_dir = os.path.dirname(__file__)
-        secret_file_path = os.path.abspath(os.path.join(curr_dir, '..', 'etc', CLIENT_SECRET_FILE))
+        secret_file_path = os.path.abspath(os.path.join(curr_dir, '..', 'etc',
+                                                        CLIENT_SECRET_FILE))
         flow = client.flow_from_clientsecrets(secret_file_path, SCOPES)
         flow.user_agent = APPLICATION_NAME
         if flags:
             credentials = tools.run_flow(flow, store, flags)
         else:  # Needed only for compatibility with Python 2.6
             credentials = tools.run(flow, store)
-        print('Storing credentials to ' + credential_path)
+        print 'Storing credentials to ' + credential_path
     return credentials
 
 
 def is_awi(sheet_cell):
     """Is this variable produced by AWI?"""
-    return False
+    if not sheet_cell:
+        return False
+
+    status_ignored = sheet_cell.split(':')[-1].strip().upper()
+
+    if status_ignored == 'X' or status_ignored == 'LIMITED':
+        return True
+    elif status_ignored == 'FALSE':
+        return False
+    else:
+        print 'Unknown AWI status: {}. Ignoring.'.format(sheet_cell)
+        return False
 
 
 def is_cnrm(sheet_cell):
     """Is this variable produced by CNRM?"""
-    return False
+    if not sheet_cell:
+        return False
+
+    int_string = re.findall(r'-?\d+', sheet_cell)
+    if int_string:
+        if ( int_string[0] == '1' or
+             int_string[0] == '2' or
+             int_string[0] == '3'):
+            return True
+        elif (int_string[0] == '-1' or
+              int_string[0] == '-2' or
+              int_string[0] == '-3' or
+              int_string[0] == '-999'):
+            return False
+        else:
+            print 'Unknown CNRM status: {}. Ignoring.'.format(sheet_cell)
+            return False
 
 
 def is_cmcc(sheet_cell):
     """Is this variable produced by CMCC?"""
-    return False
+    if not sheet_cell:
+        return False
+
+    if sheet_cell.upper() == 'FALSE':
+        return False
+    else:
+        return True
 
 
 def is_knmi(sheet_cell):
     """Is this variable produced by KNMI (ECEarth)?"""
-    return False
+    return _is_ecearth(sheet_cell, 'KNMI')
 
 
 def is_shmi(sheet_cell):
     """Is this variable produced by SHMI (ECEarth)?"""
-    return False
+    return _is_ecearth(sheet_cell, 'SHMI')
 
 
 def is_bsc(sheet_cell):
     """Is this variable produced by BSC (ECEarth)?"""
-    return False
+    return _is_ecearth(sheet_cell, 'BSC')
 
 
 def is_cnr(sheet_cell):
     """Is this variable produced by CNR (ECEarth)?"""
-    return False
+    return _is_ecearth(sheet_cell, 'CNR')
 
 
 def is_mpi(sheet_cell):
     """Is this variable produced by MPI?"""
-    return False
+    if not sheet_cell:
+        return False
+
+    if sheet_cell.upper() == 'X' or sheet_cell.upper() == 'LIMITED':
+        return True
+    elif sheet_cell.upper() == 'FALSE' or sheet_cell.upper() == 'NO':
+        return False
+    else:
+        print 'Unknown MPI status: {}. Ignoring.'.format(sheet_cell)
+        return False
 
 
 def is_metoffice(sheet_cell):
@@ -135,17 +180,19 @@ def main():
     credentials = get_credentials()
     http = credentials.authorize(httplib2.Http())
     discovery_url = ('https://sheets.googleapis.com/$discovery/rest?'
-                    'version=v4')
+                     'version=v4')
     service = discovery.build('sheets', 'v4', http=http,
                               discoveryServiceUrl=discovery_url)
 
     # the names of each of the sheets
-    sheet_names = ['Amon', 'LImon', 'Lmon', 'Omon', 'SImon', 'aermonthly',
+    sheet_names = [
+        'Amon', 'LImon', 'Lmon', 'Omon', 'SImon', 'aermonthly',
         'cfMon', 'emMon', 'emMonZ', 'primMon', 'primOmon', 'Oday', 'cfDay',
         'day', 'emDay', 'emDayZ', 'emDaypt', 'primDay', 'primOday', 'primSIday',
         '6hrPlev', '6hrPlevpt', 'primO6hr', 'prim6hr', 'prim6hrpt', '3hr',
         'em3hr', 'em3hrpt', 'prim3hr', 'prim3hrpt', 'em1hr', 'emSubhr',
-        'prim1hrpt', 'fx']
+        'prim1hrpt', 'fx'
+    ]
 
     # details of each of the institutes
     institutes = {
@@ -264,8 +311,8 @@ def main():
                             cmor_name = row[11]
                             if cmor_name:
                                 var_req_obj = match_one(VariableRequest,
-                                    cmor_name=row[11],
-                                    table_name=sheet)
+                                                        cmor_name=row[11],
+                                                        table_name=sheet)
                             else:
                                 var_req_obj = match_one(VariableRequest,
                                                         long_name=row[1],
@@ -289,7 +336,7 @@ def main():
                                     ),
                                     time_units=std_units,
                                     calendar=institutes[col_num]['calendar']
-                            )
+                                )
                             else:
                                 msg = ('Unable to find variable request matching '
                                        'cmor_name {} and table_name {} in the '
@@ -301,6 +348,20 @@ def main():
                        format(sheet, row[11]))
                 print msg
                 raise
+
+
+def _is_ecearth(sheet_cell, institute):
+    """Is this variable produced by `institute` using ECEarth?"""
+    if not sheet_cell:
+        return False
+
+    if sheet_cell.upper() == 'X' or sheet_cell.upper() == 'LIMITED':
+        return True
+    elif sheet_cell.upper() == 'FALSE' or sheet_cell.upper() == 'NO':
+        return False
+    else:
+        print 'Unknown {} status: {}. Ignoring.'.format(institute, sheet_cell)
+        return False
 
 
 if __name__ == '__main__':
