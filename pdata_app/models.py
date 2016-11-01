@@ -11,9 +11,6 @@ from django.core.exceptions import ValidationError
 from vocabs import (STATUS_VALUES, FREQUENCY_VALUES, ONLINE_STATUS,
     CHECKSUM_TYPES, VARIABLE_TYPES, CALENDARS)
 
-
-print "REMEMBER: Add in the DREQUEST identifiers"
-
 model_names = ['Project', 'Institute', 'ClimateModel', 'Experiment',
                'DataSubmission', 'DataFile', 'ESGFDataset', 'CEDADataset',
                'DataRequest', 'DataIssue', 'Checksum', 'Settings',
