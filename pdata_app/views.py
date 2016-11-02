@@ -8,29 +8,13 @@ from django.contrib.auth.decorators import login_required
 from django.shortcuts import render, redirect
 from django.db import connection
 
-import django_tables2 as tables
 from django_tables2 import RequestConfig
 
 from .models import (DataFile, DataSubmission, ESGFDataset, CEDADataset,
     DataRequest, DataIssue, VariableRequest, Settings, _standardise_time_unit)
 from .forms import CreateSubmissionForm
+from .tables import DataRequestTable
 from vocabs.vocabs import ONLINE_STATUS, STATUS_VALUES
-
-
-class DataRequestTable(tables.Table):
-    class Meta:
-        model = DataRequest
-        attrs = {'class': 'paleblue'}
-        exclude = ('time_units', 'calendar')
-
-    def render_start_time(self, record):
-        return record.start_date_string()
-
-    def render_end_time(self, record):
-        return record.end_date_string()
-
-    def render_variable_request(self, value):
-        return value.cmor_name
 
 
 def view_login(request):
