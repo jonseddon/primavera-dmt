@@ -34,7 +34,7 @@ INSTALLED_APPS = (
     'django.contrib.staticfiles',
     'solo',
     'pdata_app',
-    'rest_framework'
+    'django_tables2'
 )
 
 MIDDLEWARE_CLASSES = (
