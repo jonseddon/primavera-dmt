@@ -9,14 +9,13 @@ Quick set-up
 
  `$ . venv/bin/activate` 
 
-
  1. Install dependencies:
 
  `$ pip install -r requirements.txt`
 
  1. Create local settings:
 
- `$ cp pdata_site/settings_local.py`
+ `$ cp pdata_site/settings_local.py.tmpl pdata_site/settings_local.py`
 
  1. Django setup:
 

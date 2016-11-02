@@ -40,6 +40,7 @@ CHECKSUM_TYPES = CodeList(
 
 VARIABLE_TYPES = CodeList(
         (('real', 'real'),
+         ('float', 'float'),
          ('None', 'None'),
          ('', ''))
 )
