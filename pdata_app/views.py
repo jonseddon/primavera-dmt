@@ -167,7 +167,7 @@ def view_variable_query(request):
 
         # the versions of these files
         unique_versions = sorted(set([df.version for df in row_files
-                                       if df.version]))
+                                      if df.version]))
         if unique_versions:
             versions = ', '.join(unique_versions)
         else:
@@ -204,8 +204,8 @@ def view_variable_query(request):
             for time, unit, cal in end_times
         ]
         end_nones_removed = [(std_time, cal)
-                               for std_time, cal in std_end_times
-                               if std_time is not None]
+                             for std_time, cal in std_end_times
+                             if std_time is not None]
         if end_nones_removed:
             end_float, calendar = max(end_nones_removed, key=lambda x: x[0])
             end_obj = cf_units.num2date(end_float, std_units, calendar)
