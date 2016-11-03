@@ -8,12 +8,13 @@ from django.contrib.auth.decorators import login_required
 from django.shortcuts import render, redirect
 from django.db import connection
 
-from django_tables2 import RequestConfig
-
 from .models import (DataFile, DataSubmission, ESGFDataset, CEDADataset,
     DataRequest, DataIssue, VariableRequest, Settings, _standardise_time_unit)
 from .forms import CreateSubmissionForm
 from .tables import DataRequestTable
+from .filters import DataRequestFilter
+from .forms import DataRequestFormHelper
+from .utils.table_views import PagedFilteredTableView
 from vocabs.vocabs import ONLINE_STATUS, STATUS_VALUES
 
 
@@ -75,11 +76,17 @@ def view_esgf_datasets(request):
         'page_title': 'ESGF Datasets', 'records': esgf_datasets})
 
 
-def view_data_requests(request):
-    data_reqs = DataRequestTable(DataRequest.objects.all())
-    RequestConfig(request).configure(data_reqs)
-    return render(request, 'data_requests.html', {'request': request,
-        'page_title': 'Data Requests', 'records': data_reqs})
+# def view_data_requests(request):
+#     data_reqs = DataRequestTable(DataRequest.objects.all())
+#     RequestConfig(request).configure(data_reqs)
+#     return render(request, 'data_requests.html', {'request': request,
+#         'page_title': 'Data Requests', 'records': data_reqs})
+
+class DataRequestList(PagedFilteredTableView):
+    model = DataRequest
+    table_class = DataRequestTable
+    filter_class = DataRequestFilter
+    formhelper_class = DataRequestFormHelper
 
 
 def view_data_issues(request):

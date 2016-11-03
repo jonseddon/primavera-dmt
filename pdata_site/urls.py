@@ -25,7 +25,9 @@ urlpatterns = [
     url(r'^ceda_datasets/$', pdata_app.views.view_ceda_datasets,
         name='ceda_datasets'),
 
-    url(r'^data_requests/$', pdata_app.views.view_data_requests,
+    # url(r'^data_requests/$', pdata_app.views.view_data_requests,
+    #     name='data_requests'),
+    url(r'^data_requests/$', pdata_app.views.DataRequestList.as_view(),
         name='data_requests'),
 
     url(r'^data_issues/$', pdata_app.views.view_data_issues,
