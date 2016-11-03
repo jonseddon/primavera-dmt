@@ -1,3 +1,10 @@
+"""
+A custom class for drawing tables from QuerySets
+
+Taken from: http://stackoverflow.com/questions/25256239/\
+how-do-i-filter-tables-with-django-generic-views
+"""
+
 from django_tables2 import SingleTableView
 
 
