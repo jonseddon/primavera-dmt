@@ -21,7 +21,7 @@ class DataRequestFilter(django_filters.FilterSet):
                                            lookup_expr='contains')
 
     variable_request = django_filters.CharFilter(name='variable_request__cmor_name',
-                                                 lookup_expr='contains')
+                                                 lookup_expr='exact')
 
     rip_code = django_filters.CharFilter(name='rip_code',
                                          lookup_expr='contains')

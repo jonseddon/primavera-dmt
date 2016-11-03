@@ -372,21 +372,32 @@ class DataRequest(models.Model):
     """
     A Data Request for a given set of inputs
     """
+    class Meta:
+        verbose_name = 'Data Request'
 
-    project = models.ForeignKey(Project, null=False, on_delete=PROTECT)
-    institute = models.ForeignKey(Institute, null=False, on_delete=PROTECT)
+    project = models.ForeignKey(Project, null=False, on_delete=PROTECT,
+                                verbose_name='Project')
+    institute = models.ForeignKey(Institute, null=False, on_delete=PROTECT,
+                                  verbose_name='Institute')
     climate_model = models.ForeignKey(ClimateModel, null=False,
-        on_delete=PROTECT)
-    experiment = models.ForeignKey(Experiment, null=False, on_delete=PROTECT)
+                                      on_delete=PROTECT,
+                                      verbose_name='Climate Model')
+    experiment = models.ForeignKey(Experiment, null=False, on_delete=PROTECT,
+                                   verbose_name='Experiment')
     variable_request = models.ForeignKey(VariableRequest, null=False,
-        on_delete=PROTECT)
+                                         on_delete=PROTECT,
+                                         verbose_name='Variable')
     rip_code = models.CharField(max_length=20, verbose_name="RIP code",
-        null=True, blank=True)
-    start_time = models.FloatField(verbose_name="Start time", null=False, blank=False)
-    end_time = models.FloatField(verbose_name="End time", null=False, blank=False)
-    time_units = models.CharField(verbose_name='Time units', max_length=50, null=False, blank=False)
+                                null=True, blank=True)
+    start_time = models.FloatField(verbose_name="Start time", null=False,
+                                   blank=False)
+    end_time = models.FloatField(verbose_name="End time", null=False,
+                                 blank=False)
+    time_units = models.CharField(verbose_name='Time units', max_length=50,
+                                  null=False, blank=False)
     calendar = models.CharField(verbose_name='Calendar', max_length=20,
-        null=False, blank=False, choices=CALENDARS.items())
+                                null=False, blank=False,
+                                choices=CALENDARS.items())
 
     def start_date_string(self):
         """Return a string containing the start date"""

@@ -16,4 +16,7 @@ class DataRequestTable(tables.Table):
         return record.end_date_string()
 
     def render_variable_request(self, value):
-        return value.cmor_name
+        return '{} ({})'.format(value.cmor_name, value.table_name)
+
+
+# class OutstandingQueryTable(tables.Table):
