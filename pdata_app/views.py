@@ -269,7 +269,7 @@ def view_outstanding_query(request):
         return render(request, 'outstanding_query.html', {'request': request,
             'page_title': 'Outstanding Data Query', 'message': msg})
 
-    outstanding_reqs = []
+    excludes = []
 
     for req in data_reqs:
         if req.rip_code:
@@ -284,12 +284,12 @@ def view_outstanding_query(request):
                 experiment__id=req.experiment_id,
                 variable_request__id=req.variable_request_id)
 
-        if not req_files:
-            # no files found so request not satisfied
-            outstanding_reqs.append(req)
+        if req_files:
+            # files found so request is satisfied so remove this request
+            excludes.append(req.id)
 
-    # TODO: sort the results by table and then variable
-    outstanding_reqs.sort(key=attrgetter('variable_request.cmor_name'))
+    outstanding_reqs = data_reqs.exclude(id__in=excludes)
+
 
     return render(request, 'outstanding_query_results.html', {'request': request,
         'page_title': 'Outstanding Data Query', 'records': outstanding_reqs})
