@@ -5,7 +5,7 @@ import cf_units
 from django.db import models
 from django.utils import timezone
 from solo.models import SingletonModel
-from django.db.models import Min, Max, PROTECT, SET_NULL, CASCADE
+from django.db.models import PROTECT, SET_NULL, CASCADE
 from django.core.exceptions import ValidationError
 
 from vocabs import (STATUS_VALUES, FREQUENCY_VALUES, ONLINE_STATUS,
@@ -349,12 +349,15 @@ class ESGFDataset(DataFileAggregationBase):
 
     def clean(self, *args, **kwargs):
         if not re.match(r"^v\d+$", self.version):
-            raise ValidationError('Version must begin with letter "v" followed by a number (date).')
+            raise ValidationError('Version must begin with letter "v" followed '
+                                  'by a number (date).')
 
         if not self.directory.startswith("/"):
-            raise ValidationError('Directory must begin with "/" because it is a full directory path.')
+            raise ValidationError('Directory must begin with "/" because it is '
+                                  'a full directory path.')
 
-        if self.directory.endswith("/"): self.directory = self.directory.rstrip("/")
+        if self.directory.endswith("/"):
+            self.directory = self.directory.rstrip("/")
 
         super(ESGFDataset, self).save(*args, **kwargs)
 

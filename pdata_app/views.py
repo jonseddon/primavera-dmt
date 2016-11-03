@@ -11,6 +11,9 @@ from django.db import connection
 from .models import (DataFile, DataSubmission, ESGFDataset, CEDADataset,
     DataRequest, DataIssue, VariableRequest, Settings, _standardise_time_unit)
 from .forms import CreateSubmissionForm
+from .tables import DataRequestTable
+from .filters import DataRequestFilter
+from .utils.table_views import PagedFilteredTableView
 from vocabs.vocabs import ONLINE_STATUS, STATUS_VALUES
 
 
@@ -72,10 +75,11 @@ def view_esgf_datasets(request):
         'page_title': 'ESGF Datasets', 'records': esgf_datasets})
 
 
-def view_data_requests(request):
-    data_reqs = DataRequest.objects.all()
-    return render(request, 'data_requests.html', {'request': request,
-        'page_title': 'Data Requests', 'records': data_reqs})
+class DataRequestList(PagedFilteredTableView):
+    model = DataRequest
+    table_class = DataRequestTable
+    filter_class = DataRequestFilter
+    page_title = 'Data Requests'
 
 
 def view_data_issues(request):
@@ -163,7 +167,7 @@ def view_variable_query(request):
 
         # the versions of these files
         unique_versions = sorted(set([df.version for df in row_files
-                                       if df.version]))
+                                      if df.version]))
         if unique_versions:
             versions = ', '.join(unique_versions)
         else:
@@ -200,8 +204,8 @@ def view_variable_query(request):
             for time, unit, cal in end_times
         ]
         end_nones_removed = [(std_time, cal)
-                               for std_time, cal in std_end_times
-                               if std_time is not None]
+                             for std_time, cal in std_end_times
+                             if std_time is not None]
         if end_nones_removed:
             end_float, calendar = max(end_nones_removed, key=lambda x: x[0])
             end_obj = cf_units.num2date(end_float, std_units, calendar)
