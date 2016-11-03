@@ -13,7 +13,6 @@ from .models import (DataFile, DataSubmission, ESGFDataset, CEDADataset,
 from .forms import CreateSubmissionForm
 from .tables import DataRequestTable
 from .filters import DataRequestFilter
-from .forms import DataRequestFormHelper
 from .utils.table_views import PagedFilteredTableView
 from vocabs.vocabs import ONLINE_STATUS, STATUS_VALUES
 
@@ -76,17 +75,11 @@ def view_esgf_datasets(request):
         'page_title': 'ESGF Datasets', 'records': esgf_datasets})
 
 
-# def view_data_requests(request):
-#     data_reqs = DataRequestTable(DataRequest.objects.all())
-#     RequestConfig(request).configure(data_reqs)
-#     return render(request, 'data_requests.html', {'request': request,
-#         'page_title': 'Data Requests', 'records': data_reqs})
-
 class DataRequestList(PagedFilteredTableView):
     model = DataRequest
     table_class = DataRequestTable
     filter_class = DataRequestFilter
-    formhelper_class = DataRequestFormHelper
+    page_title = 'Data Requests'
 
 
 def view_data_issues(request):

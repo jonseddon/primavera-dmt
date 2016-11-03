@@ -35,9 +35,7 @@ INSTALLED_APPS = (
     'solo',
     'pdata_app',
     'django_tables2',
-    'django_filters',
-    'crispy_forms'
-
+    'django_filters'
 )
 
 MIDDLEWARE_CLASSES = (
@@ -98,5 +96,3 @@ STATICFILES_DIRS = [
 ]
 
 STATIC_URL = '/static/'
-
-CRISPY_TEMPLATE_PACK = 'bootstrap'
