@@ -1,4 +1,5 @@
 import os
+import urllib
 
 import cf_units
 
@@ -6,6 +7,8 @@ from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.decorators import login_required
 from django.shortcuts import render, redirect
 from django.db import connection
+from django.http import HttpResponseRedirect
+from django.core.urlresolvers import reverse
 
 from .models import (DataFile, DataSubmission, ESGFDataset, CEDADataset,
     DataRequest, DataIssue, VariableRequest, Settings, _standardise_time_unit)
@@ -307,11 +310,30 @@ def create_submission(request):
             submission.status = STATUS_VALUES['PENDING_PROCESSING']
             submission.user = request.user
             submission.save()
-            return redirect('data_submissions')
+            return _custom_redirect('data_submissions', sort='-date_submitted')
     else:
         form = CreateSubmissionForm()
     return render(request, 'create_submission_form.html', {'form': form,
         'page_title': 'Create Data Submission'})
+
+
+def _custom_redirect(url_name, *args, **kwargs):
+    """
+    Generate an HTTP redirect to URL with GET parameters.
+
+    For example: _custom_redirect('data_submissions', sort='-date_submitted')
+    should redirect to data_submissions/?sort=-date_submitted
+
+    From: http://stackoverflow.com/a/3766452
+
+    :param str url_name:
+    :param str args:
+    :param kwargs:
+    :return: An HTTP response
+    """
+    url = reverse(url_name, args = args)
+    params = urllib.urlencode(kwargs)
+    return HttpResponseRedirect(url + "?%s" % params)
 
 
 def _find_common_directory(query_set, attribute, separator='/'):
