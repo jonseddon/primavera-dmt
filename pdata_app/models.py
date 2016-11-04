@@ -260,13 +260,21 @@ class DataSubmission(DataFileAggregationBase):
     # start_time
     # end_time
 
-    status = models.CharField(max_length=20, choices=STATUS_VALUES.items(), verbose_name='Status',
-                              default=STATUS_VALUES.EXPECTED, blank=False, null=False)
-    incoming_directory = models.CharField(max_length=500, verbose_name='Incoming Directory', blank=False, null=False)
+    status = models.CharField(max_length=20, choices=STATUS_VALUES.items(),
+                              verbose_name='Status',
+                              default=STATUS_VALUES.EXPECTED,
+                              blank=False, null=False)
+    incoming_directory = models.CharField(max_length=500,
+                                          verbose_name='Incoming Directory',
+                                          blank=False, null=False)
     # Current directory
-    directory = models.CharField(max_length=500, verbose_name='Current Directory', blank=False, null=False)
+    directory = models.CharField(max_length=500,
+                                 verbose_name='Current Directory',
+                                 blank=False, null=False)
     user = models.CharField(max_length=100, blank=False, null=False)
-    date_submitted = models.DateTimeField(auto_now_add=True, null=False, blank=False)
+    date_submitted = models.DateTimeField(auto_now_add=True,
+                                          verbose_name='Date Submitted',
+                                          null=False, blank=False)
 
     def __unicode__(self):
         return "Data Submission: %s" % self.directory

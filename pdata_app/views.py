@@ -10,8 +10,8 @@ from django.db import connection
 from .models import (DataFile, DataSubmission, ESGFDataset, CEDADataset,
     DataRequest, DataIssue, VariableRequest, Settings, _standardise_time_unit)
 from .forms import CreateSubmissionForm
-from .tables import DataRequestTable, DataFileTable
-from .filters import DataRequestFilter, DataFileFilter
+from .tables import DataRequestTable, DataFileTable, DataSubmissionTable
+from .filters import DataRequestFilter, DataFileFilter, DataSubmissionFilter
 from .utils.table_views import PagedFilteredTableView
 from vocabs.vocabs import ONLINE_STATUS, STATUS_VALUES
 
@@ -28,6 +28,13 @@ class DataFileList(PagedFilteredTableView):
     table_class = DataFileTable
     filter_class = DataFileFilter
     page_title = 'Data Files'
+
+
+class DataSubmissionList(PagedFilteredTableView):
+    model = DataSubmission
+    table_class = DataSubmissionTable
+    filter_class = DataSubmissionFilter
+    page_title = 'Data Submissions'
 
 
 def view_login(request):
@@ -62,12 +69,6 @@ def view_login(request):
 def view_logout(request):
     logout(request)
     return redirect('home')
-
-
-def view_data_submissions(request):
-    data_submissions = DataSubmission.objects.all().order_by('-date_submitted')
-    return render(request, 'data_submissions.html', {'request': request,
-        'page_title': 'Data Submissions', 'records': data_submissions})
 
 
 def view_ceda_datasets(request):

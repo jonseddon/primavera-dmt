@@ -16,7 +16,7 @@ urlpatterns = [
 
     url(r'^files/$', pdata_app.views.DataFileList.as_view(), name='data_files'),
 
-    url(r'^submissions/$', pdata_app.views.view_data_submissions,
+    url(r'^submissions/$', pdata_app.views.DataSubmissionList.as_view(),
         name='data_submissions'),
 
     url(r'^esgf_datasets/$', pdata_app.views.view_esgf_datasets,

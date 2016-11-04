@@ -1,5 +1,5 @@
 import django_filters
-from .models import DataRequest, DataFile
+from .models import DataRequest, DataSubmission, DataFile
 
 
 class DataRequestFilter(django_filters.FilterSet):
@@ -43,3 +43,15 @@ class DataFileFilter(django_filters.FilterSet):
 
     tape_url = django_filters.CharFilter(name='tape_url',
                                          lookup_expr='contains')
+
+
+class DataSubmissionFilter(django_filters.FilterSet):
+    class Meta:
+        model = DataSubmission
+        fields = ('status', 'directory')
+
+    status = django_filters.CharFilter(name='status',
+                                     lookup_expr='icontains')
+
+    directory = django_filters.CharFilter(name='directory',
+                                          lookup_expr='contains')
