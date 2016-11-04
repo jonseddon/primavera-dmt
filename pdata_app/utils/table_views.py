@@ -16,7 +16,7 @@ class PagedFilteredTableView(SingleTableView):
     def get_queryset(self, **kwargs):
         qs = super(PagedFilteredTableView, self).get_queryset()
         self.filter = self.filter_class(self.request.GET, queryset=qs)
-        return self.filter.qs
+        return self.filter.qs.distinct()
 
     def get_context_data(self, **kwargs):
         context = super(PagedFilteredTableView, self).get_context_data()

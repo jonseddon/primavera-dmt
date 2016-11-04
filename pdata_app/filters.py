@@ -55,3 +55,9 @@ class DataSubmissionFilter(django_filters.FilterSet):
 
     directory = django_filters.CharFilter(name='directory',
                                           lookup_expr='contains')
+
+    version = django_filters.CharFilter(name='datafile__version',
+                                        lookup_expr='contains')
+
+    tape_url = django_filters.CharFilter(name='datafile__tape_url',
+                                        lookup_expr='contains')
