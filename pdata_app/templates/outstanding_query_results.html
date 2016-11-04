@@ -1,12 +1,46 @@
-{% extends "base.html" %}
+{% extends "base_sortable_table.html" %}
 {% load staticfiles %}
 {% load render_table from django_tables2 %}
 
     {% block contents %}
         {% if records %}
+            <p>
+                <strong>Project:</strong> {{ request.GET.project }}
+                <strong>Model:</strong> {{ request.GET.model }}
+                <strong>Experiment:</strong> {{ request.GET.experiment }}
+            </p>
+
             <p>No files have been received for the following data requests:</p>
 
-            {% render_table records %}
+            <table id="main_table" class="table table-striped table-bordered">
+                <thead>
+                    <tr>
+                        <th>Project</th>
+                        <th>Institute</th>
+                        <th>Climate Model</th>
+                        <th>Experiment</th>
+                        <th>Ensemble Member</th>
+                        <th>Variable Name</th>
+                        <th>Start</th>
+                        <th>End</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for record in records %}
+                        <tr>
+                            <td>{{ record.project.short_name }}</td>
+                            <td>{{ record.institute.short_name }}</td>
+                            <td>{{ record.climate_model.short_name }}</td>
+                            <td>{{ record.experiment.short_name }}</td>
+                            <td>{{ record.rip_code|default:"--" }}</td>
+                            <td>{{ record.variable_request.cmor_name }}</td>
+                            <td>{{ record.start_date_string }}</td>
+                            <td>{{ record.end_date_string }}</td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+
         {% else %}
             <p>Files have been received for all of the specified data requests.</p>
         {% endif %}

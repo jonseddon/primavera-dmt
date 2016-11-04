@@ -387,7 +387,7 @@ class DataRequest(models.Model):
     variable_request = models.ForeignKey(VariableRequest, null=False,
                                          on_delete=PROTECT,
                                          verbose_name='Variable')
-    rip_code = models.CharField(max_length=20, verbose_name="RIP code",
+    rip_code = models.CharField(max_length=20, verbose_name="Ensemble Member",
                                 null=True, blank=True)
     start_time = models.FloatField(verbose_name="Start time", null=False,
                                    blank=False)

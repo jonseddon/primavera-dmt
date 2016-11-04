@@ -17,6 +17,13 @@ from .utils.table_views import PagedFilteredTableView
 from vocabs.vocabs import ONLINE_STATUS, STATUS_VALUES
 
 
+class DataRequestList(PagedFilteredTableView):
+    model = DataRequest
+    table_class = DataRequestTable
+    filter_class = DataRequestFilter
+    page_title = 'Data Requests'
+
+
 def view_login(request):
     if request.method == 'GET':
         next_page = request.GET.get('next')
@@ -73,13 +80,6 @@ def view_esgf_datasets(request):
     esgf_datasets = ESGFDataset.objects.all()
     return render(request, 'esgf_datasets.html', {'request': request,
         'page_title': 'ESGF Datasets', 'records': esgf_datasets})
-
-
-class DataRequestList(PagedFilteredTableView):
-    model = DataRequest
-    table_class = DataRequestTable
-    filter_class = DataRequestFilter
-    page_title = 'Data Requests'
 
 
 def view_data_issues(request):
@@ -289,7 +289,6 @@ def view_outstanding_query(request):
             excludes.append(req.id)
 
     outstanding_reqs = data_reqs.exclude(id__in=excludes)
-
 
     return render(request, 'outstanding_query_results.html', {'request': request,
         'page_title': 'Outstanding Data Query', 'records': outstanding_reqs})

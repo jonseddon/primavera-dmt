@@ -8,6 +8,8 @@ class DataRequestTable(tables.Table):
         model = DataRequest
         attrs = {'class': 'paleblue'}
         exclude = ('id', 'time_units', 'calendar')
+        sequence = ('project', 'institute', 'climate_model', 'experiment',
+                    'rip_code', 'variable_request', 'start_time', 'end_time')
 
     def render_start_time(self, record):
         return record.start_date_string()
@@ -17,6 +19,3 @@ class DataRequestTable(tables.Table):
 
     def render_variable_request(self, value):
         return '{} ({})'.format(value.cmor_name, value.table_name)
-
-
-# class OutstandingQueryTable(tables.Table):
