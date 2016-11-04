@@ -16,8 +16,14 @@ class DataFileTable(tables.Table):
                    'ceda_dataset', 'ceda_download_url', 'ceda_opendap_url',
                    'esgf_download_url', 'esgf_opendap_url')
 
+    checksum = tables.Column(empty_values=(), verbose_name='Checksum')
+
     def render_data_submission(self, value):
         return '{}'.format(value.directory)
+
+    def render_checksum(self, record):
+        checksum = record.checksum_set.first()
+        return '{}: {}'.format(checksum.checksum_type, checksum.checksum_value)
 
 
 class DataSubmissionTable(tables.Table):
@@ -30,11 +36,11 @@ class DataSubmissionTable(tables.Table):
                     'tape_urls', 'file_versions')
 
     online_status = tables.Column(empty_values=())
-    num_files = tables.Column(empty_values=())
-    num_issues = tables.Column(empty_values=())
+    num_files = tables.Column(empty_values=(), verbose_name='# Data Files')
+    num_issues = tables.Column(empty_values=(), verbose_name='# Data Issues')
     earliest_date = tables.Column(empty_values=())
     latest_date = tables.Column(empty_values=())
-    tape_urls = tables.Column(empty_values=())
+    tape_urls = tables.Column(empty_values=(), verbose_name='Tape URLs')
     file_versions = tables.Column(empty_values=())
 
     def render_online_status(self, record):
