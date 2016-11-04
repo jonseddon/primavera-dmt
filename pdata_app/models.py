@@ -471,6 +471,16 @@ class DataFile(models.Model):
     online = models.BooleanField(default=True, verbose_name="Is the file online?", null=False, blank=False)
     tape_url = models.CharField(verbose_name="Tape URL", max_length=200, null=True, blank=True)
 
+    def start_date_string(self):
+        """Return a string containing the start date"""
+        dto = cf_units.num2date(self.start_time, self.time_units, self.calendar)
+        return dto.strftime('%Y-%m-%d')
+
+    def end_date_string(self):
+        """Return a string containing the end date"""
+        dto = cf_units.num2date(self.end_time, self.time_units, self.calendar)
+        return dto.strftime('%Y-%m-%d')
+
     def __unicode__(self):
         return "%s (Directory: %s)" % (self.name, self.directory)
 

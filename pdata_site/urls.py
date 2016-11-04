@@ -14,7 +14,7 @@ urlpatterns = [
 
     url(r'^logout/$', pdata_app.views.view_logout, name='logout'),
 
-    url(r'^files/$', pdata_app.views.view_data_files, name='data_files'),
+    url(r'^files/$', pdata_app.views.DataFileList.as_view(), name='data_files'),
 
     url(r'^submissions/$', pdata_app.views.view_data_submissions,
         name='data_submissions'),

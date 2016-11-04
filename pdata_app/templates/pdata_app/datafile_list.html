@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+{% load staticfiles %}
+{% load render_table from django_tables2 %}
+
+    {% block contents %}
+        <p>These are the netCDF files that we know about...</p>
+
+        <p>
+            <form class="form-inline" action="{% url 'data_files' %}" method="get">
+                <div class="form-group">
+                    <label class="sr-only" for="name">Name</label>
+                    <input type="text" class="form-control" name="name" id="name" placeholder="Name" {% if request.GET.name %} value="{{ request.GET.name }}" {% endif %} autofocus>
+                </div>
+                <div class="form-group">
+                    <label class="sr-only" for="directory">Directory</label>
+                    <input type="text" class="form-control" name="directory" id="directory" placeholder="Directory" {% if request.GET.directory %} value="{{ request.GET.directory }}" {% endif %}>
+                </div>
+                <div class="form-group">
+                    <label class="sr-only" for="version">Version</label>
+                    <input type="text" class="form-control" name="version" id="version" placeholder="Version" {% if request.GET.version %} value="{{ request.GET.version }}" {% endif %}>
+                </div>
+                <div class="form-group">
+                    <label class="sr-only" for="tape_url">Tape URL</label>
+                    <input type="text" class="form-control" name="tape_url" id="tape_url" placeholder="Tape URL" {% if request.GET.tape_url %} value="{{ request.GET.tape_url }}" {% endif %}>
+                </div>
+                <input type="submit" class="btn btn-default" value="Filter" />
+            </form>
+        </p>
+
+        {% render_table table %}
+    {% endblock %}

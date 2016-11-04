@@ -1,6 +1,21 @@
 import django_tables2 as tables
 
-from .models import DataRequest
+from .models import DataRequest, DataFile
+
+
+class DataFileTable(tables.Table):
+    class Meta:
+        model = DataFile
+        attrs = {'class': 'paleblue'}
+        exclude = ('id', 'incoming_directory', 'size', 'project', 'institute',
+                   'climate_model', 'experiment', 'start_time', 'end_time',
+                   'variable_request', 'frequency', 'rip_code', 'time_units',
+                   'calendar', 'data_submission', 'esgf_dataset',
+                   'ceda_dataset', 'ceda_download_url', 'ceda_opendap_url',
+                   'esgf_download_url', 'esgf_opendap_url')
+
+    def render_data_submission(self, value):
+        return '{}'.format(value.directory)
 
 
 class DataRequestTable(tables.Table):

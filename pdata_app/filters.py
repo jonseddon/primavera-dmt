@@ -1,5 +1,5 @@
 import django_filters
-from .models import DataRequest
+from .models import DataRequest, DataFile
 
 
 class DataRequestFilter(django_filters.FilterSet):
@@ -24,4 +24,22 @@ class DataRequestFilter(django_filters.FilterSet):
                                                  lookup_expr='exact')
 
     rip_code = django_filters.CharFilter(name='rip_code',
+                                         lookup_expr='contains')
+
+
+class DataFileFilter(django_filters.FilterSet):
+    class Meta:
+        model = DataFile
+        fields = ['name', 'directory', 'version', 'tape_url']
+
+    name = django_filters.CharFilter(name='name',
+                                         lookup_expr='contains')
+
+    directory = django_filters.CharFilter(name='directory',
+                                         lookup_expr='contains')
+
+    version = django_filters.CharFilter(name='version',
+                                         lookup_expr='contains')
+
+    tape_url = django_filters.CharFilter(name='tape_url',
                                          lookup_expr='contains')
