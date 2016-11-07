@@ -302,7 +302,8 @@ class CEDADataset(DataFileAggregationBase):
     directory = models.CharField(max_length=500, verbose_name="Directory", blank=False, null=False)
 
     # The CEDA Dataset might have a DOI
-    doi = models.URLField(verbose_name="DOI", blank=True, null=True)
+    doi = models.CharField(verbose_name="DOI", blank=True, null=True,
+                           max_length=500)
 
     def __unicode__(self):
         return "CEDA Dataset: %s" % self.catalogue_url
@@ -343,11 +344,11 @@ class ESGFDataset(DataFileAggregationBase):
 
     # Each ESGF Dataset will be part of one CEDADataset
     ceda_dataset = models.ForeignKey(CEDADataset, blank=True, null=True,
-        on_delete=SET_NULL)
+        on_delete=SET_NULL, verbose_name='CEDA Dataset')
 
     # Each ESGF Dataset will be part of one submission
     data_submission = models.ForeignKey(DataSubmission, blank=True, null=True,
-        on_delete=SET_NULL)
+        on_delete=SET_NULL, verbose_name='Data Submission')
 
     def get_full_id(self):
         """

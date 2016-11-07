@@ -13,8 +13,10 @@ from django.core.urlresolvers import reverse
 from .models import (DataFile, DataSubmission, ESGFDataset, CEDADataset,
     DataRequest, DataIssue, VariableRequest, Settings, _standardise_time_unit)
 from .forms import CreateSubmissionForm
-from .tables import DataRequestTable, DataFileTable, DataSubmissionTable
-from .filters import DataRequestFilter, DataFileFilter, DataSubmissionFilter
+from .tables import (DataRequestTable, DataFileTable, DataSubmissionTable,
+                     ESGFDatasetTable, CEDADatasetTable)
+from .filters import (DataRequestFilter, DataFileFilter, DataSubmissionFilter,
+                      ESGFDatasetFilter, CEDADatasetFilter)
 from .utils.table_views import PagedFilteredTableView
 from vocabs.vocabs import ONLINE_STATUS, STATUS_VALUES
 
@@ -38,6 +40,20 @@ class DataSubmissionList(PagedFilteredTableView):
     table_class = DataSubmissionTable
     filter_class = DataSubmissionFilter
     page_title = 'Data Submissions'
+
+
+class ESGFDatasetList(PagedFilteredTableView):
+    model = ESGFDataset
+    table_class = ESGFDatasetTable
+    filter_class = ESGFDatasetFilter
+    page_title = 'ESGF Datasets'
+
+
+class CEDADatasetList(PagedFilteredTableView):
+    model = CEDADataset
+    table_class = CEDADatasetTable
+    filter_class = CEDADatasetFilter
+    page_title = 'CEDA Datasets'
 
 
 def view_login(request):
@@ -72,18 +88,6 @@ def view_login(request):
 def view_logout(request):
     logout(request)
     return redirect('home')
-
-
-def view_ceda_datasets(request):
-    ceda_datasets = CEDADataset.objects.all()
-    return render(request, 'ceda_datasets.html', {'request': request,
-        'page_title': 'CEDA Datasets', 'records': ceda_datasets})
-
-
-def view_esgf_datasets(request):
-    esgf_datasets = ESGFDataset.objects.all()
-    return render(request, 'esgf_datasets.html', {'request': request,
-        'page_title': 'ESGF Datasets', 'records': esgf_datasets})
 
 
 def view_data_issues(request):

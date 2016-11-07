@@ -19,10 +19,10 @@ urlpatterns = [
     url(r'^submissions/$', pdata_app.views.DataSubmissionList.as_view(),
         name='data_submissions'),
 
-    url(r'^esgf_datasets/$', pdata_app.views.view_esgf_datasets,
+    url(r'^esgf_datasets/$', pdata_app.views.ESGFDatasetList.as_view(),
         name='esgf_datasets'),
 
-    url(r'^ceda_datasets/$', pdata_app.views.view_ceda_datasets,
+    url(r'^ceda_datasets/$', pdata_app.views.CEDADatasetList.as_view(),
         name='ceda_datasets'),
 
     url(r'^data_requests/$', pdata_app.views.DataRequestList.as_view(),

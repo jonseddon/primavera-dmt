@@ -1,6 +1,11 @@
+from urllib import urlencode
+
+from django.utils.html import format_html
+from django.urls import reverse
 import django_tables2 as tables
 
-from .models import DataRequest, DataSubmission, DataFile
+from .models import (DataRequest, DataSubmission, DataFile, ESGFDataset,
+                     CEDADataset)
 
 DEFAULT_VALUE = '--'
 
@@ -113,6 +118,39 @@ class DataRequestTable(tables.Table):
     def render_variable_request(self, value):
         return '{} ({})'.format(value.cmor_name, value.table_name)
 
+
+class ESGFDatasetTable(tables.Table):
+    class Meta:
+        model = ESGFDataset
+        attrs = {'class': 'paleblue'}
+        exclude = ('id',)
+
+    def render_ceda_dataset(self, value):
+        url_query = urlencode({'directory':  value.directory})
+        return format_html('<a href="{}?{}">{}</a>',
+                           reverse('ceda_datasets'),
+                           url_query, value.directory)
+
+    def render_data_submission(self, value):
+        url_query = urlencode({'directory':  value.directory})
+        return format_html('<a href="{}?{}">{}</a>',
+                           reverse('data_submissions'),
+                           url_query, value.directory)
+
+
+class CEDADatasetTable(tables.Table):
+    class Meta:
+        model = CEDADataset
+        attrs = {'class': 'paleblue'}
+        exclude = ('id',)
+
+    def render_doi(self, value):
+        if 'doi:' in value:
+            doi_url = value.replace('doi:', 'https://doi.org/')
+            url_html = '<a href="{url}">{url}</a>'.format(url=doi_url)
+            return format_html(url_html)
+        else:
+            return value
 
 def _to_comma_sep(list_values):
     """
