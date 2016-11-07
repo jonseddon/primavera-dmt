@@ -1,6 +1,6 @@
 import django_filters
 from .models import (DataRequest, DataSubmission, DataFile, ESGFDataset,
-                     CEDADataset)
+                     CEDADataset, DataIssue)
 
 
 class DataRequestFilter(django_filters.FilterSet):
@@ -101,3 +101,18 @@ class CEDADatasetFilter(django_filters.FilterSet):
                                           lookup_expr='contains')
 
     doi = django_filters.CharFilter(name='doi', lookup_expr='contains')
+
+
+class DataIssueFilter(django_filters.FilterSet):
+    class Meta:
+        models = DataIssue
+        fields = ('issue', 'reporter', 'date_time', 'id')
+
+    id = django_filters.NumberFilter(name='id')
+
+    issue = django_filters.CharFilter(name='issue', lookup_expr='contains')
+
+    reporter = django_filters.CharFilter(name='reporter',
+                                         lookup_expr='contains')
+
+    date_time = django_filters.DateFromToRangeFilter(name='date_time')

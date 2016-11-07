@@ -14,9 +14,9 @@ from .models import (DataFile, DataSubmission, ESGFDataset, CEDADataset,
     DataRequest, DataIssue, VariableRequest, Settings, _standardise_time_unit)
 from .forms import CreateSubmissionForm
 from .tables import (DataRequestTable, DataFileTable, DataSubmissionTable,
-                     ESGFDatasetTable, CEDADatasetTable)
+                     ESGFDatasetTable, CEDADatasetTable, DataIssueTable)
 from .filters import (DataRequestFilter, DataFileFilter, DataSubmissionFilter,
-                      ESGFDatasetFilter, CEDADatasetFilter)
+                      ESGFDatasetFilter, CEDADatasetFilter, DataIssueFilter)
 from .utils.table_views import PagedFilteredTableView
 from vocabs.vocabs import ONLINE_STATUS, STATUS_VALUES
 
@@ -56,6 +56,13 @@ class CEDADatasetList(PagedFilteredTableView):
     page_title = 'CEDA Datasets'
 
 
+class DataIssueList(PagedFilteredTableView):
+    model = DataIssue
+    table_class = DataIssueTable
+    filter_class = DataIssueFilter
+    page_title = 'Data Issues'
+
+
 def view_login(request):
     if request.method == 'GET':
         next_page = request.GET.get('next')
@@ -88,12 +95,6 @@ def view_login(request):
 def view_logout(request):
     logout(request)
     return redirect('home')
-
-
-def view_data_issues(request):
-    data_issues = DataIssue.objects.all()
-    return render(request, 'data_issues.html', {'request': request,
-        'page_title': 'Data Issues', 'records': data_issues})
 
 
 def view_home(request):

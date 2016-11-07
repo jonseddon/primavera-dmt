@@ -1,11 +1,13 @@
 """
 Unit tests for pdata_app.models
 """
+import datetime
 import os
 import re
 
-from numpy.testing import assert_almost_equal
 import cf_units
+from numpy.testing import assert_almost_equal
+import pytz
 
 from django.test import TestCase
 from django.core.exceptions import ValidationError
@@ -251,8 +253,7 @@ class TestDataFileAggregationBaseMethods(TestCase):
 
     def test_get_data_issues_with_single_issue(self):
         di = models.DataIssue(issue='unit test', reporter='bob',
-            date_time=_cmpts2num(1950, 12, 13, 0, 0, 0, 0, TIME_UNITS, '360_day'),
-                time_units=TIME_UNITS)
+            date_time=datetime.datetime(1950, 12, 13, 0, 0, 0, 0))
         di.save()
 
         datafile = self.dsub.get_data_files()[0]
@@ -264,8 +265,7 @@ class TestDataFileAggregationBaseMethods(TestCase):
 
     def test_get_data_issues_with_single_issue_on_all_files(self):
         di = models.DataIssue(issue='unit test', reporter='bob',
-            date_time=_cmpts2num(1950, 12, 13, 0, 0, 0, 0, TIME_UNITS, '360_day'),
-                time_units=TIME_UNITS)
+            date_time=datetime.datetime(1950, 12, 13, 0, 0, 0, 0))
         di.save()
 
         for df in self.dsub.get_data_files():
@@ -277,12 +277,10 @@ class TestDataFileAggregationBaseMethods(TestCase):
 
     def test_get_data_issues_with_many_issues(self):
         di1 = models.DataIssue(issue='2nd test', reporter='bill',
-            date_time=_cmpts2num(1805, 7, 5, 0, 0, 0, 0, TIME_UNITS, '360_day'),
-                time_units=TIME_UNITS)
+            date_time=datetime.datetime(1805, 7, 5, 0, 0, 0))
         di1.save()
         di2 = models.DataIssue(issue='unit test', reporter='bob',
-            date_time=_cmpts2num(1950, 12, 13, 0, 0, 0, 0, TIME_UNITS, '360_day'),
-                time_units=TIME_UNITS)
+            date_time=datetime.datetime(1950, 12, 13, 0, 0, 0, 0))
         di2.save()
 
         datafile = self.dsub.get_data_files()[0]
@@ -296,8 +294,7 @@ class TestDataFileAggregationBaseMethods(TestCase):
         self.assertEqual(issues, [di2, di1])
 
     def test_assign_data_issue(self):
-        self.dsub.assign_data_issue('all files', 'Lewis',
-            _cmpts2num(1881, 10, 11, 0, 0, 0, 0, TIME_UNITS, '360_day'), TIME_UNITS)
+        self.dsub.assign_data_issue('all files', 'Lewis')
 
         for df in self.dsub.get_data_files():
             di = df.dataissue_set.filter(issue='all files')[0]
@@ -416,13 +413,13 @@ class TestDataIssue(TestCase):
     """
     def setUp(self):
         _p = get_or_create(models.DataIssue, issue='test', reporter='me',
-            date_time=_cmpts2num(2016, 8, 8, 8, 42, 37, 0, TIME_UNITS, '360_day'),
-            time_units=TIME_UNITS, calendar='360_day')
+            date_time=make_aware(datetime.datetime(2016, 8, 8, 8, 42, 37, 0),
+                                 pytz.UTC, None))
 
     def test_unicode(self):
         data_issue = models.DataIssue.objects.first()
-        self.assertEqual(unicode(data_issue),
-            u'Data Issue (2016-08-08 08:42:37): test (me)')
+        self.assertRegexpMatches(str(data_issue),
+            r'Data Issue \([0-9 :-]{19}\): test \(me\)')
 
 
 class TestChecksum(TestCase):

@@ -1,5 +1,6 @@
 django
 django-solo
+pytz
 psycopg2==2.6.1
 google-api-python-client
 django-tables2

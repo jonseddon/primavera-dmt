@@ -165,13 +165,13 @@ class DataFileAggregationBase(models.Model):
         records.sort(key=lambda di: di.date_time, reverse=True)
         return records
 
-    def assign_data_issue(self, issue_text, reporter, date_time=None, time_units=None):
+    def assign_data_issue(self, issue_text, reporter, date_time=None):
         """
         Creates a DataIssue and attaches it to all related DataFile records.
         """
         date_time = date_time or timezone.now()
         data_issue, _tf = DataIssue.objects.get_or_create(issue=issue_text,
-            reporter=reporter, date_time=date_time, time_units=time_units)
+            reporter=reporter, date_time=date_time)
         data_issue.save()
 
         data_files = self.get_data_files()
@@ -503,27 +503,25 @@ class DataIssue(models.Model):
     A recorded issue with a DataFile
 
     NOTE: You can have multiple data issues related to a single DataFile
-    NOTE: Aggregation is used to associate a DataIssue with an ESGFDataset, CEDADataset or DataSubmission
+    NOTE: Aggregation is used to associate a DataIssue with an ESGFDataset,
+    CEDADataset or DataSubmission
     """
-    issue = models.CharField(max_length=500, verbose_name="Issue reported", null=False, blank=False)
-    reporter = models.CharField(max_length=60, verbose_name="Reporter", null=False, blank=False)
-    date_time = models.FloatField(verbose_name="Date and time of report", null=False, blank=False)
-    time_units = models.CharField(verbose_name='Time units', max_length=50, null=False, blank=False)
-    calendar = models.CharField(verbose_name='Calendar', max_length=20,
-        null=False, blank=False, choices=CALENDARS.items())
+    issue = models.CharField(max_length=500, verbose_name="Issue Reported",
+                             null=False, blank=False)
+    reporter = models.CharField(max_length=60, verbose_name="Reporter",
+                                null=False, blank=False)
+    date_time = models.DateTimeField(auto_now_add=True,
+                                     verbose_name="Date and Time of Report",
+                                     null=False, blank=False)
 
     # DataFile that the Data Issue corresponds to
     data_file = models.ManyToManyField(DataFile)
 
     def __unicode__(self):
         return "Data Issue (%s): %s (%s)" % (
-            cf_units.num2date(self.date_time, self.time_units, self.calendar).
-            strftime('%Y-%m-%d %H:%M:%S'), self.issue, self.reporter)
-
-    def date_time_string(self):
-        """Return a string containing the issue date and time"""
-        dto = cf_units.num2date(self.date_time, self.time_units, self.calendar)
-        return dto.strftime('%Y-%m-%d %H:%M:%S')
+            self.date_time.strftime('%Y-%m-%d %H:%M:%S'),
+            self.issue, self.reporter
+        )
 
 
 class Checksum(models.Model):

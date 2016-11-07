@@ -5,7 +5,7 @@ from django.urls import reverse
 import django_tables2 as tables
 
 from .models import (DataRequest, DataSubmission, DataFile, ESGFDataset,
-                     CEDADataset)
+                     CEDADataset, DataIssue)
 
 DEFAULT_VALUE = '--'
 
@@ -151,6 +151,16 @@ class CEDADatasetTable(tables.Table):
             return format_html(url_html)
         else:
             return value
+
+
+class DataIssueTable(tables.Table):
+    class Meta:
+        model = DataIssue
+        attrs = {'class': 'paleblue'}
+
+    def render_date_time(self, value):
+        return value.strftime('%Y-%m-%d %H:%M:%S')
+
 
 def _to_comma_sep(list_values):
     """

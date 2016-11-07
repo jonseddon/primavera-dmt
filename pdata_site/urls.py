@@ -28,7 +28,7 @@ urlpatterns = [
     url(r'^data_requests/$', pdata_app.views.DataRequestList.as_view(),
         name='data_requests'),
 
-    url(r'^data_issues/$', pdata_app.views.view_data_issues,
+    url(r'^data_issues/$', pdata_app.views.DataIssueList.as_view(),
         name='data_issues'),
 
     url(r'^variable_query/$', pdata_app.views.view_variable_query,
