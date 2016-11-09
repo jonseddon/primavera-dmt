@@ -22,13 +22,15 @@ class DataFileTable(tables.Table):
                    'esgf_download_url', 'esgf_opendap_url')
 
     checksum = tables.Column(empty_values=(), verbose_name='Checksum')
-
-    def render_data_submission(self, value):
-        return '{}'.format(value.directory)
+    num_dataissues = tables.Column(empty_values=(), verbose_name='# Data Issues',
+                                   orderable=False)
 
     def render_checksum(self, record):
         checksum = record.checksum_set.first()
         return '{}: {}'.format(checksum.checksum_type, checksum.checksum_value)
+
+    def render_num_dataissues(self, record):
+        return record.dataissue_set.count()
 
 
 class DataSubmissionTable(tables.Table):
@@ -40,13 +42,19 @@ class DataSubmissionTable(tables.Table):
                     'num_files', 'num_issues', 'earliest_date', 'latest_date',
                     'tape_urls', 'file_versions')
 
-    online_status = tables.Column(empty_values=())
-    num_files = tables.Column(empty_values=(), verbose_name='# Data Files')
-    num_issues = tables.Column(empty_values=(), verbose_name='# Data Issues')
-    earliest_date = tables.Column(empty_values=())
-    latest_date = tables.Column(empty_values=())
-    tape_urls = tables.Column(empty_values=(), verbose_name='Tape URLs')
-    file_versions = tables.Column(empty_values=())
+    online_status = tables.Column(empty_values=(), orderable=False)
+    num_files = tables.Column(empty_values=(), verbose_name='# Data Files',
+                              orderable=False)
+    num_issues = tables.Column(empty_values=(), verbose_name='# Data Issues',
+                               orderable=False)
+    earliest_date = tables.Column(empty_values=(), orderable=False)
+    latest_date = tables.Column(empty_values=(), orderable=False)
+    tape_urls = tables.Column(empty_values=(), verbose_name='Tape URLs',
+                              orderable=False)
+    file_versions = tables.Column(empty_values=(), orderable=False)
+
+    def render_date_submitted(self, value):
+        return value.strftime('%Y-%m-%d %H:%M')
 
     def render_online_status(self, record):
         if record.status in ['PENDING_PROCESSING', 'ARRIVED']:
@@ -159,7 +167,7 @@ class DataIssueTable(tables.Table):
         attrs = {'class': 'paleblue'}
 
     def render_date_time(self, value):
-        return value.strftime('%Y-%m-%d %H:%M:%S')
+        return value.strftime('%Y-%m-%d %H:%M')
 
 
 def _to_comma_sep(list_values):
