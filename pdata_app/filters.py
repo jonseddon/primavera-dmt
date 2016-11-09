@@ -45,6 +45,8 @@ class DataFileFilter(django_filters.FilterSet):
     tape_url = django_filters.CharFilter(name='tape_url',
                                          lookup_expr='contains')
 
+    data_submission = django_filters.NumberFilter(name='data_submission__id')
+
 
 class DataSubmissionFilter(django_filters.FilterSet):
     class Meta:
@@ -118,3 +120,6 @@ class DataIssueFilter(django_filters.FilterSet):
     date_time = django_filters.DateFromToRangeFilter(name='date_time')
 
     data_file = django_filters.NumberFilter(name='data_file__id')
+
+    data_submission = django_filters.NumberFilter(
+        name='data_file__data_submission__id')

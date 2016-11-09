@@ -75,13 +75,29 @@ class DataSubmissionTable(tables.Table):
         if record.status in ['PENDING_PROCESSING', 'ARRIVED']:
             return DEFAULT_VALUE
         else:
-            return len(record.get_data_files())
+            num_datafiles = len(record.get_data_files())
+            url_query = urlencode({'data_submission': record.id,
+                                   'data_submission_string': '{}'.format(
+                                       record.directory)})
+            return format_html('<a href="{}?{}">{}</a>'.format(
+                reverse('data_files'),
+                url_query,
+                num_datafiles
+            ))
 
     def render_num_issues(self, record):
         if record.status in ['PENDING_PROCESSING', 'ARRIVED']:
             return DEFAULT_VALUE
         else:
-            return len(record.get_data_issues())
+            num_dataissues = len(record.get_data_issues())
+            url_query = urlencode({'data_submission': record.id,
+                                   'data_submission_string': '{}'.format(
+                                       record.directory)})
+            return format_html('<a href="{}?{}">{}</a>'.format(
+                reverse('data_issues'),
+                url_query,
+                num_dataissues
+            ))
 
     def render_earliest_date(self, record):
         if record.status in ['PENDING_PROCESSING', 'ARRIVED']:

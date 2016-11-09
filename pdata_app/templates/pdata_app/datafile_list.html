@@ -3,7 +3,14 @@
 {% load render_table from django_tables2 %}
 
     {% block contents %}
-        <p>These are the netCDF files that we know about...</p>
+        <p>
+            {% if request.GET.data_submission %}
+                These are the netCDF files for data submission ...
+                <pre>{{ request.GET.data_submission_string }}</pre>
+            {% else %}
+                These are the netCDF files that we know about...
+            {% endif %}
+        </p>
 
         <p>
             <form class="form-inline" action="{% url 'data_files' %}" method="get">
@@ -23,6 +30,10 @@
                     <label class="sr-only" for="tape_url">Tape URL</label>
                     <input type="text" class="form-control" name="tape_url" id="tape_url" placeholder="Tape URL" {% if request.GET.tape_url %} value="{{ request.GET.tape_url }}" {% endif %}>
                 </div>
+                {% if request.GET.data_submission %}
+                    <input type="hidden" name="data_submission" value="{{ request.GET.data_submission }}">
+                    <input type="hidden" name="data_submission_string" value="{{ request.GET.data_submission_string }}">
+                {% endif %}
                 <input type="submit" class="btn btn-default" value="Filter" />
             </form>
         </p>

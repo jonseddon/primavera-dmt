@@ -5,8 +5,11 @@
     {% block contents %}
         <p>
             {% if request.GET.data_file %}
-                These are the data issues identified for data file
-                {{ request.GET.data_file_string }} ...
+                These are the data issues identified for data file ...
+                <pre>{{ request.GET.data_file_string }}</pre>
+            {% elif request.GET.data_submission %}
+                These are the data issues identified for data submission ...
+                <pre>{{ request.GET.data_submission_string }}</pre>
             {% else %}
                 These are the data issues identified ...
             {% endif %}
@@ -39,6 +42,9 @@
                 {% if request.GET.data_file %}
                     <input type="hidden" name="data_file" value="{{ request.GET.data_file }}">
                     <input type="hidden" name="data_file_string" value="{{ request.GET.data_file_string }}">
+                {% elif request.GET.data_submission %}
+                    <input type="hidden" name="data_submission" value="{{ request.GET.data_submission }}">
+                    <input type="hidden" name="data_submission_string" value="{{ request.GET.data_submission_string }}">
                 {% endif %}
                 <input type="submit" class="btn btn-default" value="Filter" />
             </form>
