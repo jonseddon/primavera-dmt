@@ -187,7 +187,7 @@ class DataFileAggregationBase(models.Model):
             return None
 
         std_times = [
-            (_standardise_time_unit(time, unit, std_units, cal), cal)
+            (standardise_time_unit(time, unit, std_units, cal), cal)
             for time, unit, cal in start_times
         ]
 
@@ -211,7 +211,7 @@ class DataFileAggregationBase(models.Model):
             return None
 
         std_times = [
-            (_standardise_time_unit(time, unit, std_units, cal), cal)
+            (standardise_time_unit(time, unit, std_units, cal), cal)
             for time, unit, cal in end_times
         ]
 
@@ -539,7 +539,7 @@ class Checksum(models.Model):
                                 self.data_file.name)
 
 
-def _standardise_time_unit(time_float, time_unit, standard_unit, calendar):
+def standardise_time_unit(time_float, time_unit, standard_unit, calendar):
     """
     Standardise a floating point time in one time unit by returning the
     corresponding time in the `standard_unit`. The original value is returned if

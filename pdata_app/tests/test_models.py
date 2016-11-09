@@ -473,7 +473,7 @@ class TestStandardiseTimeUnit(TestCase):
         time_unit = 'days since 2000-01-01'
         time_num = 3.14159
 
-        actual = models._standardise_time_unit(time_num, time_unit, time_unit, '360_day')
+        actual = models.standardise_time_unit(time_num, time_unit, time_unit, '360_day')
         assert_almost_equal(actual, time_num)
 
     def test_different_units(self):
@@ -481,14 +481,14 @@ class TestStandardiseTimeUnit(TestCase):
         new_unit = 'days since 2000-02-01'
         time_num = 33.14159
 
-        actual = models._standardise_time_unit(time_num, old_unit, new_unit, '360_day')
+        actual = models.standardise_time_unit(time_num, old_unit, new_unit, '360_day')
         expected = 3.14159
         assert_almost_equal(actual, expected, decimal=5)
 
     def test_none(self):
         time_unit = 'days since 2000-01-01'
-        self.assertIsNone(models._standardise_time_unit(None, time_unit,
-            time_unit, '360_day'))
+        self.assertIsNone(models.standardise_time_unit(None, time_unit,
+                                                       time_unit, '360_day'))
 
 
 def _extract_file_metadata(file_path):

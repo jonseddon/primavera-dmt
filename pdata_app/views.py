@@ -11,7 +11,8 @@ from django.http import HttpResponseRedirect
 from django.core.urlresolvers import reverse
 
 from .models import (DataFile, DataSubmission, ESGFDataset, CEDADataset,
-    DataRequest, DataIssue, VariableRequest, Settings, _standardise_time_unit)
+                     DataRequest, DataIssue, VariableRequest, Settings,
+                     standardise_time_unit)
 from .forms import CreateSubmissionForm
 from .tables import (DataRequestTable, DataFileTable, DataSubmissionTable,
                      ESGFDatasetTable, CEDADatasetTable, DataIssueTable)
@@ -108,6 +109,11 @@ def view_retrieval_request(request):
 
 
 def view_variable_query(request):
+    """
+    Similarly to view_outstanding_query(), the results from this view should not
+    be displayed with djang-tables and instead the jQuery data-tables package
+    should be used for displaying the results.
+    """
     request_params = request.GET
 
     if not request_params:
@@ -191,7 +197,7 @@ def view_variable_query(request):
         start_times = row_files.values_list('start_time', 'time_units',
             'calendar')
         std_start_times = [
-            (_standardise_time_unit(time, unit, std_units, cal), cal)
+            (standardise_time_unit(time, unit, std_units, cal), cal)
             for time, unit, cal in start_times
         ]
         start_nones_removed = [(std_time, cal)
@@ -209,7 +215,7 @@ def view_variable_query(request):
         end_times = row_files.values_list('end_time', 'time_units',
             'calendar')
         std_end_times = [
-            (_standardise_time_unit(time, unit, std_units, cal), cal)
+            (standardise_time_unit(time, unit, std_units, cal), cal)
             for time, unit, cal in end_times
         ]
         end_nones_removed = [(std_time, cal)
@@ -346,7 +352,7 @@ def _custom_redirect(url_name, *args, **kwargs):
     :param kwargs:
     :return: An HTTP response
     """
-    url = reverse(url_name, args = args)
+    url = reverse(url_name, args=args)
     params = urllib.urlencode(kwargs)
     return HttpResponseRedirect(url + "?%s" % params)
 
@@ -358,7 +364,8 @@ def _find_common_directory(query_set, attribute, separator='/'):
     returns the directory part of this common prefix (everything before the
     final separator).
 
-    :param django.db.models.query.QuerySet query_set: The query set to search through.
+    :param django.db.models.query.QuerySet query_set: The query set to search
+        through.
     :param str attribute: The name of the attribute to find.
     :param str separator: The separator between directories.
     :returns: The prefix that is common to all attributes or None if attribute
