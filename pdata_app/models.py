@@ -62,8 +62,6 @@ class Institute(models.Model):
     def __unicode__(self):
         return self.short_name
 
-# TODO Should we have Individual in here???
-
 
 class ClimateModel(models.Model):
     """
