@@ -1,5 +1,5 @@
 import os
-from operator import attrgetter
+import urllib
 
 import cf_units
 
@@ -7,14 +7,61 @@ from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.decorators import login_required
 from django.shortcuts import render, redirect
 from django.db import connection
+from django.http import HttpResponseRedirect
+from django.core.urlresolvers import reverse
 
 from .models import (DataFile, DataSubmission, ESGFDataset, CEDADataset,
-    DataRequest, DataIssue, VariableRequest, Settings, _standardise_time_unit)
+                     DataRequest, DataIssue, VariableRequest, Settings,
+                     standardise_time_unit)
 from .forms import CreateSubmissionForm
-from .tables import DataRequestTable
-from .filters import DataRequestFilter
+from .tables import (DataRequestTable, DataFileTable, DataSubmissionTable,
+                     ESGFDatasetTable, CEDADatasetTable, DataIssueTable)
+from .filters import (DataRequestFilter, DataFileFilter, DataSubmissionFilter,
+                      ESGFDatasetFilter, CEDADatasetFilter, DataIssueFilter)
 from .utils.table_views import PagedFilteredTableView
 from vocabs.vocabs import ONLINE_STATUS, STATUS_VALUES
+
+
+class DataRequestList(PagedFilteredTableView):
+    model = DataRequest
+    table_class = DataRequestTable
+    filter_class = DataRequestFilter
+    page_title = 'Data Requests'
+
+
+class DataFileList(PagedFilteredTableView):
+    model = DataFile
+    table_class = DataFileTable
+    filter_class = DataFileFilter
+    page_title = 'Data Files'
+
+
+class DataSubmissionList(PagedFilteredTableView):
+    model = DataSubmission
+    table_class = DataSubmissionTable
+    filter_class = DataSubmissionFilter
+    page_title = 'Data Submissions'
+
+
+class ESGFDatasetList(PagedFilteredTableView):
+    model = ESGFDataset
+    table_class = ESGFDatasetTable
+    filter_class = ESGFDatasetFilter
+    page_title = 'ESGF Datasets'
+
+
+class CEDADatasetList(PagedFilteredTableView):
+    model = CEDADataset
+    table_class = CEDADatasetTable
+    filter_class = CEDADatasetFilter
+    page_title = 'CEDA Datasets'
+
+
+class DataIssueList(PagedFilteredTableView):
+    model = DataIssue
+    table_class = DataIssueTable
+    filter_class = DataIssueFilter
+    page_title = 'Data Issues'
 
 
 def view_login(request):
@@ -51,43 +98,6 @@ def view_logout(request):
     return redirect('home')
 
 
-def view_data_submissions(request):
-    data_submissions = DataSubmission.objects.all().order_by('-date_submitted')
-    return render(request, 'data_submissions.html', {'request': request,
-        'page_title': 'Data Submissions', 'records': data_submissions})
-
-
-def view_data_files(request):
-    data_files = DataFile.objects.all()
-    return render(request, 'data_files.html', {'request': request,
-        'page_title': 'Data Files', 'records': data_files})
-
-
-def view_ceda_datasets(request):
-    ceda_datasets = CEDADataset.objects.all()
-    return render(request, 'ceda_datasets.html', {'request': request,
-        'page_title': 'CEDA Datasets', 'records': ceda_datasets})
-
-
-def view_esgf_datasets(request):
-    esgf_datasets = ESGFDataset.objects.all()
-    return render(request, 'esgf_datasets.html', {'request': request,
-        'page_title': 'ESGF Datasets', 'records': esgf_datasets})
-
-
-class DataRequestList(PagedFilteredTableView):
-    model = DataRequest
-    table_class = DataRequestTable
-    filter_class = DataRequestFilter
-    page_title = 'Data Requests'
-
-
-def view_data_issues(request):
-    data_issues = DataIssue.objects.all()
-    return render(request, 'data_issues.html', {'request': request,
-        'page_title': 'Data Issues', 'records': data_issues})
-
-
 def view_home(request):
     return render(request, 'home.html', {'request': request,
         'page_title': 'The PRIMAVERA DMT'})
@@ -99,6 +109,11 @@ def view_retrieval_request(request):
 
 
 def view_variable_query(request):
+    """
+    Similarly to view_outstanding_query(), the results from this view should not
+    be displayed with djang-tables and instead the jQuery data-tables package
+    should be used for displaying the results.
+    """
     request_params = request.GET
 
     if not request_params:
@@ -182,7 +197,7 @@ def view_variable_query(request):
         start_times = row_files.values_list('start_time', 'time_units',
             'calendar')
         std_start_times = [
-            (_standardise_time_unit(time, unit, std_units, cal), cal)
+            (standardise_time_unit(time, unit, std_units, cal), cal)
             for time, unit, cal in start_times
         ]
         start_nones_removed = [(std_time, cal)
@@ -200,7 +215,7 @@ def view_variable_query(request):
         end_times = row_files.values_list('end_time', 'time_units',
             'calendar')
         std_end_times = [
-            (_standardise_time_unit(time, unit, std_units, cal), cal)
+            (standardise_time_unit(time, unit, std_units, cal), cal)
             for time, unit, cal in end_times
         ]
         end_nones_removed = [(std_time, cal)
@@ -240,7 +255,17 @@ def view_variable_query(request):
 
 
 def view_outstanding_query(request):
-    # TODO: add autocomplete: http://flaviusim.com/blog/AJAX-Autocomplete-Search-with-Django-and-jQuery/
+    """
+    Note: this view should not be displayed using django-tables unlike many of
+    the other views. The other views are implemented in a single SQL query.
+    django-tables will limit the query to only the subset of records that will
+    be displayed on the next page. This view_outstanding_query uses user code
+    to filter the results. Calling it repeatedly will be slow and django-tables
+    subsetting could result in unpredictable output. Instead, all of the results
+    from this query are sent to the output web page. There, the datatables
+    plugin for jQuery (https://datatables.net/) is used to filter and paginate
+    the query results on the page.
+    """
     request_params = request.GET
 
     # Basic page request with nothing specified
@@ -269,7 +294,7 @@ def view_outstanding_query(request):
         return render(request, 'outstanding_query.html', {'request': request,
             'page_title': 'Outstanding Data Query', 'message': msg})
 
-    outstanding_reqs = []
+    excludes = []
 
     for req in data_reqs:
         if req.rip_code:
@@ -284,12 +309,11 @@ def view_outstanding_query(request):
                 experiment__id=req.experiment_id,
                 variable_request__id=req.variable_request_id)
 
-        if not req_files:
-            # no files found so request not satisfied
-            outstanding_reqs.append(req)
+        if req_files:
+            # files found so request is satisfied so remove this request
+            excludes.append(req.id)
 
-    # TODO: sort the results by table and then variable
-    outstanding_reqs.sort(key=attrgetter('variable_request.cmor_name'))
+    outstanding_reqs = data_reqs.exclude(id__in=excludes)
 
     return render(request, 'outstanding_query_results.html', {'request': request,
         'page_title': 'Outstanding Data Query', 'records': outstanding_reqs})
@@ -307,11 +331,30 @@ def create_submission(request):
             submission.status = STATUS_VALUES['PENDING_PROCESSING']
             submission.user = request.user
             submission.save()
-            return redirect('data_submissions')
+            return _custom_redirect('data_submissions', sort='-date_submitted')
     else:
         form = CreateSubmissionForm()
     return render(request, 'create_submission_form.html', {'form': form,
         'page_title': 'Create Data Submission'})
+
+
+def _custom_redirect(url_name, *args, **kwargs):
+    """
+    Generate an HTTP redirect to URL with GET parameters.
+
+    For example: _custom_redirect('data_submissions', sort='-date_submitted')
+    should redirect to data_submissions/?sort=-date_submitted
+
+    From: http://stackoverflow.com/a/3766452
+
+    :param str url_name:
+    :param str args:
+    :param kwargs:
+    :return: An HTTP response
+    """
+    url = reverse(url_name, args=args)
+    params = urllib.urlencode(kwargs)
+    return HttpResponseRedirect(url + "?%s" % params)
 
 
 def _find_common_directory(query_set, attribute, separator='/'):
@@ -321,7 +364,8 @@ def _find_common_directory(query_set, attribute, separator='/'):
     returns the directory part of this common prefix (everything before the
     final separator).
 
-    :param django.db.models.query.QuerySet query_set: The query set to search through.
+    :param django.db.models.query.QuerySet query_set: The query set to search
+        through.
     :param str attribute: The name of the attribute to find.
     :param str separator: The separator between directories.
     :returns: The prefix that is common to all attributes or None if attribute

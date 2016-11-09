@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+{% load staticfiles %}
+{% load render_table from django_tables2 %}
+
+    {% block contents %}
+        <p>These are the CEDA datasets...</p>
+
+        <p>
+            <form class="form-inline" action="{% url 'ceda_datasets' %}" method="get">
+                <div class="form-group">
+                    <label class="sr-only" for="catalogue_url">Catalogue URL</label>
+                    <input type="text" class="form-control" name="catalogue_url" id="catalogue_url" placeholder="Catalogue URL" {% if request.GET.catalogue_url %} value="{{ request.GET.catalogue_url }}" {% endif %} autofocus>
+                </div>
+                <div class="form-group">
+                    <label class="sr-only" for="directory">Directory</label>
+                    <input type="text" class="form-control" name="directory" id="directory" placeholder="Directory" {% if request.GET.directory %} value="{{ request.GET.directory }}" {% endif %}>
+                </div>
+                <div class="form-group">
+                    <label class="sr-only" for="doi">DOI</label>
+                    <input type="text" class="form-control" name="doi" id="doi" placeholder="DOI" {% if request.GET.doi %} value="{{ request.GET.doi }}" {% endif %}>
+                </div>
+                <input type="submit" class="btn btn-default" value="Filter" />
+            </form>
+        </p>
+
+        {% render_table table %}
+
+    {% endblock %}

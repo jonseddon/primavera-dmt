@@ -15,6 +15,15 @@
 
     <link rel="stylesheet" href="{% static 'django_tables2/themes/paleblue/css/screen.css' %}" />
 
+    <script type="text/javascript" src="{% static 'ext/datatables.min.js' %}"></script>
+    <!-- if a table has the id sortable_table then draw it with DataTable -->
+    <script type="text/javascript" charset="utf-8">
+        $(document).ready(function() {
+            $('#sortable_table').DataTable();
+        } );
+    </script>
+
+
     <title>{{ page_title }}</title>
 
 </head>
@@ -50,7 +59,7 @@
                   <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false">Views <span class="caret"></span></a>
                   <ul class="dropdown-menu">
                     <li><a href="{% url 'data_submissions' %}">Data Submissions</a></li>
-                    <li><a href="{% url 'data_files' %}">Files</a></li>
+                    <li><a href="{% url 'data_files' %}">Data Files</a></li>
                     <li><a href="{% url 'esgf_datasets' %}">ESGF Datasets</a></li>
                     <li><a href="{% url 'ceda_datasets' %}">CEDA Datasets</a></li>
                     <li><a href="{% url 'data_requests' %}">Data Requests</a></li>

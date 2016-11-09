@@ -62,8 +62,6 @@ class Institute(models.Model):
     def __unicode__(self):
         return self.short_name
 
-# TODO Should we have Individual in here???
-
 
 class ClimateModel(models.Model):
     """
@@ -165,13 +163,13 @@ class DataFileAggregationBase(models.Model):
         records.sort(key=lambda di: di.date_time, reverse=True)
         return records
 
-    def assign_data_issue(self, issue_text, reporter, date_time=None, time_units=None):
+    def assign_data_issue(self, issue_text, reporter, date_time=None):
         """
         Creates a DataIssue and attaches it to all related DataFile records.
         """
         date_time = date_time or timezone.now()
         data_issue, _tf = DataIssue.objects.get_or_create(issue=issue_text,
-            reporter=reporter, date_time=date_time, time_units=time_units)
+            reporter=reporter, date_time=date_time)
         data_issue.save()
 
         data_files = self.get_data_files()
@@ -187,7 +185,7 @@ class DataFileAggregationBase(models.Model):
             return None
 
         std_times = [
-            (_standardise_time_unit(time, unit, std_units, cal), cal)
+            (standardise_time_unit(time, unit, std_units, cal), cal)
             for time, unit, cal in start_times
         ]
 
@@ -211,7 +209,7 @@ class DataFileAggregationBase(models.Model):
             return None
 
         std_times = [
-            (_standardise_time_unit(time, unit, std_units, cal), cal)
+            (standardise_time_unit(time, unit, std_units, cal), cal)
             for time, unit, cal in end_times
         ]
 
@@ -260,13 +258,21 @@ class DataSubmission(DataFileAggregationBase):
     # start_time
     # end_time
 
-    status = models.CharField(max_length=20, choices=STATUS_VALUES.items(), verbose_name='Status',
-                              default=STATUS_VALUES.EXPECTED, blank=False, null=False)
-    incoming_directory = models.CharField(max_length=500, verbose_name='Incoming Directory', blank=False, null=False)
+    status = models.CharField(max_length=20, choices=STATUS_VALUES.items(),
+                              verbose_name='Status',
+                              default=STATUS_VALUES.EXPECTED,
+                              blank=False, null=False)
+    incoming_directory = models.CharField(max_length=500,
+                                          verbose_name='Incoming Directory',
+                                          blank=False, null=False)
     # Current directory
-    directory = models.CharField(max_length=500, verbose_name='Current Directory', blank=False, null=False)
+    directory = models.CharField(max_length=500,
+                                 verbose_name='Current Directory',
+                                 blank=False, null=False)
     user = models.CharField(max_length=100, blank=False, null=False)
-    date_submitted = models.DateTimeField(auto_now_add=True, null=False, blank=False)
+    date_submitted = models.DateTimeField(auto_now_add=True,
+                                          verbose_name='Date Submitted',
+                                          null=False, blank=False)
 
     def __unicode__(self):
         return "Data Submission: %s" % self.directory
@@ -294,7 +300,8 @@ class CEDADataset(DataFileAggregationBase):
     directory = models.CharField(max_length=500, verbose_name="Directory", blank=False, null=False)
 
     # The CEDA Dataset might have a DOI
-    doi = models.URLField(verbose_name="DOI", blank=True, null=True)
+    doi = models.CharField(verbose_name="DOI", blank=True, null=True,
+                           max_length=500)
 
     def __unicode__(self):
         return "CEDA Dataset: %s" % self.catalogue_url
@@ -335,11 +342,11 @@ class ESGFDataset(DataFileAggregationBase):
 
     # Each ESGF Dataset will be part of one CEDADataset
     ceda_dataset = models.ForeignKey(CEDADataset, blank=True, null=True,
-        on_delete=SET_NULL)
+        on_delete=SET_NULL, verbose_name='CEDA Dataset')
 
     # Each ESGF Dataset will be part of one submission
     data_submission = models.ForeignKey(DataSubmission, blank=True, null=True,
-        on_delete=SET_NULL)
+        on_delete=SET_NULL, verbose_name='Data Submission')
 
     def get_full_id(self):
         """
@@ -372,21 +379,32 @@ class DataRequest(models.Model):
     """
     A Data Request for a given set of inputs
     """
+    class Meta:
+        verbose_name = 'Data Request'
 
-    project = models.ForeignKey(Project, null=False, on_delete=PROTECT)
-    institute = models.ForeignKey(Institute, null=False, on_delete=PROTECT)
+    project = models.ForeignKey(Project, null=False, on_delete=PROTECT,
+                                verbose_name='Project')
+    institute = models.ForeignKey(Institute, null=False, on_delete=PROTECT,
+                                  verbose_name='Institute')
     climate_model = models.ForeignKey(ClimateModel, null=False,
-        on_delete=PROTECT)
-    experiment = models.ForeignKey(Experiment, null=False, on_delete=PROTECT)
+                                      on_delete=PROTECT,
+                                      verbose_name='Climate Model')
+    experiment = models.ForeignKey(Experiment, null=False, on_delete=PROTECT,
+                                   verbose_name='Experiment')
     variable_request = models.ForeignKey(VariableRequest, null=False,
-        on_delete=PROTECT)
-    rip_code = models.CharField(max_length=20, verbose_name="RIP code",
-        null=True, blank=True)
-    start_time = models.FloatField(verbose_name="Start time", null=False, blank=False)
-    end_time = models.FloatField(verbose_name="End time", null=False, blank=False)
-    time_units = models.CharField(verbose_name='Time units', max_length=50, null=False, blank=False)
+                                         on_delete=PROTECT,
+                                         verbose_name='Variable')
+    rip_code = models.CharField(max_length=20, verbose_name="Ensemble Member",
+                                null=True, blank=True)
+    start_time = models.FloatField(verbose_name="Start time", null=False,
+                                   blank=False)
+    end_time = models.FloatField(verbose_name="End time", null=False,
+                                 blank=False)
+    time_units = models.CharField(verbose_name='Time units', max_length=50,
+                                  null=False, blank=False)
     calendar = models.CharField(verbose_name='Calendar', max_length=20,
-        null=False, blank=False, choices=CALENDARS.items())
+                                null=False, blank=False,
+                                choices=CALENDARS.items())
 
     def start_date_string(self):
         """Return a string containing the start date"""
@@ -460,6 +478,16 @@ class DataFile(models.Model):
     online = models.BooleanField(default=True, verbose_name="Is the file online?", null=False, blank=False)
     tape_url = models.CharField(verbose_name="Tape URL", max_length=200, null=True, blank=True)
 
+    def start_date_string(self):
+        """Return a string containing the start date"""
+        dto = cf_units.num2date(self.start_time, self.time_units, self.calendar)
+        return dto.strftime('%Y-%m-%d')
+
+    def end_date_string(self):
+        """Return a string containing the end date"""
+        dto = cf_units.num2date(self.end_time, self.time_units, self.calendar)
+        return dto.strftime('%Y-%m-%d')
+
     def __unicode__(self):
         return "%s (Directory: %s)" % (self.name, self.directory)
 
@@ -473,27 +501,25 @@ class DataIssue(models.Model):
     A recorded issue with a DataFile
 
     NOTE: You can have multiple data issues related to a single DataFile
-    NOTE: Aggregation is used to associate a DataIssue with an ESGFDataset, CEDADataset or DataSubmission
+    NOTE: Aggregation is used to associate a DataIssue with an ESGFDataset,
+    CEDADataset or DataSubmission
     """
-    issue = models.CharField(max_length=500, verbose_name="Issue reported", null=False, blank=False)
-    reporter = models.CharField(max_length=60, verbose_name="Reporter", null=False, blank=False)
-    date_time = models.FloatField(verbose_name="Date and time of report", null=False, blank=False)
-    time_units = models.CharField(verbose_name='Time units', max_length=50, null=False, blank=False)
-    calendar = models.CharField(verbose_name='Calendar', max_length=20,
-        null=False, blank=False, choices=CALENDARS.items())
+    issue = models.CharField(max_length=500, verbose_name="Issue Reported",
+                             null=False, blank=False)
+    reporter = models.CharField(max_length=60, verbose_name="Reporter",
+                                null=False, blank=False)
+    date_time = models.DateTimeField(auto_now_add=True,
+                                     verbose_name="Date and Time of Report",
+                                     null=False, blank=False)
 
     # DataFile that the Data Issue corresponds to
     data_file = models.ManyToManyField(DataFile)
 
     def __unicode__(self):
         return "Data Issue (%s): %s (%s)" % (
-            cf_units.num2date(self.date_time, self.time_units, self.calendar).
-            strftime('%Y-%m-%d %H:%M:%S'), self.issue, self.reporter)
-
-    def date_time_string(self):
-        """Return a string containing the issue date and time"""
-        dto = cf_units.num2date(self.date_time, self.time_units, self.calendar)
-        return dto.strftime('%Y-%m-%d %H:%M:%S')
+            self.date_time.strftime('%Y-%m-%d %H:%M:%S'),
+            self.issue, self.reporter
+        )
 
 
 class Checksum(models.Model):
@@ -511,7 +537,7 @@ class Checksum(models.Model):
                                 self.data_file.name)
 
 
-def _standardise_time_unit(time_float, time_unit, standard_unit, calendar):
+def standardise_time_unit(time_float, time_unit, standard_unit, calendar):
     """
     Standardise a floating point time in one time unit by returning the
     corresponding time in the `standard_unit`. The original value is returned if

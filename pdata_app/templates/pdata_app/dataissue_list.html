@@ -1,0 +1,56 @@
+{% extends "base.html" %}
+{% load staticfiles %}
+{% load render_table from django_tables2 %}
+
+    {% block contents %}
+        <p>
+            {% if request.GET.data_file %}
+                These are the data issues identified for data file ...
+                <pre>{{ request.GET.data_file_string }}</pre>
+            {% elif request.GET.data_submission %}
+                These are the data issues identified for data submission ...
+                <pre>{{ request.GET.data_submission_string }}</pre>
+            {% else %}
+                These are the data issues identified ...
+            {% endif %}
+
+        </p>
+
+        <p>
+            <form class="form-inline" action="{% url 'data_issues' %}" method="get">
+                <div class="form-group">
+                    <label class="sr-only" for="id">ID</label>
+                    <input type="text" class="form-control" name="id" id="id" placeholder="ID" {% if request.GET.id %} value="{{ request.GET.id }}" {% endif %} autofocus>
+                </div>
+                <div class="form-group">
+                    <label class="sr-only" for="issue">Issue Text</label>
+                    <input type="text" class="form-control" name="issue" id="issue" placeholder="Issue Text" {% if request.GET.issue %} value="{{ request.GET.issue }}" {% endif %}>
+                </div>
+                <div class="form-group">
+                    <label class="sr-only" for="reporter">Reporter</label>
+                    <input type="text" class="form-control" name="reporter" id="reporter" placeholder="Reporter" {% if request.GET.reporter %} value="{{ request.GET.reporter }}" {% endif %}>
+                </div>
+                <br/>
+                <div class="form-group">
+                    <label class="sr-only" for="start_date_time">Start Date (YYY-MM-DD)</label>
+                    <input type="text" class="form-control" name="date_time_0" id="start_date_time" placeholder="Start Date (YYY-MM-DD)" {% if request.GET.date_time_0 %} value="{{ request.GET.date_time_0 }}" {% endif %}>
+                </div>
+                <div class="form-group">
+                    <label class="sr-only" for="end_date_time">End Date (YYY-MM-DD)</label>
+                    <input type="text" class="form-control" name="date_time_1" id="end_date_time" placeholder="End Date (YYY-MM-DD)" {% if request.GET.date_time_1 %} value="{{ request.GET.date_time_1 }}" {% endif %}>
+                </div>
+                {% if request.GET.data_file %}
+                    <input type="hidden" name="data_file" value="{{ request.GET.data_file }}">
+                    <input type="hidden" name="data_file_string" value="{{ request.GET.data_file_string }}">
+                {% elif request.GET.data_submission %}
+                    <input type="hidden" name="data_submission" value="{{ request.GET.data_submission }}">
+                    <input type="hidden" name="data_submission_string" value="{{ request.GET.data_submission_string }}">
+                {% endif %}
+                <input type="submit" class="btn btn-default" value="Filter" />
+            </form>
+
+        </p>
+
+        {% render_table table %}
+
+    {% endblock %}

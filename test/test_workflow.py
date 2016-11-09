@@ -4,10 +4,12 @@ Use unit tests to represent example workflows in the data management tool.
 The workflows that will occur are documented in:
 https://docs.google.com/document/d/1qnIg2pHqF1I1tuP_iCVzb6yL_bXZoheBBUQ9RuGWPlQ
 """
+import datetime
 import os
 import re
 
 import cf_units
+import pytz
 
 from django.conf import settings
 from django.test import TestCase
@@ -176,8 +178,8 @@ class TestWorkflows(PdataBaseTest):
         # Now, create the data issue
         data_issue = get_or_create(DataIssue, issue='test issue',
             reporter='Jon Seddon',
-            date_time=_cmpts2num(1978, 7, 19, 0, 0, 0, 0, TIME_UNITS, CALENDAR),
-            time_units=TIME_UNITS, calendar=CALENDAR)
+            date_time=make_aware(datetime.datetime(1978, 7, 19, 0, 0, 0, 0),
+                                 pytz.UTC, None))
 
         # Add the issue to all files in the submission
         for df in data_submission.get_data_files():

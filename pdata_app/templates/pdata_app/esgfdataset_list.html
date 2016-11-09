@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+{% load staticfiles %}
+{% load render_table from django_tables2 %}
+
+    {% block contents %}
+        <p>These are the ESGF datasets...</p>
+
+        <p>
+            <form class="form-inline" action="{% url 'esgf_datasets' %}" method="get">
+                <div class="form-group">
+                    <label class="sr-only" for="drs_id">DRS ID</label>
+                    <input type="text" class="form-control" name="drs_id" id="drs_id" placeholder="DRS ID" {% if request.GET.drs_id %} value="{{ request.GET.drs_id }}" {% endif %} autofocus>
+                </div>
+                <div class="form-group">
+                    <label class="sr-only" for="version">Version</label>
+                    <input type="text" class="form-control" name="version" id="version" placeholder="Version" {% if request.GET.version %} value="{{ request.GET.version }}" {% endif %}>
+                </div>
+                <div class="form-group">
+                    <label class="sr-only" for="directory">Directory</label>
+                    <input type="text" class="form-control" name="directory" id="directory" placeholder="Directory" {% if request.GET.directory %} value="{{ request.GET.directory }}" {% endif %}>
+                </div>
+                <div class="form-group">
+                    <label class="sr-only" for="thredds_url">THREDDS URL</label>
+                    <input type="text" class="form-control" name="thredds_url" id="thredds_url" placeholder="THREDDS URL" {% if request.GET.thredds_url %} value="{{ request.GET.thredds_url }}" {% endif %}>
+                </div>
+                <div class="form-group">
+                    <label class="sr-only" for="ceda_dataset">CEDA Dataset</label>
+                    <input type="text" class="form-control" name="ceda_dataset" id="ceda_dataset" placeholder="CEDA Dataset" {% if request.GET.ceda_dataset %} value="{{ request.GET.ceda_dataset }}" {% endif %}>
+                </div>
+                <div class="form-group">
+                    <label class="sr-only" for="data_submission">Data Submission Directory</label>
+                    <input type="text" class="form-control" name="data_submission" id="data_submission" placeholder="Data Submission Directory" {% if request.GET.data_submission %} value="{{ request.GET.data_submission }}" {% endif %}>
+                </div>
+                <input type="submit" class="btn btn-default" value="Filter" />
+            </form>
+        </p>
+
+
+        {% render_table table %}
+
+    {% endblock %}
