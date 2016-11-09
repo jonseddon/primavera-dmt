@@ -30,7 +30,16 @@ class DataFileTable(tables.Table):
         return '{}: {}'.format(checksum.checksum_type, checksum.checksum_value)
 
     def render_num_dataissues(self, record):
-        return record.dataissue_set.count()
+        num_dataissues = record.dataissue_set.count()
+        url_query = urlencode({'data_file': record.id,
+                               'data_file_string': '{} ({})'.format(
+                                   record.name,
+                                   record.directory)})
+        return format_html('<a href="{}?{}">{}</a>'.format(
+            reverse('data_issues'),
+            url_query,
+            num_dataissues
+        ))
 
 
 class DataSubmissionTable(tables.Table):

@@ -106,7 +106,7 @@ class CEDADatasetFilter(django_filters.FilterSet):
 class DataIssueFilter(django_filters.FilterSet):
     class Meta:
         models = DataIssue
-        fields = ('issue', 'reporter', 'date_time', 'id')
+        fields = ('issue', 'reporter', 'date_time', 'id', 'data_file')
 
     id = django_filters.NumberFilter(name='id')
 
@@ -116,3 +116,5 @@ class DataIssueFilter(django_filters.FilterSet):
                                          lookup_expr='contains')
 
     date_time = django_filters.DateFromToRangeFilter(name='date_time')
+
+    data_file = django_filters.NumberFilter(name='data_file__id')
