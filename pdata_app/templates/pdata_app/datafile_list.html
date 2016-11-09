@@ -7,6 +7,11 @@
             {% if request.GET.data_submission %}
                 These are the netCDF files for data submission ...
                 <pre>{{ request.GET.data_submission_string }}</pre>
+            {% elif request.GET.data_issue %}
+                These are the netCDF files affected by data issue
+                <a href="{% url 'data_issues' %}?id={{ request.GET.data_issue }}">
+                    #{{ request.GET.data_issue }}</a>  ...
+                <pre>{{ request.GET.data_issue_string }}</pre>
             {% else %}
                 These are the netCDF files that we know about...
             {% endif %}
@@ -33,6 +38,9 @@
                 {% if request.GET.data_submission %}
                     <input type="hidden" name="data_submission" value="{{ request.GET.data_submission }}">
                     <input type="hidden" name="data_submission_string" value="{{ request.GET.data_submission_string }}">
+                {% elif request.GET.data_issue %}
+                    <input type="hidden" name="data_issue" value="{{ request.GET.data_issue }}">
+                    <input type="hidden" name="data_issue_string" value="{{ request.GET.data_issue_string }}">
                 {% endif %}
                 <input type="submit" class="btn btn-default" value="Filter" />
             </form>

@@ -249,7 +249,17 @@ def view_variable_query(request):
 
 
 def view_outstanding_query(request):
-    # TODO: add autocomplete: http://flaviusim.com/blog/AJAX-Autocomplete-Search-with-Django-and-jQuery/
+    """
+    Note: this view should not be displayed using django-tables unlike many of
+    the other views. The other views are implemented in a single SQL query.
+    django-tables will limit the query to only the subset of records that will
+    be displayed on the next page. This view_outstanding_query uses user code
+    to filter the results. Calling it repeatedly will be slow and django-tables
+    subsetting could result in unpredictable output. Instead, all of the results
+    from this query are sent to the output web page. There, the datatables
+    plugin for jQuery (https://datatables.net/) is used to filter and paginate
+    the query results on the page.
+    """
     request_params = request.GET
 
     # Basic page request with nothing specified

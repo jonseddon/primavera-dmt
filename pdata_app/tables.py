@@ -191,8 +191,24 @@ class DataIssueTable(tables.Table):
         model = DataIssue
         attrs = {'class': 'paleblue'}
 
+    num_files_affected = tables.Column(empty_values=(), orderable=False,
+                                       verbose_name='Total # Files Affected')
+
     def render_date_time(self, value):
         return value.strftime('%Y-%m-%d %H:%M')
+
+    def render_num_files_affected(self, record):
+        num_files_affected = record.data_file.count()
+        url_query = urlencode({'data_issue': record.id,
+                               'data_issue_string': '{} ({})\n{}{}'.format(
+                                   record.reporter,
+                                   record.date_time.strftime('%Y-%m-%d %H:%M'),
+                                   record.issue[:100],
+                                   '...' if len(record.issue) > 100 else ''
+                               )})
+        return format_html('<a href="{}?{}">{}</a>',
+                           reverse('data_files'),
+                           url_query, num_files_affected)
 
 
 def _to_comma_sep(list_values):

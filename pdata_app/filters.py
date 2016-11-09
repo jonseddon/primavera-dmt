@@ -47,6 +47,8 @@ class DataFileFilter(django_filters.FilterSet):
 
     data_submission = django_filters.NumberFilter(name='data_submission__id')
 
+    data_issue = django_filters.NumberFilter(name='dataissue__id')
+
 
 class DataSubmissionFilter(django_filters.FilterSet):
     class Meta:
