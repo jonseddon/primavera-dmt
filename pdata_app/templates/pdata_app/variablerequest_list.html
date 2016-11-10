@@ -70,7 +70,7 @@
                 </div>
                 <div class="checkbox">
                     <label>
-                        <input id="nameless" type="checkbox" name="nameless" value="1" {% if request.GET.nameless %}checked{% endif %}>No CMOR name
+                        <input id="nameless" type="checkbox" name="nameless" value="1" {% if request.GET.nameless %}checked{% endif %} onchange="updateCmorName()"> No CMOR name only
                     </label>
                 </div>
                 <input type="submit" class="btn btn-default" value="Filter" />
@@ -81,17 +81,20 @@
         {% render_table table %}
 
         <script>
-            $('#nameless').change(function(){
+            $(function () {
+                updateCmorName(); //call on page load
+            });
+
+            function updateCmorName(){
                 if ($('#nameless').is(':checked') == true)
                 {
-                    $('#cmor_name').prop('placeholder', 'No CMOR name').prop('disabled', true);
+                    $('#cmor_name').prop('placeholder', 'No CMOR name').val('').prop('disabled', true);
                 }
                 else
                 {
                     $('#cmor_name').prop('placeholder', 'CMOR Name').prop('disabled', false);
                 }
-            });
+            }
         </script>
-
 
     {% endblock %}
