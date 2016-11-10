@@ -3,6 +3,11 @@
 {% load render_table from django_tables2 %}
 
     {% block contents %}
+        <p>The original CMIP6 data request is available at:
+            <a href="http://clipc-services.ceda.ac.uk/dreq/mipVars.html">
+                http://clipc-services.ceda.ac.uk/dreq/mipVars.html</a>
+        </p>
+
         <p>These are the variable requests identified ...</p>
 
         <p>
@@ -19,7 +24,6 @@
                     <label class="sr-only" for="units">Units</label>
                     <input type="text" class="form-control" name="units" id="units" placeholder="Units" {% if request.GET.units %} value="{{ request.GET.units }}" {% endif %}>
                 </div>
-                <br/>
                 <div class="form-group">
                     <label class="sr-only" for="var_name">var_name</label>
                     <input type="text" class="form-control" name="var_name" id="var_name" placeholder="var_name" {% if request.GET.var_name %} value="{{ request.GET.var_name }}" {% endif %}>
@@ -64,11 +68,33 @@
                     <label class="sr-only" for="uid">UID</label>
                     <input type="text" class="form-control" name="uid" id="uid" placeholder="UID" {% if request.GET.uid %} value="{{ request.GET.uid }}" {% endif %}>
                 </div>
+                <div class="checkbox">
+                    <label>
+                        <input id="nameless" type="checkbox" name="nameless" value="1" {% if request.GET.nameless %}checked{% endif %} onchange="updateCmorName()"> No CMOR name only
+                    </label>
+                </div>
                 <input type="submit" class="btn btn-default" value="Filter" />
             </form>
 
         </p>
 
         {% render_table table %}
+
+        <script>
+            $(function () {
+                updateCmorName(); //call on page load
+            });
+
+            function updateCmorName(){
+                if ($('#nameless').is(':checked') == true)
+                {
+                    $('#cmor_name').prop('placeholder', 'No CMOR name').val('').prop('disabled', true);
+                }
+                else
+                {
+                    $('#cmor_name').prop('placeholder', 'CMOR Name').prop('disabled', false);
+                }
+            }
+        </script>
 
     {% endblock %}

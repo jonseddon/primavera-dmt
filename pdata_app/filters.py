@@ -163,7 +163,7 @@ class VariableRequestQueryFilter(django_filters.FilterSet):
                                           lookup_expr='contains')
 
     cmor_name = django_filters.CharFilter(name='cmor_name',
-                                          lookup_expr='contains')
+                                          lookup_expr='exact')
 
     modeling_realm = django_filters.CharFilter(name='modeling_realm',
                                           lookup_expr='contains')
@@ -176,3 +176,10 @@ class VariableRequestQueryFilter(django_filters.FilterSet):
 
     uid = django_filters.CharFilter(name='uid',
                                           lookup_expr='contains')
+
+    nameless = django_filters.MethodFilter()
+
+    def filter_nameless(self, queryset, value):
+        if value:
+            return queryset.filter(cmor_name__exact='')
+        return queryset
