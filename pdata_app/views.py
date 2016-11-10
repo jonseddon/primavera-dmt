@@ -15,9 +15,11 @@ from .models import (DataFile, DataSubmission, ESGFDataset, CEDADataset,
                      standardise_time_unit)
 from .forms import CreateSubmissionForm
 from .tables import (DataRequestTable, DataFileTable, DataSubmissionTable,
-                     ESGFDatasetTable, CEDADatasetTable, DataIssueTable)
+                     ESGFDatasetTable, CEDADatasetTable, DataIssueTable,
+                     VariableRequestQueryTable)
 from .filters import (DataRequestFilter, DataFileFilter, DataSubmissionFilter,
-                      ESGFDatasetFilter, CEDADatasetFilter, DataIssueFilter)
+                      ESGFDatasetFilter, CEDADatasetFilter, DataIssueFilter,
+                      VariableRequestQueryFilter)
 from .utils.table_views import PagedFilteredTableView
 from vocabs.vocabs import ONLINE_STATUS, STATUS_VALUES
 
@@ -62,6 +64,13 @@ class DataIssueList(PagedFilteredTableView):
     table_class = DataIssueTable
     filter_class = DataIssueFilter
     page_title = 'Data Issues'
+
+
+class VariableRequestQueryList(PagedFilteredTableView):
+    model = VariableRequest
+    table_class = VariableRequestQueryTable
+    filter_class = VariableRequestQueryFilter
+    page_title = 'Variable Request'
 
 
 def view_login(request):
@@ -118,7 +127,7 @@ def view_variable_query(request):
 
     if not request_params:
         return render(request, 'variable_query.html', {'request': request,
-            'page_title': 'Variable Query'})
+            'page_title': 'Variable Received Query'})
 
     var_id = request_params.get('var_id')
 
@@ -134,7 +143,7 @@ def view_variable_query(request):
     files = DataFile.objects.filter(variable_request__cmor_name=var_id)
     if not files:
         return render(request, 'variable_query.html', {'request': request,
-        'page_title': 'Variable Query',
+        'page_title': 'Variable Received Query',
         'message': 'Variable: {} not found'.format(var_id)})
 
     file_sets_found = []
@@ -250,7 +259,7 @@ def view_variable_query(request):
         })
 
     return render(request, 'variable_query_results.html', {'request': request,
-        'page_title': '{}: Variable Query Results'.format(var_id),
+        'page_title': '{}: Variable Received Results'.format(var_id),
         'var_id': var_id, 'file_sets': file_sets_found})
 
 

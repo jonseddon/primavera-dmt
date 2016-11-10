@@ -1,6 +1,6 @@
 import django_filters
 from .models import (DataRequest, DataSubmission, DataFile, ESGFDataset,
-                     CEDADataset, DataIssue)
+                     CEDADataset, DataIssue, VariableRequest)
 
 
 class DataRequestFilter(django_filters.FilterSet):
@@ -125,3 +125,54 @@ class DataIssueFilter(django_filters.FilterSet):
 
     data_submission = django_filters.NumberFilter(
         name='data_file__data_submission__id')
+
+
+class VariableRequestQueryFilter(django_filters.FilterSet):
+    class Meta:
+        models = VariableRequest
+        fields = ('table_name', 'long_name', 'units', 'var_name',
+                  'standard_name', 'cell_methods', 'positive', 'variable_type',
+                  'dimensions', 'cmor_name', 'modeling_realm', 'frequency',
+                  'cell_measures', 'uid')
+
+    table_name = django_filters.CharFilter(name='table_name',
+                                          lookup_expr='contains')
+
+    long_name = django_filters.CharFilter(name='long_name',
+                                          lookup_expr='contains')
+
+    units = django_filters.CharFilter(name='units',
+                                          lookup_expr='contains')
+
+    var_name = django_filters.CharFilter(name='var_name',
+                                          lookup_expr='contains')
+
+    standard_name = django_filters.CharFilter(name='standard_name',
+                                          lookup_expr='contains')
+
+    cell_methods = django_filters.CharFilter(name='cell_methods',
+                                          lookup_expr='contains')
+
+    positive = django_filters.CharFilter(name='positive',
+                                          lookup_expr='contains')
+
+    variable_type = django_filters.CharFilter(name='variable_type',
+                                          lookup_expr='contains')
+
+    dimensions = django_filters.CharFilter(name='dimensions',
+                                          lookup_expr='contains')
+
+    cmor_name = django_filters.CharFilter(name='cmor_name',
+                                          lookup_expr='contains')
+
+    modeling_realm = django_filters.CharFilter(name='modeling_realm',
+                                          lookup_expr='contains')
+
+    frequency = django_filters.CharFilter(name='frequency',
+                                          lookup_expr='contains')
+
+    cell_measures = django_filters.CharFilter(name='cell_measures',
+                                          lookup_expr='contains')
+
+    uid = django_filters.CharFilter(name='uid',
+                                          lookup_expr='contains')

@@ -5,7 +5,7 @@ from django.urls import reverse
 import django_tables2 as tables
 
 from .models import (DataRequest, DataSubmission, DataFile, ESGFDataset,
-                     CEDADataset, DataIssue)
+                     CEDADataset, DataIssue, VariableRequest)
 
 DEFAULT_VALUE = '--'
 
@@ -209,6 +209,13 @@ class DataIssueTable(tables.Table):
         return format_html('<a href="{}?{}">{}</a>',
                            reverse('data_files'),
                            url_query, num_files_affected)
+
+
+class VariableRequestQueryTable(tables.Table):
+    class Meta:
+        model = VariableRequest
+        attrs = {'class': 'paleblue'}
+        exclude = ('id',)
 
 
 def _to_comma_sep(list_values):
