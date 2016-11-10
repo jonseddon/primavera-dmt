@@ -106,7 +106,7 @@ def main():
                         variable_type=VARIABLE_TYPES[row[9]], dimensions=row[10],
                         cmor_name=row[11], modeling_realm=row[12],
                         frequency=FREQUENCY_VALUES[row[13]],
-                        cell_measures=row[14], uid=row[21])
+                        cell_measures=row[14], uid=row[18])
                 except (KeyError, IndexError):
                     # display some information to work out where the error
                     # happened and then re-raise the exception to crash out
