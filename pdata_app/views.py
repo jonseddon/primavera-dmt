@@ -111,7 +111,7 @@ def view_retrieval_request(request):
 def view_variable_query(request):
     """
     Similarly to view_outstanding_query(), the results from this view should not
-    be displayed with djang-tables and instead the jQuery data-tables package
+    be displayed with django-tables and instead the jQuery data-tables package
     should be used for displaying the results.
     """
     request_params = request.GET
