@@ -34,7 +34,7 @@ from pdata_app.models import (DataRequest, Institute, Project, Settings,
 from pdata_app.utils.dbapi import match_one, get_or_create
 
 # The ID of the Google Speadsheet (taken from the sheet's URL)
-SPREADSHEET_ID = '1bEDNnDTBQ93Nf6t-I675HJI64N96D76aaryrarHgPbI'
+SPREADSHEET_ID = '1ei4_OTHXLkCh8LXe_CndrN6b4HHd4FxxKQEeeSu9htM'
 
 # If modifying these scopes, delete your previously saved credentials
 # at ~/.credentials/sheets.googleapis.com-python-quickstart.json
@@ -150,9 +150,11 @@ def is_mpi(sheet_cell):
     if not sheet_cell:
         return False
 
-    if sheet_cell.upper() == 'X' or sheet_cell.upper() == 'LIMITED':
+    status_ignored = sheet_cell.split(':')[-1].strip().upper()
+
+    if status_ignored == 'X' or status_ignored == 'LIMITED':
         return True
-    elif sheet_cell.upper() == 'FALSE' or sheet_cell.upper() == 'NO':
+    elif status_ignored == 'FALSE' or status_ignored == 'NO':
         return False
     else:
         print 'Unknown MPI status: {}. Ignoring.'.format(sheet_cell)
