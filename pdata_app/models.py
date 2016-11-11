@@ -103,7 +103,7 @@ class VariableRequest(models.Model):
     long_name = models.CharField(max_length=200, null=False, blank=False)
     units = models.CharField(max_length=200, null=False, blank=False)
     var_name = models.CharField(max_length=30, null=False, blank=False)
-    standard_name = models.CharField(max_length=100, null=False, blank=False)
+    standard_name = models.CharField(max_length=200, null=False, blank=False)
     cell_methods = models.CharField(max_length=200, null=False, blank=False)
     positive = models.CharField(max_length=20, null=True, blank=True)
     variable_type = models.CharField(max_length=20, choices=VARIABLE_TYPES.items(), null=False, blank=False)
