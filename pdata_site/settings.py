@@ -20,7 +20,7 @@ DEBUG = False
 # Now import local settings (that might override DEBUG settings)
 from settings_local import *
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ['prima-dm.ceda.ac.uk']
 
 
 # Application definition
@@ -92,7 +92,9 @@ STATICFILES_FINDERS = (
 # https://docs.djangoproject.com/en/1.6/howto/static-files/
 
 STATICFILES_DIRS = [
-    os.path.join(BASE_DIR, "static"),
+    os.path.join(BASE_DIR, "static_src"),
 ]
+
+STATIC_ROOT = os.path.join(BASE_DIR, "static")
 
 STATIC_URL = '/static/'

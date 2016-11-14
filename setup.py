@@ -16,4 +16,6 @@ setup(name='pdata_site',
       url='https://github.com/agstephens/primavera-dmt',
       packages=find_packages(),
       include_package_data=True,
+      package_data={'pdata_app':['templates/*.html',
+                                 'templates/pdata_app/*.html']}
       )
