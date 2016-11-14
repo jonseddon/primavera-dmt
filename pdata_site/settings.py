@@ -20,7 +20,7 @@ DEBUG = False
 # Now import local settings (that might override DEBUG settings)
 from settings_local import *
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ['prima-dm.ceda.ac.uk']
 
 
 # Application definition
