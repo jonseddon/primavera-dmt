@@ -34,13 +34,13 @@ class DataFileFilter(django_filters.FilterSet):
         fields = ['name', 'directory', 'version', 'tape_url']
 
     name = django_filters.CharFilter(name='name',
-                                         lookup_expr='contains')
+                                     lookup_expr='contains')
 
     directory = django_filters.CharFilter(name='directory',
-                                         lookup_expr='contains')
+                                          lookup_expr='contains')
 
     version = django_filters.CharFilter(name='version',
-                                         lookup_expr='contains')
+                                        lookup_expr='contains')
 
     tape_url = django_filters.CharFilter(name='tape_url',
                                          lookup_expr='contains')
@@ -136,46 +136,46 @@ class VariableRequestQueryFilter(django_filters.FilterSet):
                   'cell_measures', 'uid')
 
     table_name = django_filters.CharFilter(name='table_name',
-                                          lookup_expr='contains')
+                                           lookup_expr='icontains')
 
     long_name = django_filters.CharFilter(name='long_name',
-                                          lookup_expr='contains')
+                                          lookup_expr='icontains')
 
     units = django_filters.CharFilter(name='units',
-                                          lookup_expr='contains')
+                                      lookup_expr='icontains')
 
     var_name = django_filters.CharFilter(name='var_name',
-                                          lookup_expr='contains')
+                                         lookup_expr='icontains')
 
     standard_name = django_filters.CharFilter(name='standard_name',
-                                          lookup_expr='contains')
+                                              lookup_expr='icontains')
 
     cell_methods = django_filters.CharFilter(name='cell_methods',
-                                          lookup_expr='contains')
+                                             lookup_expr='icontains')
 
     positive = django_filters.CharFilter(name='positive',
-                                          lookup_expr='contains')
+                                         lookup_expr='icontains')
 
     variable_type = django_filters.CharFilter(name='variable_type',
-                                          lookup_expr='contains')
+                                              lookup_expr='icontains')
 
     dimensions = django_filters.CharFilter(name='dimensions',
-                                          lookup_expr='contains')
+                                           lookup_expr='icontains')
 
     cmor_name = django_filters.CharFilter(name='cmor_name',
                                           lookup_expr='exact')
 
     modeling_realm = django_filters.CharFilter(name='modeling_realm',
-                                          lookup_expr='contains')
+                                               lookup_expr='icontains')
 
     frequency = django_filters.CharFilter(name='frequency',
                                           lookup_expr='contains')
 
     cell_measures = django_filters.CharFilter(name='cell_measures',
-                                          lookup_expr='contains')
+                                              lookup_expr='icontains')
 
     uid = django_filters.CharFilter(name='uid',
-                                          lookup_expr='contains')
+                                    lookup_expr='icontains')
 
     nameless = django_filters.MethodFilter()
 
