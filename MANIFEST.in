@@ -1,0 +1,2 @@
+recursive-include pdata_app/templates *.html
+recursive-include pdata_site/static_src *.*
