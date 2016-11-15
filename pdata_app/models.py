@@ -99,20 +99,38 @@ class VariableRequest(models.Model):
     """
     A variable requested in the CMIP6 data request
     """
-    table_name = models.CharField(max_length=30, null=False, blank=False)
-    long_name = models.CharField(max_length=200, null=False, blank=False)
-    units = models.CharField(max_length=200, null=False, blank=False)
-    var_name = models.CharField(max_length=30, null=False, blank=False)
-    standard_name = models.CharField(max_length=200, null=False, blank=False)
-    cell_methods = models.CharField(max_length=200, null=False, blank=False)
-    positive = models.CharField(max_length=20, null=True, blank=True)
-    variable_type = models.CharField(max_length=20, choices=VARIABLE_TYPES.items(), null=False, blank=False)
-    dimensions = models.CharField(max_length=200, null=False, blank=False)
-    cmor_name = models.CharField(max_length=20, null=False, blank=False)
-    modeling_realm = models.CharField(max_length=20, null=False, blank=False)
-    frequency = models.CharField(max_length=200, choices=FREQUENCY_VALUES.items(), null=False, blank=False)
-    cell_measures = models.CharField(max_length=200, null=False, blank=False)
-    uid = models.CharField(max_length=200, null=False, blank=False)
+    table_name = models.CharField(max_length=30, null=False, blank=False,
+                                  verbose_name='Table Name')
+    long_name = models.CharField(max_length=200, null=False, blank=False,
+                                  verbose_name='Long Name')
+    units = models.CharField(max_length=200, null=False, blank=False,
+                                  verbose_name='Units')
+    var_name = models.CharField(max_length=30, null=False, blank=False,
+                                  verbose_name='Var Name')
+    standard_name = models.CharField(max_length=200, null=False, blank=False,
+                                  verbose_name='Standard Name')
+    cell_methods = models.CharField(max_length=200, null=False, blank=False,
+                                  verbose_name='Cell Methods')
+    positive = models.CharField(max_length=20, null=True, blank=True,
+                                  verbose_name='Positive')
+    variable_type = models.CharField(max_length=20,
+                                     choices=VARIABLE_TYPES.items(),
+                                     null=False, blank=False,
+                                  verbose_name='Variable Type')
+    dimensions = models.CharField(max_length=200, null=False, blank=False,
+                                  verbose_name='Dimensions')
+    cmor_name = models.CharField(max_length=20, null=False, blank=False,
+                                  verbose_name='CMOR Name')
+    modeling_realm = models.CharField(max_length=20, null=False, blank=False,
+                                  verbose_name='Modeling Realm')
+    frequency = models.CharField(max_length=200,
+                                 choices=FREQUENCY_VALUES.items(),
+                                 null=False, blank=False,
+                                  verbose_name='Frequency')
+    cell_measures = models.CharField(max_length=200, null=False, blank=False,
+                                  verbose_name='Cell Measures')
+    uid = models.CharField(max_length=200, null=False, blank=False,
+                                  verbose_name='UID')
 
     def __unicode__(self):
         return 'VariableRequest: {} ({})'.format(self.cmor_name, self.table_name)
