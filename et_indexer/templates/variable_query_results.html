@@ -1,0 +1,29 @@
+
+{% extends "base.html"%}
+{% load staticfiles %}
+{% load os_path %}
+
+{% block contents %}
+<p>{{ var_occs|length }} records found.</p>
+
+<p>
+    <table class="table table-hover">
+        <tr>
+            <th>Filename</th>
+            <th>File Batch ID</th>
+            <th>File Status</th>
+            <th>Directory</th>
+        </tr>
+
+        {% for record in var_occs %}
+           <tr>
+               <td> {{ record.data_file.original_location|basename }} </td>
+               <td> {{ record.data_file.batch_id }} </td>
+               <td> {{ record.data_file.status }} </td>
+               <td> {{ record.data_file.original_location|dirname }} </td>
+           </tr>
+        {% endfor %}
+    </table>
+</p>
+
+{% endblock %}

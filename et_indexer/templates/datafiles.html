@@ -1,0 +1,32 @@
+
+{% extends "base.html"%}
+{% load staticfiles %}
+{% load os_path %}
+
+{% block contents %}
+
+<p>{{ records|length }} data files found.</p>
+
+<p>
+    <table class="table table-hover">
+        <tr>
+            <th>Filename</th>
+            <th>Batch ID</th>
+            <th>Status</th>
+            <th>Directory</th>
+        </tr>
+
+        {% for record in records %}
+           <tr>
+               <td> {{ record.original_location|basename }} </td>
+               <td> {{ record.batch_id }} </td>
+               <td> {{ record.status }} </td>
+               <td> {{ record.original_location|dirname }} </td>
+           </tr>
+        {% endfor %}
+    </table>
+</p>
+
+{% endblock %}
+    
+

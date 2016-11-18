@@ -1,0 +1,22 @@
+
+{% extends "base.html"%}
+{% load staticfiles %}
+
+{% block contents %}
+
+
+{% if message %}
+  <p> {{ message }} </p>
+{% endif %}
+
+Variable to search for:
+    
+    <form class="form-inline" action="{%url 'view_varquery' %}" method="get">
+        <input type="text" class="form-control" name="var_name" autofocus />
+        <input type="submit" class="btn btn-default" value="Query" />
+    </form>
+    
+
+{% endblock %}
+    
+
