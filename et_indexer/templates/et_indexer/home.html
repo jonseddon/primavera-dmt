@@ -1,12 +1,12 @@
-{% extends "base.html"%}
+{% extends "et_indexer/base.html"%}
 {% load staticfiles %}
 
 {% block contents %}
 Welcome, the following options are available from the Views menu:
 
 <p><ul>
-    <li><a href="{% url 'view_datafiles' %}">Data Files</a></li>
-    <li><a href="{% url 'view_varquery' %}">Variable Query</a></li>
+    <li><a href="{% url 'et_indexer_view_datafiles' %}">Data Files</a></li>
+    <li><a href="{% url 'et_indexer_view_varquery' %}">Variable Query</a></li>
 </ul></p>
     
 Please contact <a href="mailto:jon.seddon@metoffice.gov.uk">Jon Seddon</a> if there

@@ -2,6 +2,7 @@ from django.conf.urls import include, url
 from django.contrib.staticfiles.urls import staticfiles_urlpatterns
 
 import pdata_app.views
+import et_indexer.views
 
 
 from django.contrib import admin
@@ -46,6 +47,14 @@ urlpatterns = [
 
     url(r'^retrieval_request/$', pdata_app.views.view_retrieval_request,
         name='retrieval_request'),
+
+    url(r'^et_indexer/$', et_indexer.views.view_home, name='et_indexer'),
+
+    url(r'^et_indexer/datafiles/$', et_indexer.views.view_datafiles,
+        name='et_indexer_view_datafiles'),
+
+    url(r'^et_indexer/var_query/$', et_indexer.views.view_varquery,
+        name='et_indexer_view_varquery'),
 
     url(r'.*', pdata_app.views.view_home, name='home'),
 ]

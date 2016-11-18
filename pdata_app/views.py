@@ -77,10 +77,10 @@ def view_login(request):
     if request.method == 'GET':
         next_page = request.GET.get('next')
         if next_page:
-            return render(request, 'login.html', {'request': request,
+            return render(request, 'pdata_app/login.html', {'request': request,
                 'page_title': 'Login', 'next': next_page})
         else:
-            return render(request, 'login.html', {'request': request,
+            return render(request, 'pdata_app/login.html', {'request': request,
                 'page_title': 'Login'})
 
     username = request.POST['username']
@@ -95,10 +95,10 @@ def view_login(request):
             return redirect('home')
     else:
         if next_page:
-            return render(request, 'login.html', {'request': request,
+            return render(request, 'pdata_app/login.html', {'request': request,
                 'page_title': 'Login', 'next': next_page, 'errors': True})
         else:
-            return render(request, 'login.html', {'request': request,
+            return render(request, 'pdata_app/login.html', {'request': request,
                 'page_title': 'Login', 'errors': True})
 
 
@@ -108,13 +108,14 @@ def view_logout(request):
 
 
 def view_home(request):
-    return render(request, 'home.html', {'request': request,
+    return render(request, 'pdata_app/home.html', {'request': request,
         'page_title': 'The PRIMAVERA DMT'})
 
 
 def view_retrieval_request(request):
-    return render(request, 'retrieval_request.html', {'request': request,
-        'page_title': 'Retrieval Request'})
+    return render(request, 'pdata_app/retrieval_request.html',
+                  {'request': request,
+                   'page_title': 'Retrieval Request'})
 
 
 def view_variable_query(request):
@@ -126,25 +127,28 @@ def view_variable_query(request):
     request_params = request.GET
 
     if not request_params:
-        return render(request, 'variable_query.html', {'request': request,
-            'page_title': 'Variable Received Query'})
+        return render(request, 'pdata_app/variable_query.html',
+                      {'request': request,
+                       'page_title': 'Variable Received Query'})
 
     var_id = request_params.get('var_id')
 
     # Parameter specified
     if not var_id:
         msg = 'Please specify a Variable'
-        return render(request, 'variable_query.html', {'request': request,
-            'page_title': 'Variable Query', 'message': msg})
+        return render(request, 'pdata_app/variable_query.html',
+                      {'request': request,
+                       'page_title': 'Variable Query', 'message': msg})
 
     # Everything supplied so start processing
 
     # see if any files contain the variable requested
     files = DataFile.objects.filter(variable_request__cmor_name=var_id)
     if not files:
-        return render(request, 'variable_query.html', {'request': request,
-        'page_title': 'Variable Received Query',
-        'message': 'Variable: {} not found'.format(var_id)})
+        return render(request, 'pdata_app/variable_query.html',
+                      {'request': request,
+                       'page_title': 'Variable Received Query',
+                       'message': 'Variable: {} not found'.format(var_id)})
 
     file_sets_found = []
 
@@ -258,9 +262,10 @@ def view_variable_query(request):
             'esgf_od_url': _find_common_directory(row_files, 'esgf_opendap_url')
         })
 
-    return render(request, 'variable_query_results.html', {'request': request,
-        'page_title': '{}: Variable Received Results'.format(var_id),
-        'var_id': var_id, 'file_sets': file_sets_found})
+    return render(request, 'pdata_app/variable_query_results.html',
+                  {'request': request,
+                   'page_title': '{}: Variable Received Results'.format(var_id),
+                   'var_id': var_id, 'file_sets': file_sets_found})
 
 
 def view_outstanding_query(request):
@@ -279,8 +284,9 @@ def view_outstanding_query(request):
 
     # Basic page request with nothing specified
     if not request_params:
-        return render(request, 'outstanding_query.html', {'request': request,
-            'page_title': 'Outstanding Data Query'})
+        return render(request, 'pdata_app/outstanding_query.html',
+                      {'request': request,
+                       'page_title': 'Outstanding Data Query'})
 
     project = request_params.get('project')
     model = request_params.get('model')
@@ -289,8 +295,10 @@ def view_outstanding_query(request):
     # Some parameters specified
     if not (model and experiment and project):
         msg = 'Please specify a Project, Model and Experiment'
-        return render(request, 'outstanding_query.html', {'request': request,
-            'page_title': 'Outstanding Data Query', 'message': msg})
+        return render(request, 'pdata_app/outstanding_query.html',
+                      {'request': request,
+                       'page_title': 'Outstanding Data Query',
+                       'message': msg})
 
     # Everything supplied so start processing
 
@@ -300,8 +308,10 @@ def view_outstanding_query(request):
 
     if not data_reqs:
         msg = 'No data requests match that query'
-        return render(request, 'outstanding_query.html', {'request': request,
-            'page_title': 'Outstanding Data Query', 'message': msg})
+        return render(request, 'pdata_app/outstanding_query.html',
+                      {'request': request,
+                       'page_title': 'Outstanding Data Query',
+                       'message': msg})
 
     excludes = []
 
@@ -324,8 +334,10 @@ def view_outstanding_query(request):
 
     outstanding_reqs = data_reqs.exclude(id__in=excludes)
 
-    return render(request, 'outstanding_query_results.html', {'request': request,
-        'page_title': 'Outstanding Data Query', 'records': outstanding_reqs})
+    return render(request, 'pdata_app/outstanding_query_results.html',
+                  {'request': request,
+                   'page_title': 'Outstanding Data Query',
+                   'records': outstanding_reqs})
 
 
 @login_required(login_url='/login/')
@@ -343,8 +355,9 @@ def create_submission(request):
             return _custom_redirect('data_submissions', sort='-date_submitted')
     else:
         form = CreateSubmissionForm()
-    return render(request, 'create_submission_form.html', {'form': form,
-        'page_title': 'Create Data Submission'})
+    return render(request, 'pdata_app/create_submission_form.html',
+                  {'form': form,
+                   'page_title': 'Create Data Submission'})
 
 
 def _custom_redirect(url_name, *args, **kwargs):
