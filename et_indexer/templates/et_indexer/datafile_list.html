@@ -1,0 +1,11 @@
+
+{% extends "et_indexer/base.html"%}
+{% load staticfiles %}
+{% load render_table from django_tables2 %}
+
+{% block contents %}
+    {% render_table table %}
+
+{% endblock %}
+    
+

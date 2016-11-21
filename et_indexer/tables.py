@@ -2,7 +2,8 @@ import os
 
 import django_tables2 as tables
 
-from .models import VariableOccurrence
+from .models import VariableOccurrence, Datafile
+
 
 class VariableOccurrenceTable(tables.Table):
     class Meta:
@@ -10,9 +11,12 @@ class VariableOccurrenceTable(tables.Table):
         attrs = {'class': 'paleblue'}
         exclude = ('id', 'max_val', 'min_val', 'shape')
 
-    data_file__batch_id = tables.Column(empty_values=(), verbose_name='Batch ID')
-    data_file__status = tables.Column(empty_values=(), verbose_name='File Status')
-    data_file__original_location = tables.Column(empty_values=(), verbose_name='Directory')
+    data_file__batch_id = tables.Column(empty_values=(),
+                                        verbose_name='Batch ID')
+    data_file__status = tables.Column(empty_values=(),
+                                      verbose_name='File Status')
+    data_file__original_location = tables.Column(empty_values=(),
+                                                 verbose_name='Directory')
 
     def render_data_file(self, value):
         return os.path.basename(value.original_location)
@@ -30,6 +34,25 @@ class VariableOccurrenceTable(tables.Table):
         return record.data_file.status
 
     def order_variable(self, queryset, is_descending):
-        queryset = queryset.order_by(('-' if is_descending else '') + 'variable__var_name')
-        return (queryset, True)
+        queryset = queryset.order_by(('-' if is_descending else '') +
+                                     'variable__var_name')
+        return queryset, True
 
+
+class DatafileTable(tables.Table):
+    class Meta:
+        model = Datafile
+        attrs = {'class': 'paleblue'}
+        exclude = ('id', 'original_location', 'original_owner', 'workspace',
+                   'date_scanned', 'date_archived', 'file_size',
+                   'file_checksum', 'file_checksum_type', 'file_format')
+        sequence = ('filename', 'batch_id', 'status', 'directory')
+
+    filename = tables.Column(empty_values=(), verbose_name='File Name')
+    directory = tables.Column(empty_values=(), verbose_name='Directory')
+
+    def render_filename(self, record):
+        return os.path.basename(record.original_location)
+
+    def render_directory(self, record):
+        return os.path.dirname(record.original_location)

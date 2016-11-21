@@ -3,7 +3,9 @@ from django.db import models
 
 # Create your models here.
 
-model_names = ['Variable', 'Datafile', 'VariableOccurrence', 'VariableAttributeLink', 'Attribute', 'DatafileAttributeLink', 'DatafileNote', 'VariableNote']
+model_names = ['Variable', 'Datafile', 'VariableOccurrence',
+               'VariableAttributeLink', 'Attribute', 'DatafileAttributeLink',
+               'DatafileNote', 'VariableNote']
 
 
 class Variable(models.Model):
@@ -52,17 +54,30 @@ class Datafile(models.Model):
     class Meta:
         verbose_name = 'Data File'
 
-    original_location = models.CharField(max_length=200, null=False, blank=False, unique=True)
-    batch_id = models.IntegerField(null=True, blank=True)
-    status = models.CharField(max_length=200, null=True, blank=True)
-    original_owner = models.CharField(max_length=200, null=False, blank=False)
-    workspace = models.CharField(max_length=200, null=True, blank=True)
-    date_scanned = models.DateTimeField(auto_now_add=True, null=False, blank=False)
-    date_archived = models.DateTimeField(null=True, blank=True)
-    file_size = models.IntegerField(null=False, blank=False)
-    file_checksum = models.CharField(max_length=50, null=True, blank=True)
-    file_checksum_type = models.CharField(max_length=50, null=True, blank=True)
-    file_format = models.CharField(max_length=40, null=False, blank=False)
+    original_location = models.CharField(max_length=200, null=False,
+                                         blank=False, unique=True,
+                                         verbose_name='Original Location')
+    batch_id = models.IntegerField(null=True, blank=True,
+                                   verbose_name='Batch ID')
+    status = models.CharField(max_length=200, null=True, blank=True,
+                              verbose_name='Status')
+    original_owner = models.CharField(max_length=200, null=False, blank=False,
+                                      verbose_name='Original Owner')
+    workspace = models.CharField(max_length=200, null=True, blank=True,
+                                 verbose_name='Workspace')
+    date_scanned = models.DateTimeField(auto_now_add=True,
+                                        null=False, blank=False,
+                                        verbose_name='Date Scanned')
+    date_archived = models.DateTimeField(null=True, blank=True,
+                                         verbose_name='Date Archived')
+    file_size = models.IntegerField(null=False, blank=False,
+                                    verbose_name='File Size')
+    file_checksum = models.CharField(max_length=50, null=True, blank=True,
+                                     verbose_name='File Checksum')
+    file_checksum_type = models.CharField(max_length=50, null=True, blank=True,
+                                          verbose_name='File Checksum Type')
+    file_format = models.CharField(max_length=40, null=False, blank=False,
+                                   verbose_name='File Format')
 
     def __unicode__(self):
         outstr = "\n"

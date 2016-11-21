@@ -50,7 +50,7 @@ urlpatterns = [
 
     url(r'^et_indexer/$', et_indexer.views.view_home, name='et_indexer'),
 
-    url(r'^et_indexer/datafiles/$', et_indexer.views.view_datafiles,
+    url(r'^et_indexer/datafiles/$', et_indexer.views.DatafileList.as_view(),
         name='et_indexer_view_datafiles'),
 
     url(r'^et_indexer/var_query/$',

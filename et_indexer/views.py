@@ -1,8 +1,8 @@
 from django.shortcuts import render
 
 from .models import Datafile, VariableOccurrence
-from .tables import VariableOccurrenceTable
-from .filters import VariableOccurrenceFilter
+from .tables import VariableOccurrenceTable, DatafileTable
+from .filters import VariableOccurrenceFilter, DatafileFilter
 from .utils.table_views import PagedFilteredTableView
 
 
@@ -13,11 +13,12 @@ class VariableOccurrenceList(PagedFilteredTableView):
     page_title = 'Variable Occurrences'
 
 
-def view_datafiles(request):
-    df = Datafile.objects.all()
-    return render(request, 'et_indexer/datafiles.html', {'records':df,
-                                              'page_title':'Data Files'})
-    
+class DatafileList(PagedFilteredTableView):
+    model = Datafile
+    table_class = DatafileTable
+    filter_class = DatafileFilter
+    page_title = 'Data Files'
+
 
 def view_home(request):
     return render(request, 'et_indexer/home.html', {'request':request,
