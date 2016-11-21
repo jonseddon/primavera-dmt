@@ -7,7 +7,7 @@ model_names = ['Variable', 'Datafile', 'VariableOccurrence', 'VariableAttributeL
 
 
 class Variable(models.Model):
-    '''
+    """
     Class to hold information on a single netCDF variable;
       * var_name: Char, required
       * standard_name: char, optional
@@ -16,7 +16,9 @@ class Variable(models.Model):
       * units: char, default = "1"
 
     Other attributes to go in VariableAttribute
-    '''
+    """
+    class Meta:
+        verbose_name = 'Variable'
 
     var_name = models.CharField(max_length=200, null=False, blank=False)
     standard_name = models.CharField(max_length=200, null=True, blank=True)
@@ -47,6 +49,9 @@ class Datafile(models.Model):
      * file_checksum_type: char, optional
      * file_format: char, required
     """
+    class Meta:
+        verbose_name = 'Data File'
+
     original_location = models.CharField(max_length=200, null=False, blank=False, unique=True)
     batch_id = models.IntegerField(null=True, blank=True)
     status = models.CharField(max_length=200, null=True, blank=True)
@@ -67,19 +72,25 @@ class Datafile(models.Model):
 
 
 class VariableOccurrence(models.Model):
-    '''
+    """
     Link a variable with a file and optionally include information about the data in the file
     * data_file: FK
     * variable: FK
     * max_val: float, optional
     * min_val: float, optional
     * shape: char, optional
-    '''
-    data_file = models.ForeignKey("Datafile")
-    variable = models.ForeignKey("Variable")
-    max_val = models.FloatField(null=True, blank=True)
-    min_val = models.FloatField(null=True, blank=True)
-    shape = models.CharField(max_length=50, null=True, blank=True)
+    """
+    class Meta:
+        verbose_name = 'Variable Occurrence'
+
+    data_file = models.ForeignKey('Datafile', verbose_name='Data File')
+    variable = models.ForeignKey('Variable', verbose_name='Variable')
+    max_val = models.FloatField(null=True, blank=True,
+                                verbose_name='Maximum Value')
+    min_val = models.FloatField(null=True, blank=True,
+                                verbose_name='Minimum Value')
+    shape = models.CharField(max_length=50, null=True, blank=True,
+                             verbose_name='Shape')
 
     def __unicode__(self):
         outstr = "\n"
@@ -89,12 +100,15 @@ class VariableOccurrence(models.Model):
 
 
 class Attribute(models.Model):
-    '''
+    """
     Attribute information
     * attribute_name: char, required
     * attribute_type: char, required
     * attribute_value: char, required
-    '''
+    """
+    class Meta:
+        verbose_name = 'Attribute'
+
     attribute_name = models.CharField(max_length=200, null=False, blank=False)
     attribute_type = models.CharField(max_length=200, null=False, blank=False)
     attribute_value = models.CharField(max_length=200, null=False, blank=False)
@@ -107,11 +121,14 @@ class Attribute(models.Model):
 
 
 class VariableAttributeLink(models.Model):
-    '''
+    """
     Link a variable with an attribute
     * variable: FK
     * attribute: FK
-    '''
+    """
+    class Meta:
+        verbose_name = 'Variable-Attribute Link'
+
     var_occurrence = models.ForeignKey('VariableOccurrence')
     attribute = models.ForeignKey('Attribute')
 
@@ -123,11 +140,13 @@ class VariableAttributeLink(models.Model):
 
 
 class DatafileAttributeLink(models.Model):
-    '''
+    """
     Link a data file with an attribute (for global attributes)
     * data_file: FK
     * attribute: FK
-    '''
+    """
+    class Meta:
+        verbose_name = 'Data File-Attribute Link'
 
     data_file = models.ForeignKey('Datafile')
     attribute = models.ForeignKey('Attribute')
@@ -140,13 +159,16 @@ class DatafileAttributeLink(models.Model):
 
 
 class DatafileNote(models.Model):
-    '''
+    """
     A class to annotate data files, e.g. "corrupted"
     * data_file: FK
     * data_file_note: char, required
     * note_author: char, required
     * note_datetime: datetime, auto_now_add
-    '''
+    """
+    class Meta:
+        verbose_name = 'Data File Note'
+
     data_file = models.ForeignKey('Datafile')
     data_file_note = models.CharField(max_length=2000, null=False, blank=False)
     note_author = models.CharField(max_length=50, null=False, blank=False)
@@ -160,13 +182,16 @@ class DatafileNote(models.Model):
 
 
 class VariableNote(models.Model):
-    '''
+    """
     A class to annotate variables
     * variable: FK
     * variable_note: char, required
     * note_author: char, required
     * note_datetime: datetime, auto_now_add
-    '''
+    """
+    class Meta:
+        verbose_name = 'Variable Note'
+
     variable = models.ForeignKey('Variable')
     variable_note = models.CharField(max_length=2000, null=False, blank=False)
     note_datetime = models.DateTimeField(auto_now_add=True, null=False, blank=False)

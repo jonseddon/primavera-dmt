@@ -4,4 +4,4 @@ pytz
 psycopg2==2.6.1
 google-api-python-client
 django-tables2
-django-filter
+django-filter==0.15.3

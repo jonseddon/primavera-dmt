@@ -53,7 +53,8 @@ urlpatterns = [
     url(r'^et_indexer/datafiles/$', et_indexer.views.view_datafiles,
         name='et_indexer_view_datafiles'),
 
-    url(r'^et_indexer/var_query/$', et_indexer.views.view_varquery,
+    url(r'^et_indexer/var_query/$',
+        et_indexer.views.VariableOccurrenceList.as_view(),
         name='et_indexer_view_varquery'),
 
     url(r'.*', pdata_app.views.view_home, name='home'),

@@ -13,6 +13,8 @@
     <link href="{% static 'ext/bootstrap-3.3.6-dist/css/bootstrap.min.css' %}" rel="stylesheet">
     <script src="http://code.jquery.com/ui/1.11.4/jquery-ui.js"></script>
 
+    <link rel="stylesheet" href="{% static 'django_tables2/themes/paleblue/css/screen.css' %}" />
+
     <title>{{ page_title }}</title>
 
 </head>
@@ -43,7 +45,7 @@
                   <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false">Views <span class="caret"></span></a>
                   <ul class="dropdown-menu">
                     <li><a href="{% url 'et_indexer_view_datafiles' %}">Data Files</a></li>
-                    <li><a href="{% url 'et_indexer_view_varquery' %}">Variable Query</a></li>
+                    <li><a href="{% url 'et_indexer_view_varquery' %}">Variable Occurrences</a></li>
                   </ul>
                 </li>
               </ul>
