@@ -1,3 +1,10 @@
+#!/usr/bin/env python2.7
+"""
+NetCDF inventory Elastic Tape database updater
+
+Fetches the web page describing all of the elastic tape holdings and updates
+each data file with the information available in that.
+"""
 import argparse
 import requests
 from lxml import html

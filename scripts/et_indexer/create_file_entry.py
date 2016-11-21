@@ -1,3 +1,9 @@
+#!/usr/bin/env python2.7
+"""
+NetCDF file inventory tool for Elastic Tape Archive
+
+Adds basic details of each file to the database.
+"""
 import argparse
 import os
 from ncdf_indexer import NetCDFIndexedFile

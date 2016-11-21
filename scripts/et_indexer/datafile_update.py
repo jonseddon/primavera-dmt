@@ -1,3 +1,10 @@
+#!/usr/bin/env python2.7
+"""
+Update data file inventory: checksums and value ranges
+
+This adds a checksum and value ranges to files that have already been added to
+the database by create_file_entry.py.
+"""
 import argparse
 import os
 from ncdf_indexer import NetCDFIndexedFile
