@@ -15,17 +15,17 @@ class VariableOccurrenceTable(tables.Table):
                                         verbose_name='Batch ID')
     data_file__status = tables.Column(empty_values=(),
                                       verbose_name='File Status')
-    data_file__original_location = tables.Column(empty_values=(),
-                                                 verbose_name='Directory')
+    directory = tables.Column(empty_values=(), verbose_name='Directory',
+                              accessor='data_file__original_location')
 
     def render_data_file(self, value):
         return os.path.basename(value.original_location)
 
+    def render_directory(self, record):
+        return os.path.dirname(record.data_file.original_location)
+
     def render_variable(self, value):
         return value.var_name
-
-    def render_data_file__original_location(self, record):
-        return os.path.dirname(record.data_file.original_location)
 
     def render_data_file__batch_id(self, record):
         return record.data_file.batch_id
