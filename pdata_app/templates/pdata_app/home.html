@@ -1,4 +1,4 @@
-{% extends "base.html" %}
+{% extends "pdata_app/base.html" %}
 {% load staticfiles %}
 
     {% block contents %}
@@ -19,12 +19,12 @@
             <li><a href="{% url 'ceda_datasets' %}">View CEDA Datasets</a></li>
             <li><a href="{% url 'data_requests' %}">View Data Requests</a></li>
             <li><a href="{% url 'data_issues' %}">View Data Issues</a></li>
+            <li><a href="{% url 'var_req_query' %}">View Variable Requests</a></li>
         </ul>
 
         <p>The following queries are available:</p>
 
         <ul>
-            <li><a href="{% url 'var_req_query' %}">Variable Request Query</a></li>
             <li><a href="{% url 'variable_query' %}">Variables Received Query</a></li>
             <li><a href="{% url 'outstanding_query' %}">Outstanding Data Query</a></li>
         </ul>
