@@ -32,7 +32,7 @@ class DatafileFilter(django_filters.FilterSet):
     status = django_filters.CharFilter(name='status',
                                        lookup_expr='icontains')
 
-    filename = django_filters.CharFilter(name='original_location',
+    original_location = django_filters.CharFilter(name='original_location',
                                          lookup_expr='icontains')
 
     directory = django_filters.CharFilter(name='original_location',

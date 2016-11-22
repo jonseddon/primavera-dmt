@@ -43,16 +43,18 @@ class DatafileTable(tables.Table):
     class Meta:
         model = Datafile
         attrs = {'class': 'paleblue'}
-        exclude = ('id', 'original_location', 'original_owner', 'workspace',
+        exclude = ('id', 'original_owner', 'workspace',
                    'date_scanned', 'date_archived', 'file_size',
                    'file_checksum', 'file_checksum_type', 'file_format')
-        sequence = ('filename', 'batch_id', 'status', 'directory')
+        sequence = ('original_location', 'batch_id', 'status',
+                    'directory')
 
-    filename = tables.Column(empty_values=(), verbose_name='File Name')
-    directory = tables.Column(empty_values=(), verbose_name='Directory')
+    original_location = tables.Column(verbose_name='File Name')
+    directory = tables.Column(empty_values=(), verbose_name='Directory',
+                              accessor='original_location')
 
-    def render_filename(self, record):
-        return os.path.basename(record.original_location)
+    def render_original_location(self, value):
+        return os.path.basename(value)
 
     def render_directory(self, record):
         return os.path.dirname(record.original_location)
