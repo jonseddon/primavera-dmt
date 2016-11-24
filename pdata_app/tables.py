@@ -27,7 +27,11 @@ class DataFileTable(tables.Table):
 
     def render_checksum(self, record):
         checksum = record.checksum_set.first()
-        return '{}: {}'.format(checksum.checksum_type, checksum.checksum_value)
+        if checksum:
+            return '{}: {}'.format(checksum.checksum_type,
+                                   checksum.checksum_value)
+        else:
+            return DEFAULT_VALUE
 
     def render_num_dataissues(self, record):
         num_dataissues = record.dataissue_set.count()

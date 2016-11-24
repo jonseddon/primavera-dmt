@@ -1,4 +1,4 @@
-import commands
+from subprocess import check_output, CalledProcessError
 
 def safe_strftime(dt, format):
     """
@@ -33,10 +33,35 @@ def safe_strftime(dt, format):
 
 
 def md5(fpath):
-    return commands.getoutput("md5sum %s" % fpath).split()[0]
+    return _checksum('md5sum', fpath)
+
 
 def sha256(fpath):
-    return commands.getoutput("sha256sum %s" % fpath).split()[0]
+    return _checksum('sha256sum', fpath)
+
 
 def adler32(fpath):
-    return commands.getoutput("adler32 %s" % fpath).split()[0]
+    return _checksum('adler32', fpath)
+
+
+def _checksum(checksum_method, file_path):
+    """
+    Runs program `checksum_method` on `file_path` and returns the result or
+    None if running the program was unsuccessful.
+
+    :param str command:
+    :param str file_path:
+    :return: the checksum or None if it cannot be calculated
+    """
+    try:
+        # shell=True is not a security risk here. The input has previously been
+        # checked and this is only called if file_path has been confirmed as
+        # being a valid file
+        ret_val = check_output('{} {}'.format(checksum_method, file_path),
+                                shell=True)
+        # split on white space and return the first part
+        checksum = ret_val.split()[0]
+    except (CalledProcessError, OSError):
+        checksum = None
+
+    return checksum

@@ -413,9 +413,16 @@ def create_database_file_object(metadata, data_submission):
         logger.error(msg)
         raise SubmissionError(msg)
 
-    checksum_value = adler32(os.path.join(metadata['directory'],metadata['basename'] ))
-    checksum = get_or_create(Checksum, data_file=data_file,
-        checksum_value=checksum_value, checksum_type=CHECKSUM_TYPES['ADLER32'])
+    checksum_value = adler32(os.path.join(metadata['directory'],
+                                          metadata['basename'] ))
+    if checksum_value:
+        checksum = get_or_create(Checksum, data_file=data_file,
+                                 checksum_value=checksum_value,
+                                 checksum_type=CHECKSUM_TYPES['ADLER32'])
+    else:
+        msg = ('Unable to calculate checksum for file: {}'.
+               format(metadata['basename']))
+        logger.warning(msg)
 
 
 def _pdt2num(pdt, time_units, calendar, start_of_period=True):
