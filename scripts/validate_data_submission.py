@@ -314,7 +314,6 @@ def update_database_submission(validated_metadata, directory):
     :param str directory: The directory that the files were uploaded to
     :returns:
     """
-    # TODO: check the status of the submission to check that it's not yet validated?
     try:
         data_sub = DataSubmission.objects.get(incoming_directory=directory)
     except django.core.exceptions.MultipleObjectsReturned:
@@ -387,8 +386,7 @@ def create_database_file_object(metadata, data_submission):
     # create a data file. If the file already exists in the database with
     # identical metadata then nothing happens. If the file exists but with
     # slightly different metadata then django.db.utils.IntegrityError is
-    # raised which may or may not be what we want to happen
-    # TODO: sort the above
+    # raised
     try:
         data_file = get_or_create(DataFile, name=metadata['basename'],
             incoming_directory=metadata['directory'],
@@ -414,7 +412,7 @@ def create_database_file_object(metadata, data_submission):
         raise SubmissionError(msg)
 
     checksum_value = adler32(os.path.join(metadata['directory'],
-                                          metadata['basename'] ))
+                                          metadata['basename']))
     if checksum_value:
         checksum = get_or_create(Checksum, data_file=data_file,
                                  checksum_value=checksum_value,
