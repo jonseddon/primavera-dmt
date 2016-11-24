@@ -42,6 +42,7 @@
                     <input type="hidden" name="data_issue" value="{{ request.GET.data_issue }}">
                     <input type="hidden" name="data_issue_string" value="{{ request.GET.data_issue_string }}">
                 {% endif %}
+                <a class="btn btn-default" href="{% url 'data_files' %}">Clear</a>
                 <input type="submit" class="btn btn-default" value="Filter" />
             </form>
         </p>

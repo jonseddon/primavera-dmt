@@ -19,6 +19,7 @@
                     <label class="sr-only" for="doi">DOI</label>
                     <input type="text" class="form-control" name="doi" id="doi" placeholder="DOI" {% if request.GET.doi %} value="{{ request.GET.doi }}" {% endif %}>
                 </div>
+                <a class="btn btn-default" href="{% url 'ceda_datasets' %}">Clear</a>
                 <input type="submit" class="btn btn-default" value="Filter" />
             </form>
         </p>
