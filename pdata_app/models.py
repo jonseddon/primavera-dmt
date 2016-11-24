@@ -287,7 +287,8 @@ class DataSubmission(DataFileAggregationBase):
     directory = models.CharField(max_length=500,
                                  verbose_name='Current Directory',
                                  blank=False, null=False)
-    user = models.CharField(max_length=100, blank=False, null=False)
+    user = models.CharField(max_length=100, blank=False, null=False,
+                            verbose_name='User')
     date_submitted = models.DateTimeField(auto_now_add=True,
                                           verbose_name='Date Submitted',
                                           null=False, blank=False)

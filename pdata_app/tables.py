@@ -50,10 +50,11 @@ class DataSubmissionTable(tables.Table):
     class Meta:
         model = DataSubmission
         attrs = {'class': 'paleblue'}
-        exclude = ('id', 'incoming_directory', 'user')
-        sequence = ('directory', 'status', 'date_submitted', 'online_status',
-                    'num_files', 'num_issues', 'earliest_date', 'latest_date',
-                    'tape_urls', 'file_versions')
+        exclude = ('id', 'incoming_directory')
+        sequence = ('directory', 'status', 'date_submitted', 'user',
+                    'online_status', 'num_files', 'num_issues',
+                    'earliest_date', 'latest_date', 'tape_urls',
+                    'file_versions')
 
     online_status = tables.Column(empty_values=(), orderable=False)
     num_files = tables.Column(empty_values=(), verbose_name='# Data Files',

@@ -31,6 +31,7 @@
                     <label class="sr-only" for="rip_code">Ensemble Member</label>
                     <input type="text" class="form-control" name="rip_code" id="rip_code" placeholder="Ensemble Member" {% if request.GET.rip_code %} value="{{ request.GET.rip_code }}" {% endif %}>
                 </div>
+                <a class="btn btn-default" href="{% url 'data_requests' %}">Clear</a>
                 <input type="submit" class="btn btn-default" value="Filter" />
             </form>
         </p>
