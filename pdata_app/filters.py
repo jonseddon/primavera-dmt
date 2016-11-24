@@ -53,19 +53,21 @@ class DataFileFilter(django_filters.FilterSet):
 class DataSubmissionFilter(django_filters.FilterSet):
     class Meta:
         model = DataSubmission
-        fields = ('status', 'directory')
+        fields = ('status', 'directory', 'user')
 
     status = django_filters.CharFilter(name='status',
                                      lookup_expr='icontains')
 
     directory = django_filters.CharFilter(name='directory',
-                                          lookup_expr='contains')
+                                          lookup_expr='icontains')
 
     version = django_filters.CharFilter(name='datafile__version',
-                                        lookup_expr='contains')
+                                        lookup_expr='icontains')
 
     tape_url = django_filters.CharFilter(name='datafile__tape_url',
-                                        lookup_expr='contains')
+                                        lookup_expr='icontains')
+
+    user = django_filters.CharFilter(lookup_expr='icontains')
 
 
 class ESGFDatasetFilter(django_filters.FilterSet):
