@@ -31,7 +31,7 @@ class DataRequestFilter(django_filters.FilterSet):
 class DataFileFilter(django_filters.FilterSet):
     class Meta:
         model = DataFile
-        fields = ['name', 'directory', 'version', 'tape_url']
+        fields = ['name', 'directory', 'version', 'tape_url', 'grid']
 
     name = django_filters.CharFilter(name='name',
                                      lookup_expr='contains')
@@ -48,6 +48,8 @@ class DataFileFilter(django_filters.FilterSet):
     data_submission = django_filters.NumberFilter(name='data_submission__id')
 
     data_issue = django_filters.NumberFilter(name='dataissue__id')
+
+    grid = django_filters.CharFilter(name='grid', lookup_expr='icontains')
 
 
 class DataSubmissionFilter(django_filters.FilterSet):
