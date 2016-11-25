@@ -467,7 +467,9 @@ class DataFile(models.Model):
     frequency = models.CharField(max_length=20, choices=FREQUENCY_VALUES.items(),
         verbose_name="Time frequency", null=False, blank=False)
     rip_code = models.CharField(max_length=20, verbose_name="RIP code",
-        null=False, blank=False)
+                                null=False, blank=False)
+    grid = models.CharField(max_length=20, verbose_name='Grid Label',
+                            null=True, blank=True)
 
     # DateTimes are allowed to be null/blank because some fields (such as orography)
     # are time-independent
