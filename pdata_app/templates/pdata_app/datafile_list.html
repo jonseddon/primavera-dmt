@@ -32,6 +32,10 @@
                     <input type="text" class="form-control" name="version" id="version" placeholder="Version" {% if request.GET.version %} value="{{ request.GET.version }}" {% endif %}>
                 </div>
                 <div class="form-group">
+                    <label class="sr-only" for="grid">Grid Label</label>
+                    <input type="text" class="form-control" name="grid" id="grid" placeholder="Grid Label" {% if request.GET.grid %} value="{{ request.GET.grid }}" {% endif %}>
+                </div>
+                <div class="form-group">
                     <label class="sr-only" for="tape_url">Tape URL</label>
                     <input type="text" class="form-control" name="tape_url" id="tape_url" placeholder="Tape URL" {% if request.GET.tape_url %} value="{{ request.GET.tape_url }}" {% endif %}>
                 </div>

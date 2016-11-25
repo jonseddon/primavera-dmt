@@ -81,7 +81,7 @@ def list_files(directory, suffix='.nc'):
     return nc_files
 
 
-def identify_and_validate(filenames, project, num_processes):
+def identify_and_validate(filenames, project, num_processes, file_format):
     """
     Loop through a list of file names, identify each file's metadata and then
     validate it. The looping is done in parallel using the multiprocessing
@@ -92,6 +92,8 @@ def identify_and_validate(filenames, project, num_processes):
     :param list filenames: The files to process
     :param str project: The name of the project
     :param int num_processes: The number of parallel processes to use
+    :param str file_format: The CMOR version of the netCDF files, one out of-
+        CMIP5 or CMIP6
     :returns: A list containing the metadata dictionary generated for each file
     :rtype: multiprocessing.Manager.list
     """
@@ -106,8 +108,10 @@ def identify_and_validate(filenames, project, num_processes):
         jobs.append(p)
         p.start()
 
-    func_input_pair = zip(filenames, (project,) * len(filenames))
-    blank_pair = (None, None)
+    func_input_pair = zip(filenames,
+                          (project,) * len(filenames),
+                          (file_format,) * len(filenames))
+    blank_pair = (None, None, None)
 
     iters = itertools.chain(func_input_pair, (blank_pair,) * num_processes)
     for item in iters:
@@ -129,7 +133,8 @@ def identify_and_validate_file(params, output, error_event):
     is received.
 
     :param multiprocessing.Manager.Queue params: A queue, with each item being a
-        tuple of the filename to load and the name of the project
+        tuple of the filename to load, the name of the project and the netCDF
+        file CMOR version
     :param multiprocessing.Manager.list output: A list containing the output
         metadata dictionaries for each file
     :param multiprocessing.Manager.Event error_event: If set then a catastrophic
@@ -139,13 +144,13 @@ def identify_and_validate_file(params, output, error_event):
         if error_event.is_set():
             return
 
-        filename, project = params.get()
+        filename, project, file_format = params.get()
 
         if filename is None:
             return
 
         try:
-            metadata = identify_filename_metadata(filename)
+            metadata = identify_filename_metadata(filename, file_format)
             metadata['project'] = project
 
             verify_fk_relationships(metadata)
@@ -166,16 +171,24 @@ def identify_and_validate_file(params, output, error_event):
             output.append(metadata)
 
 
-def identify_filename_metadata(filename):
+def identify_filename_metadata(filename, file_format):
     """
     Identify all of the required metadata from the filename and file contents
 
     :param str filename: The file's complete path
+    :param str file_format: The CMOR version of the netCDF files, one out of-
+        CMIP5 or CMIP6
     :returns: A dictionary containing the identified metadata
     :raises FileValidationError: If unable to parse the date string
     """
-    components = ['cmor_name', 'table', 'climate_model', 'experiment',
+    if file_format == 'CMIP5':
+        components = ['cmor_name', 'table', 'climate_model', 'experiment',
         'rip_code', 'date_string']
+    elif file_format == 'CMIP6':
+        components = ['cmor_name', 'table', 'experiment', 'climate_model',
+        'rip_code', 'grid','date_string']
+    else:
+        raise NotImplementedError('file_format must be CMIP5 or CMIP6')
 
     basename = os.path.basename(filename)
     directory = os.path.dirname(filename)
@@ -258,7 +271,12 @@ def identify_contents_metadata(cube):
     metadata['standard_name'] = cube.standard_name
     metadata['time_units'] = cube.coord('time').units.origin
     metadata['calendar'] = cube.coord('time').units.calendar
-    metadata['institute'] = cube.attributes['institute_id']
+    try:
+        metadata['institute'] = cube.attributes['institution_id']
+    except KeyError:
+        # CMIP5 uses institute_id but we should not be processing CMIP5 data
+        # but handle it just in case
+        metadata['institute'] = cube.attributes['institute_id']
 
     return metadata
 
@@ -403,7 +421,9 @@ def create_database_file_object(metadata, data_submission):
                               metadata['calendar'], start_of_period=False),
             time_units=time_units, calendar=metadata['calendar'],
             version=version_string,
-            data_submission=data_submission, online=True)
+            data_submission=data_submission, online=True,
+            grid=metadata['grid'] if 'grid' in metadata else None
+        )
     except django.db.utils.IntegrityError:
         msg = ('Unable to submit file because it already exists in the '
             'database with different metadata: {} ({}) .'.format(
@@ -606,9 +626,17 @@ def parse_args():
     """
     parser = argparse.ArgumentParser(description='Validate and create a '
         'PRIMAVERA data submission')
-    parser.add_argument('directory', help="the submission's top-level directory")
-    parser.add_argument('-j', '--project', help='the project that data is ultimately '
-        'being submitted to (default: %(default)s)', default='CMIP6')
+    parser.add_argument('directory', help="the submission's top-level "
+                                          "directory")
+    parser.add_argument('-j', '--project', help='the project that data is '
+                                                'ultimately being submitted to '
+                                                '(default: %(default)s)',
+                        default='CMIP6')
+    parser.add_argument('-f', '--file-format', help='the CMOR version of the '
+                                                    'input netCDF files being '
+                                                    'submitted (CMIP5 or CMIP6)'
+                                                    ' (default: %(default)s)',
+                        default='CMIP6')
     parser.add_argument('-l', '--log-level', help='set logging level to one of '
         'debug, info, warn (the default), or error')
     parser.add_argument('-p', '--processes', help='the number of parallel processes '
@@ -640,7 +668,7 @@ def main(args):
 
     try:
         validated_metadata = identify_and_validate(data_files, args.project,
-            args.processes)
+            args.processes, args.file_format)
 
         logger.debug('%s files validated successfully', len(validated_metadata))
 
