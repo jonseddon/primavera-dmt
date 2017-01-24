@@ -13,6 +13,7 @@ from multiprocessing import Process, Manager
 import os
 import random
 import re
+import shutil
 import sys
 
 import iris
@@ -171,7 +172,7 @@ def identify_and_validate_file(params, output, error_event):
             output.append(metadata)
 
 
-def identify_filename_metadata(filename, file_format):
+def identify_filename_metadata(filename, file_format='CMIP6'):
     """
     Identify all of the required metadata from the filename and file contents
 
@@ -203,18 +204,23 @@ def identify_filename_metadata(filename, file_format):
         filename_sects[3] += '_' + filename_sects.pop(4)
 
     # deduce as much as possible from the filename
-    for cmpt_name, cmpt in zip(components, filename_sects):
-        if cmpt_name == 'date_string':
-            start_date, end_date = cmpt.split('-')
-            try:
-                metadata['start_date'] = _make_partial_date_time(start_date)
-                metadata['end_date'] = _make_partial_date_time(end_date)
-            except ValueError:
-                msg = 'Unknown date format in filename: {}'.format(filename)
-                logger.debug(msg)
-                raise FileValidationError(msg)
-        else:
-            metadata[cmpt_name] = cmpt
+    try:
+        for cmpt_name, cmpt in zip(components, filename_sects):
+            if cmpt_name == 'date_string':
+                start_date, end_date = cmpt.split('-')
+                try:
+                    metadata['start_date'] = _make_partial_date_time(start_date)
+                    metadata['end_date'] = _make_partial_date_time(end_date)
+                except ValueError:
+                    msg = 'Unknown date format in filename: {}'.format(filename)
+                    logger.debug(msg)
+                    raise FileValidationError(msg)
+            else:
+                metadata[cmpt_name] = cmpt
+    except ValueError:
+        msg = 'Unknown filename format: {}'.format(filename)
+        logger.debug(msg)
+        raise FileValidationError(msg)
 
     metadata['filesize'] = os.path.getsize(filename)
 
@@ -323,26 +329,16 @@ def validate_file_contents(cube, metadata):
     _check_data_point(cube, metadata)
 
 
-def update_database_submission(validated_metadata, directory):
+def update_database_submission(validated_metadata, data_sub):
     """
-    Create an entry in the database for this submission
+    Create entries in the database for the files in this submission.
 
     :param multiprocessing.Manager.list validated_metadata: A list containing
         the metadata dictionary generated for each file
-    :param str directory: The directory that the files were uploaded to
+    :param pdata_app.models.DataSubmission data_sub: The data submission object
+        to update.
     :returns:
     """
-    try:
-        data_sub = DataSubmission.objects.get(incoming_directory=directory)
-    except django.core.exceptions.MultipleObjectsReturned:
-        msg = 'Multiple DataSubmissions found for directory: {}'.format(directory)
-        logger.error(msg)
-        raise SubmissionError(msg)
-    except django.core.exceptions.ObjectDoesNotExist:
-        msg = 'No DataSubmissions found for directory: {}'.format(directory)
-        logger.error(msg)
-        raise SubmissionError(msg)
-
     for data_file in validated_metadata:
         create_database_file_object(data_file, data_sub)
 
@@ -441,6 +437,80 @@ def create_database_file_object(metadata, data_submission):
         msg = ('Unable to calculate checksum for file: {}'.
                format(metadata['basename']))
         logger.warning(msg)
+
+
+def move_rejected_files(submission_dir):
+    """
+    Move the entire submission to a rejected directory two levels up from the
+    submission directory.
+
+    :param str submission_dir:
+    :returns: The path to the submission after the function has run.
+    """
+    rejected_dir = os.path.normpath(os.path.join(submission_dir, '..',
+                                                 '..', 'rejected'))
+    try:
+        if not os.path.exists(rejected_dir):
+            os.mkdir(rejected_dir)
+
+        shutil.move(submission_dir, rejected_dir)
+    except (IOError, OSError):
+        msg = ("Unable to move the directory. Leaving it in it's current "
+               "location")
+        logger.error(msg)
+        return submission_dir
+
+    msg = 'Data submission moved to {}'.format(rejected_dir)
+    logger.debug(msg)
+
+    return rejected_dir
+
+
+def send_rejection_email(submission_dir, rejection_dir):
+    """
+    Send an email to the submission's creator wanring them of validation
+    failure.
+
+    :param str submission_dir:
+    :param str rejection_dir:
+    """
+    pass
+
+
+def set_status_rejected(data_sub, rejected_dir):
+    """
+    Set the data submission's status to be rejected and update the path to
+    point to where the data now lives.
+
+    :param pdata_app.models.DataSubmission data_sub: The data submission object.
+    """
+    data_sub.status = STATUS_VALUES['REJECTED']
+    data_sub.directory = rejected_dir
+    data_sub.save()
+
+
+def _get_submission_object(submission_dir):
+    """
+    :param str submission_dir: The path of the submission's top level
+    directory.
+    :returns: The object corresponding to the submission.
+    :rtype: pdata_app.models.DataSubmission
+    """
+    try:
+        data_sub = DataSubmission.objects.get(incoming_directory=submission_dir)
+    except django.core.exceptions.MultipleObjectsReturned:
+        msg = 'Multiple DataSubmissions found for directory: {}'.format(
+            submission_dir)
+        logger.error(msg)
+        raise SubmissionError(msg)
+    except django.core.exceptions.ObjectDoesNotExist:
+        msg = ('No DataSubmissions have been found in the database for '
+               'directory: {}. Please create a submission through the web '
+               'interface.'.format(submission_dir))
+        logger.error(msg)
+        raise SubmissionError(msg)
+
+    return data_sub
 
 
 def _pdt2num(pdt, time_units, calendar, start_of_period=True):
@@ -667,6 +737,13 @@ def main(args):
     logger.debug('%s files identified', len(data_files))
 
     try:
+        data_sub = _get_submission_object(submission_dir)
+        if not args.validate_only:
+            if data_sub.status != 'ARRIVED':
+                msg = "The submission's status is not ARRIVED."
+                logger.error(msg)
+                raise SubmissionError(msg)
+
         validated_metadata = identify_and_validate(data_files, args.project,
             args.processes, args.file_format)
 
@@ -678,12 +755,15 @@ def main(args):
             sys.exit(0)
 
         if not args.relaxed and len(validated_metadata) != len(data_files):
+            rejected_dir = move_rejected_files(submission_dir)
+            send_rejection_email(submission_dir, rejected_dir)
+            set_status_rejected(data_sub, rejected_dir)
             msg = ('Not all files passed validation. Please fix these errors '
-                'and then re-run this script to create a data submission.')
+                'and then re-run this script.')
             logger.error(msg)
             raise SubmissionError(msg)
 
-        update_database_submission(validated_metadata, submission_dir)
+        update_database_submission(validated_metadata, data_sub)
 
         logger.debug('%s files submitted successfully',
             match_one(DataSubmission, incoming_directory=submission_dir).get_data_files().count())

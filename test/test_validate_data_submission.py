@@ -24,7 +24,8 @@ class TestIdentifyFilenameMetadata(TestCase):
 
         filename = 'clt_Amon_Monty_historical_r1i1p1_185912-188411.nc'
 
-        self.metadata = identify_filename_metadata(filename)
+        self.metadata = identify_filename_metadata(filename,
+                                                   file_format='CMIP5')
 
     def test_cmor_name(self):
         self.assertEqual(self.metadata['cmor_name'], 'clt')
@@ -53,7 +54,7 @@ class TestIdentifyFilenameMetadata(TestCase):
     def test_bad_date_format(self, mock_logger):
         filename = 'clt_Amon_Monty_historical_r1i1p1_1859-1884.nc'
         self.assertRaises(FileValidationError,
-            identify_filename_metadata, filename)
+            identify_filename_metadata, filename, file_format='CMIP5')
 
 
 class TestUpdateDatabaseSubmission(TestCase):
@@ -66,19 +67,9 @@ class TestUpdateDatabaseSubmission(TestCase):
             directory='/dir2', user='primavera')
 
     def test_unique_submission(self):
-        update_database_submission({}, '/dir2')
+        update_database_submission({}, self.ds3)
         self.ds3.refresh_from_db()
         self.assertEqual(self.ds3.status, 'VALIDATED')
-
-    @mock.patch('scripts.validate_data_submission.logger')
-    def test_no_submission(self, mock_logger):
-        self.assertRaises(SubmissionError, update_database_submission,
-            {}, '/dir9')
-
-    @mock.patch('scripts.validate_data_submission.logger')
-    def test_multiple_submissions(self, mock_logger):
-        self.assertRaises(SubmissionError, update_database_submission,
-            {}, '/dir1')
 
 
 class TestPdt2Num(TestCase):

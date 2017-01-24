@@ -8,7 +8,8 @@ STATUS_VALUES = CodeList(
          ('ARRIVED', 'ARRIVED'),
          ('VALIDATED', 'VALIDATED'),
          ('ARCHIVED', 'ARCHIVED'),
-         ('PUBLISHED', 'PUBLISHED'))
+         ('PUBLISHED', 'PUBLISHED'),
+         ('REJECTED', 'REJECTED'))
 )
 
 
