@@ -204,23 +204,23 @@ def identify_filename_metadata(filename, file_format='CMIP6'):
         filename_sects[3] += '_' + filename_sects.pop(4)
 
     # deduce as much as possible from the filename
-    # try:
-    for cmpt_name, cmpt in zip(components, filename_sects):
-        if cmpt_name == 'date_string':
-            start_date, end_date = cmpt.split('-')
-            try:
-                metadata['start_date'] = _make_partial_date_time(start_date)
-                metadata['end_date'] = _make_partial_date_time(end_date)
-            except ValueError:
-                msg = 'Unknown date format in filename: {}'.format(filename)
-                logger.debug(msg)
-                raise FileValidationError(msg)
-        else:
-            metadata[cmpt_name] = cmpt
-    # except ValueError:
-    #     msg = 'Unknown filename format: {}'.format(filename)
-    #     logger.debug(msg)
-    #     raise FileValidationError(msg)
+    try:
+        for cmpt_name, cmpt in zip(components, filename_sects):
+            if cmpt_name == 'date_string':
+                start_date, end_date = cmpt.split('-')
+                try:
+                    metadata['start_date'] = _make_partial_date_time(start_date)
+                    metadata['end_date'] = _make_partial_date_time(end_date)
+                except ValueError:
+                    msg = 'Unknown date format in filename: {}'.format(filename)
+                    logger.debug(msg)
+                    raise FileValidationError(msg)
+            else:
+                metadata[cmpt_name] = cmpt
+    except ValueError:
+        msg = 'Unknown filename format: {}'.format(filename)
+        logger.debug(msg)
+        raise FileValidationError(msg)
 
     metadata['filesize'] = os.path.getsize(filename)
 
