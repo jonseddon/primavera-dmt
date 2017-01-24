@@ -759,7 +759,7 @@ def main(args):
             send_rejection_email(submission_dir, rejected_dir)
             set_status_rejected(data_sub, rejected_dir)
             msg = ('Not all files passed validation. Please fix these errors '
-                'and then re-run this script to create a data submission.')
+                'and then re-run this script.')
             logger.error(msg)
             raise SubmissionError(msg)
 
