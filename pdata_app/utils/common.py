@@ -2,7 +2,9 @@
 common.py - several functions that are used throughout the pdata_app
 """
 import os
+import random
 from subprocess import check_output, CalledProcessError
+from tempfile import gettempdir
 
 from iris.time import PartialDateTime
 import cf_units
@@ -196,3 +198,19 @@ def list_files(directory, suffix='.nc'):
             nc_files.append(file_path)
 
     return nc_files
+
+
+def get_temp_filename(suffix):
+    """
+    Generates a random filename and returns this as a string. The filename is
+    in the form tempXXXXX.YY where XXXXX is a random five digit integer. The
+    filename is appended to the path of the system's temporary directory.
+
+    :param str suffix: The suffix to append to the filename
+    :returns: The random file path
+    """
+    number = random.randint(0, 99999)
+    zero_padded = str(number).zfill(5)
+    filename = 'temp' + zero_padded + '.' + suffix
+
+    return os.path.join(gettempdir(), filename)
