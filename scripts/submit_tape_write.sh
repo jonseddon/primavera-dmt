@@ -1,6 +1,6 @@
 #!/bin/bash
-#BSUB -o /home/users/jseddon/%J.o
-#BSUB -e /home/users/jseddon/%J.e
+#BSUB -o /home/users/jseddon/lotus/%J.o
+#BSUB -e /home/users/jseddon/lotus/%J.e
 #BSUB -q short-serial
 #BSUB -W 01:00
 #

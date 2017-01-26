@@ -5,6 +5,7 @@ submit_tape_write.py
 This script is run by a cron job. It identifies data submissions that have a
 status of VALIDATED but don't have a
 """
+from __future__ import print_function
 import subprocess
 
 import django
@@ -14,8 +15,8 @@ from pdata_app.models import DataSubmission
 from vocabs.vocabs import STATUS_VALUES
 
 TAPE_WRITE_SCRIPT = ('/home/users/jseddon/primavera/primavera-dmt/scripts/'
-    'submit_tape_write.sh')
-LOTUS_OPTIONS = '-o ~/%J.o -q short-serial -W 01:00'
+    'submission_to_tape.sh')
+LOTUS_OPTIONS = '-o ~/lotus/%J.o -q short-serial -W 01:00'
 
 
 def submit_tape_write(submission):
