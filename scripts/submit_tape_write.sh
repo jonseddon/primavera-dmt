@@ -1,9 +1,7 @@
 #!/bin/bash
 #BSUB -o /home/users/jseddon/%J.o
 #BSUB -e /home/users/jseddon/%J.e
-#BSUB -q lotus
-#BSUB -n 8
-#BSUB -R "span[hosts=1]"
+#BSUB -q short-serial
 #BSUB -W 01:00
 #
 # SYNOPSIS
