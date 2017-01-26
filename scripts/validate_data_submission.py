@@ -437,8 +437,11 @@ def move_rejected_files(submission_dir):
         logger.error(msg)
         return submission_dir
 
-    msg = 'Data submission moved to {}'.format(rejected_dir)
-    logger.debug(msg)
+    new_rejected_dir = os.path.join(rejected_dir,
+        os.path.basename(os.path.abspath(submission_dir)))
+
+    msg = 'Data submission moved to {}'.format(new_rejected_dir)
+    logger.error(msg)
 
     return rejected_dir
 
@@ -614,8 +617,8 @@ def main(args):
     logger.debug('%s files identified', len(data_files))
 
     try:
-        data_sub = _get_submission_object(submission_dir)
         if not args.validate_only:
+            data_sub = _get_submission_object(submission_dir)
             if data_sub.status != 'ARRIVED':
                 msg = "The submission's status is not ARRIVED."
                 logger.error(msg)
