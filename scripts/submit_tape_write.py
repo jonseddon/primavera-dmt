@@ -5,46 +5,43 @@ submit_tape_write.py
 This script is run by a cron job. It identifies data submissions that have a
 status of VALIDATED but don't have a
 """
-from __future__ import print_function
-import os
-import pwd
-import stat
 import subprocess
 
 import django
 django.setup()
+from django.db.models import Count
 from pdata_app.models import DataSubmission
 from vocabs.vocabs import STATUS_VALUES
 
-STATUS_TO_PROCESS = STATUS_VALUES['PENDING_PROCESSING']
-ADMIN_USER = 'jseddon'
 TAPE_WRITE_SCRIPT = ('/home/users/jseddon/primavera/primavera-dmt/scripts/'
     'submit_tape_write.sh')
 LOTUS_OPTIONS = '-o ~/%J.o -q short-serial -W 01:00'
 
 
-def submit_validation(submission):
+def submit_tape_write(submission):
     """
     Submit a LOTUS job to run the validation.
 
     :param submission:
     :return:
     """
-    cmd = 'bsub {} {} --log-level DEBUG --processes {} {}'.format(
-        LOTUS_OPTIONS, VALIDATE_SCRIPT, NUM_PROCS_USE_LOTUS, submission)
+    cmd = 'bsub {} {} --log-level DEBUG {}'.format(
+        LOTUS_OPTIONS, TAPE_WRITE_SCRIPT, submission)
     bsub_output = subprocess.check_output(cmd, shell=True)
-    print('Sunmission: {}'.format(submission))
+    print('Submission: {}'.format(submission))
     print(bsub_output)
 
 
 def main():
-    submissions = DataSubmission.objects.filter(status=STATUS_TO_PROCESS)
+    status_to_process = STATUS_VALUES['VALIDATED']
+
+    # find all data submissions that have been validated and contain no
+    # datafiles that have a tape_url
+    submissions = (DataSubmission.objects.annotate(Count('datafile__tape_url')).
+        filter(status=status_to_process, datafile__tape_url__count=0))
 
     for submission in submissions:
-        # if are_files_chowned(submission):
-        #     submission.status = STATUS_VALUES['ARRIVED']
-        #     submission.save()
-        submit_validation(submission.directory)
+        submit_tape_write(submission.incoming_directory)
 
 
 if __name__ == "__main__":
