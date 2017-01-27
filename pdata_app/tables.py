@@ -14,16 +14,27 @@ class DataFileTable(tables.Table):
     class Meta:
         model = DataFile
         attrs = {'class': 'paleblue'}
-        exclude = ('id', 'incoming_directory', 'size', 'project', 'institute',
-                   'climate_model', 'experiment', 'start_time', 'end_time',
-                   'variable_request', 'frequency', 'rip_code', 'time_units',
-                   'calendar', 'data_submission', 'esgf_dataset',
+        exclude = ('id', 'incoming_directory', 'size', 'project', 'start_time',
+                   'end_time', 'variable_request', 'frequency', 'rip_code',
+                   'time_units', 'calendar', 'data_submission', 'esgf_dataset',
                    'ceda_dataset', 'ceda_download_url', 'ceda_opendap_url',
                    'esgf_download_url', 'esgf_opendap_url')
 
-    checksum = tables.Column(empty_values=(), verbose_name='Checksum')
-    num_dataissues = tables.Column(empty_values=(), verbose_name='# Data Issues',
+    cmor_name = tables.Column(empty_values=(), verbose_name='CMOR Name',
+                              orderable=False)
+    mip_table = tables.Column(empty_values=(), verbose_name='MIP Table',
+                              orderable=False)
+    checksum = tables.Column(empty_values=(), verbose_name='Checksum',
+                             orderable=False)
+    num_dataissues = tables.Column(empty_values=(),
+                                   verbose_name='# Data Issues',
                                    orderable=False)
+
+    def render_cmor_name(self, record):
+        return record.variable_request.cmor_name
+
+    def render_mip_table(self, record):
+        return record.variable_request.table_name
 
     def render_checksum(self, record):
         checksum = record.checksum_set.first()
