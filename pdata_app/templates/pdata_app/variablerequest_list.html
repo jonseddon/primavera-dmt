@@ -13,6 +13,10 @@
         <p>
             <form class="form-inline" action="{% url 'var_req_query' %}" method="get">
                 <div class="form-group">
+                    <label class="sr-only" for="cmor_name">CMOR Name</label>
+                    <input type="text" class="form-control" name="cmor_name" id="cmor_name" placeholder="CMOR Name" {% if request.GET.cmor_name %} value="{{ request.GET.cmor_name }}" {% endif %}>
+                </div>
+                <div class="form-group">
                     <label class="sr-only" for="table_name">Table Name</label>
                     <input type="text" class="form-control" name="table_name" id="table_name" placeholder="Table Name" {% if request.GET.table_name %} value="{{ request.GET.table_name }}" {% endif %} autofocus>
                 </div>
@@ -25,48 +29,44 @@
                     <input type="text" class="form-control" name="units" id="units" placeholder="Units" {% if request.GET.units %} value="{{ request.GET.units }}" {% endif %}>
                 </div>
                 <div class="form-group">
-                    <label class="sr-only" for="var_name">var_name</label>
-                    <input type="text" class="form-control" name="var_name" id="var_name" placeholder="Var Name" {% if request.GET.var_name %} value="{{ request.GET.var_name }}" {% endif %}>
+                    <label class="sr-only" for="frequency">Frequency</label>
+                    <input type="text" class="form-control" name="frequency" id="frequency" placeholder="Frequency" {% if request.GET.frequency %} value="{{ request.GET.frequency }}" {% endif %}>
                 </div>
                 <div class="form-group">
                     <label class="sr-only" for="standard_name">Standard Name</label>
                     <input type="text" class="form-control" name="standard_name" id="standard_name" placeholder="Standard Name" {% if request.GET.standard_name %} value="{{ request.GET.standard_name }}" {% endif %}>
                 </div>
                 <div class="form-group">
+                    <label class="sr-only" for="var_name">var_name</label>
+                    <input type="text" class="form-control" name="var_name" id="var_name" placeholder="Var Name" {% if request.GET.var_name %} value="{{ request.GET.var_name }}" {% endif %}>
+                </div>
+                <div class="form-group">
                     <label class="sr-only" for="cell_methods">Cell Methods</label>
                     <input type="text" class="form-control" name="cell_methods" id="cell_methods" placeholder="Cell Methods" {% if request.GET.cell_methods %} value="{{ request.GET.cell_methods }}" {% endif %}>
-                </div>
-                <div class="form-group">
-                    <label class="sr-only" for="positive">Positive</label>
-                    <input type="text" class="form-control" name="positive" id="positive" placeholder="Positive" {% if request.GET.positive %} value="{{ request.GET.positive }}" {% endif %}>
-                </div>
-                <div class="form-group">
-                    <label class="sr-only" for="variable_type">Variable Type</label>
-                    <input type="text" class="form-control" name="variable_type" id="variable_type" placeholder="Variable Type" {% if request.GET.variable_type %} value="{{ request.GET.variable_type }}" {% endif %}>
-                </div>
-                <div class="form-group">
-                    <label class="sr-only" for="dimensions">Dimensions</label>
-                    <input type="text" class="form-control" name="dimensions" id="dimensions" placeholder="Dimensions" {% if request.GET.dimensions %} value="{{ request.GET.dimensions }}" {% endif %}>
-                </div>
-                <div class="form-group">
-                    <label class="sr-only" for="cmor_name">CMOR Name</label>
-                    <input type="text" class="form-control" name="cmor_name" id="cmor_name" placeholder="CMOR Name" {% if request.GET.cmor_name %} value="{{ request.GET.cmor_name }}" {% endif %}>
-                </div>
-                <div class="form-group">
-                    <label class="sr-only" for="modeling_realm">Modeling Realm</label>
-                    <input type="text" class="form-control" name="modeling_realm" id="modeling_realm" placeholder="Modeling Realm" {% if request.GET.modeling_realm %} value="{{ request.GET.modeling_realm }}" {% endif %}>
-                </div>
-                <div class="form-group">
-                    <label class="sr-only" for="frequency">Frequency</label>
-                    <input type="text" class="form-control" name="frequency" id="frequency" placeholder="Frequency" {% if request.GET.frequency %} value="{{ request.GET.frequency }}" {% endif %}>
                 </div>
                 <div class="form-group">
                     <label class="sr-only" for="cell_measures">Cell Measures</label>
                     <input type="text" class="form-control" name="cell_measures" id="cell_measures" placeholder="Cell Measures" {% if request.GET.cell_measures %} value="{{ request.GET.cell_measures }}" {% endif %}>
                 </div>
                 <div class="form-group">
+                    <label class="sr-only" for="dimensions">Dimensions</label>
+                    <input type="text" class="form-control" name="dimensions" id="dimensions" placeholder="Dimensions" {% if request.GET.dimensions %} value="{{ request.GET.dimensions }}" {% endif %}>
+                </div>
+                <div class="form-group">
+                    <label class="sr-only" for="positive">Positive</label>
+                    <input type="text" class="form-control" name="positive" id="positive" placeholder="Positive" {% if request.GET.positive %} value="{{ request.GET.positive }}" {% endif %}>
+                </div>
+                <div class="form-group">
                     <label class="sr-only" for="uid">UID</label>
                     <input type="text" class="form-control" name="uid" id="uid" placeholder="UID" {% if request.GET.uid %} value="{{ request.GET.uid }}" {% endif %}>
+                </div>
+                <div class="form-group">
+                    <label class="sr-only" for="variable_type">Variable Type</label>
+                    <input type="text" class="form-control" name="variable_type" id="variable_type" placeholder="Variable Type" {% if request.GET.variable_type %} value="{{ request.GET.variable_type }}" {% endif %}>
+                </div>
+                <div class="form-group">
+                    <label class="sr-only" for="modeling_realm">Modeling Realm</label>
+                    <input type="text" class="form-control" name="modeling_realm" id="modeling_realm" placeholder="Modeling Realm" {% if request.GET.modeling_realm %} value="{{ request.GET.modeling_realm }}" {% endif %}>
                 </div>
                 <div class="checkbox">
                     <label>

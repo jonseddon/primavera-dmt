@@ -222,6 +222,11 @@ class VariableRequestQueryTable(tables.Table):
         model = VariableRequest
         attrs = {'class': 'paleblue'}
         exclude = ('id',)
+        sequence = ('cmor_name', 'table_name', 'long_name', 'units',
+                    'frequency', 'standard_name', 'var_name', 'cell_methods',
+                    'cell_measures', 'dimensions', 'positive', 'uid',
+                    'variable_type', 'modeling_realm')
+        order_by = 'var_name'
 
 
 def _to_comma_sep(list_values):
