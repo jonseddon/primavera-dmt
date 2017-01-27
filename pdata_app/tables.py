@@ -55,6 +55,7 @@ class DataSubmissionTable(tables.Table):
                     'online_status', 'num_files', 'num_issues',
                     'earliest_date', 'latest_date', 'tape_urls',
                     'file_versions')
+        order_by = '-date_submitted'
 
     online_status = tables.Column(empty_values=(), orderable=False)
     num_files = tables.Column(empty_values=(), verbose_name='# Data Files',

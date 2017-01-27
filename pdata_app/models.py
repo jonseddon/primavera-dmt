@@ -296,6 +296,9 @@ class DataSubmission(DataFileAggregationBase):
     def __unicode__(self):
         return "Data Submission: %s" % self.directory
 
+    class Meta:
+        unique_together = ('incoming_directory',)
+
 
 class CEDADataset(DataFileAggregationBase):
     """
