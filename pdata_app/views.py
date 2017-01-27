@@ -352,7 +352,7 @@ def create_submission(request):
             submission.status = STATUS_VALUES['PENDING_PROCESSING']
             submission.user = request.user
             submission.save()
-            return _custom_redirect('data_submissions', sort='-date_submitted')
+            return _custom_redirect('data_submissions')
     else:
         form = CreateSubmissionForm()
     return render(request, 'pdata_app/create_submission_form.html',

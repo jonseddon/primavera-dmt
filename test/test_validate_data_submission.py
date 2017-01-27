@@ -10,11 +10,12 @@ from iris.tests.stock import realistic_3d
 from iris.time import PartialDateTime
 
 from scripts.validate_data_submission import (_check_start_end_times,
-    _check_contiguity, _check_data_point, identify_filename_metadata,
-    FileValidationError, _make_partial_date_time, _pdt2num,
-    _calc_last_day_in_month, SubmissionError, update_database_submission)
+    _check_contiguity, identify_filename_metadata, FileValidationError,
+    _make_partial_date_time, _pdt2num, _calc_last_day_in_month,
+    update_database_submission)
 from pdata_app.models import DataSubmission
 from pdata_app.utils.dbapi import get_or_create
+from vocabs.vocabs import STATUS_VALUES
 
 
 class TestIdentifyFilenameMetadata(TestCase):
@@ -58,18 +59,22 @@ class TestIdentifyFilenameMetadata(TestCase):
 
 
 class TestUpdateDatabaseSubmission(TestCase):
-    def setUp(self):
-        self.ds1 = get_or_create(DataSubmission, incoming_directory='/dir1',
-            directory='/dir1', user='primavera')
-        self.ds2 = get_or_create(DataSubmission, incoming_directory='/dir1',
-            directory='/dir1', user='someone')
-        self.ds3 = get_or_create(DataSubmission, incoming_directory='/dir2',
-            directory='/dir2', user='primavera')
+    @mock.patch('scripts.validate_data_submission.create_database_file_object')
+    def setUp(self, mock_create_file):
+        self.mock_create_file = mock_create_file
+        self.ds = get_or_create(DataSubmission, incoming_directory='/dir',
+                                directory='/dir', user='primavera',
+                                status=STATUS_VALUES['PENDING_PROCESSING'])
+        self.metadata = [{'file': 'file1'},]
+        update_database_submission(self.metadata, self.ds)
 
-    def test_unique_submission(self):
-        update_database_submission({}, self.ds3)
-        self.ds3.refresh_from_db()
-        self.assertEqual(self.ds3.status, 'VALIDATED')
+    def test_submission_status(self):
+        self.ds.refresh_from_db()
+        self.assertEqual(self.ds.status, 'VALIDATED')
+
+    def test_create_db_file_called(self):
+        self.mock_create_file.assert_called_once_with(self.metadata[0],
+                                                      self.ds)
 
 
 class TestPdt2Num(TestCase):
