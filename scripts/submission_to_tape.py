@@ -98,7 +98,7 @@ def main(args):
     filelist_name = get_temp_filename('filelist.txt')
     with open(filelist_name, 'w') as fh:
         for data_file in data_sub.get_data_files():
-            fh.write(os.path.join(data_file.directory, data_file.name))
+            fh.write(os.path.join(data_file.directory, data_file.name) + '\n')
     logger.debug('File list written to {}'.format(filelist_name))
 
     # run the et_put.py command to send the files to tape
