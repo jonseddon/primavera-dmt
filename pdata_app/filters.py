@@ -21,7 +21,10 @@ class DataRequestFilter(django_filters.FilterSet):
     experiment = django_filters.CharFilter(name='experiment__short_name',
                                            lookup_expr='icontains')
 
-    variable_request = django_filters.CharFilter(name='variable_request__cmor_name',
+    cmor_name = django_filters.CharFilter(name='variable_request__cmor_name',
+                                                 lookup_expr='iexact')
+
+    mip_table = django_filters.CharFilter(name='variable_request__table_name',
                                                  lookup_expr='iexact')
 
     rip_code = django_filters.CharFilter(name='rip_code',
