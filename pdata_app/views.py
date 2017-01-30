@@ -131,10 +131,10 @@ def view_variable_query(request):
                       {'request': request,
                        'page_title': 'Variable Received Query'})
 
-    var_id = request_params.get('var_id')
+    cmor_name = request_params.get('cmor_name')
 
     # Parameter specified
-    if not var_id:
+    if not cmor_name:
         msg = 'Please specify a Variable'
         return render(request, 'pdata_app/variable_query.html',
                       {'request': request,
@@ -143,31 +143,31 @@ def view_variable_query(request):
     # Everything supplied so start processing
 
     # see if any files contain the variable requested
-    files = DataFile.objects.filter(variable_request__cmor_name=var_id)
+    files = DataFile.objects.filter(variable_request__cmor_name=cmor_name)
     if not files:
         return render(request, 'pdata_app/variable_query.html',
                       {'request': request,
                        'page_title': 'Variable Received Query',
-                       'message': 'Variable: {} not found'.format(var_id)})
+                       'message': 'Variable: {} not found'.format(cmor_name)})
 
     file_sets_found = []
 
-    # get the variable_id primary key from the var_id name
-    variable_id = VariableRequest.objects.filter(cmor_name=var_id).first().id
-
     # loop through the unique combinations
     cursor = connection.cursor()
-    uniq_rows = cursor.execute('SELECT DISTINCT frequency, climate_model_id, '
-        'experiment_id, project_id, rip_code FROM pdata_app_datafile WHERE '
-        'variable_request_id=%s', [variable_id])
+    uniq_rows = cursor.execute('SELECT DISTINCT variable_request_id, '
+        'climate_model_id, experiment_id, project_id, rip_code FROM '
+        'pdata_app_datafile JOIN pdata_app_variablerequest ON '
+        'variable_request_id=pdata_app_variablerequest.id WHERE '
+        'pdata_app_variablerequest.cmor_name=%s', [cmor_name])
 
     for row in uniq_rows.fetchall():
         # unpack the four items from each distinct set of files
-        frequency, climate_model, experiment, project, rip_code = row
+        var_req, climate_model, experiment, project, rip_code = row
 
         # find all of the files that contain these distinct items
-        row_files = DataFile.objects.filter(variable_request__cmor_name=var_id,
-            frequency=frequency, climate_model_id=climate_model,
+        row_files = DataFile.objects.filter(
+            variable_request_id=var_req,
+            climate_model_id=climate_model,
             experiment_id=experiment, project_id=project, rip_code=rip_code)
 
         # generate some summary info about the files
@@ -247,7 +247,7 @@ def view_variable_query(request):
             'project': first_file.project.short_name,
             'model': first_file.climate_model.short_name,
             'experiment': first_file.experiment.short_name,
-            'frequency': first_file.frequency,
+            'mip_table': first_file.variable_request.table_name,
             'rip_code': rip_code,
             'num_files': num_files,
             'online_status': online_status,
@@ -263,9 +263,9 @@ def view_variable_query(request):
         })
 
     return render(request, 'pdata_app/variable_query_results.html',
-                  {'request': request,
-                   'page_title': '{}: Variable Received Results'.format(var_id),
-                   'var_id': var_id, 'file_sets': file_sets_found})
+                  {'request': request, 'page_title':
+                   '{}: Variable Received Results'.format(cmor_name),
+                   'var_id': cmor_name, 'file_sets': file_sets_found})
 
 
 def view_outstanding_query(request):
