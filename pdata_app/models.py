@@ -471,6 +471,7 @@ class DataFile(models.Model):
     experiment = models.ForeignKey(Experiment, null=False, on_delete=PROTECT,
                                    verbose_name='Experiment')
     variable_request = models.ForeignKey(VariableRequest, null=False, on_delete=PROTECT)
+    data_request = models.ForeignKey(DataRequest, null=False, on_delete=PROTECT)
     frequency = models.CharField(max_length=20, choices=FREQUENCY_VALUES.items(),
         verbose_name="Time frequency", null=False, blank=False)
     rip_code = models.CharField(max_length=20, verbose_name="RIP code",

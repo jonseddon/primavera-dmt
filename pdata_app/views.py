@@ -20,15 +20,25 @@ from .tables import (DataRequestTable, DataFileTable, DataSubmissionTable,
 from .filters import (DataRequestFilter, DataFileFilter, DataSubmissionFilter,
                       ESGFDatasetFilter, CEDADatasetFilter, DataIssueFilter,
                       VariableRequestQueryFilter)
-from .utils.table_views import PagedFilteredTableView
+from .utils.table_views import PagedFilteredTableView, DataRequestFilteredView
 from vocabs.vocabs import ONLINE_STATUS, STATUS_VALUES
 
 
-class DataRequestList(PagedFilteredTableView):
+class DataRequestList(DataRequestFilteredView):
     model = DataRequest
     table_class = DataRequestTable
     filter_class = DataRequestFilter
     page_title = 'Data Requests'
+    message = 'These are the data requests made...'
+
+
+class OutstandingDataRequestList(DataRequestFilteredView):
+    model = DataRequest
+    table_class = DataRequestTable
+    filter_class = DataRequestFilter
+    page_title = 'Outstanding Data Requests'
+    get_outstanding_data = True
+    message = 'No files have been received for the following data requests:'
 
 
 class DataFileList(PagedFilteredTableView):
@@ -265,79 +275,7 @@ def view_variable_query(request):
     return render(request, 'pdata_app/variable_query_results.html',
                   {'request': request, 'page_title':
                    '{}: Variable Received Results'.format(cmor_name),
-                   'var_id': cmor_name, 'file_sets': file_sets_found})
-
-
-def view_outstanding_query(request):
-    """
-    Note: this view should not be displayed using django-tables unlike many of
-    the other views. The other views are implemented in a single SQL query.
-    django-tables will limit the query to only the subset of records that will
-    be displayed on the next page. This view_outstanding_query uses user code
-    to filter the results. Calling it repeatedly will be slow and django-tables
-    subsetting could result in unpredictable output. Instead, all of the results
-    from this query are sent to the output web page. There, the datatables
-    plugin for jQuery (https://datatables.net/) is used to filter and paginate
-    the query results on the page.
-    """
-    request_params = request.GET
-
-    # Basic page request with nothing specified
-    if not request_params:
-        return render(request, 'pdata_app/outstanding_query.html',
-                      {'request': request,
-                       'page_title': 'Outstanding Data Query'})
-
-    project = request_params.get('project')
-    model = request_params.get('model')
-    experiment = request_params.get('experiment')
-
-    # Some parameters specified
-    if not (model and experiment and project):
-        msg = 'Please specify a Project, Model and Experiment'
-        return render(request, 'pdata_app/outstanding_query.html',
-                      {'request': request,
-                       'page_title': 'Outstanding Data Query',
-                       'message': msg})
-
-    # Everything supplied so start processing
-
-    # Identify all of the data requests that match this query
-    data_reqs = DataRequest.objects.filter(climate_model__short_name=model,
-        experiment__short_name=experiment)
-
-    if not data_reqs:
-        msg = 'No data requests match that query'
-        return render(request, 'pdata_app/outstanding_query.html',
-                      {'request': request,
-                       'page_title': 'Outstanding Data Query',
-                       'message': msg})
-
-    excludes = []
-
-    for req in data_reqs:
-        if req.rip_code:
-            req_files = DataFile.objects.filter(
-                climate_model__id=req.climate_model_id,
-                experiment__id=req.experiment_id,
-                variable_request__id=req.variable_request_id,
-                rip_code=req.rip_code)
-        else:
-            req_files = DataFile.objects.filter(
-                climate_model__id=req.climate_model_id,
-                experiment__id=req.experiment_id,
-                variable_request__id=req.variable_request_id)
-
-        if req_files:
-            # files found so request is satisfied so remove this request
-            excludes.append(req.id)
-
-    outstanding_reqs = data_reqs.exclude(id__in=excludes)
-
-    return render(request, 'pdata_app/outstanding_query_results.html',
-                  {'request': request,
-                   'page_title': 'Outstanding Data Query',
-                   'records': outstanding_reqs})
+                   'cmor_name': cmor_name, 'file_sets': file_sets_found})
 
 
 @login_required(login_url='/login/')

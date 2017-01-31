@@ -121,12 +121,17 @@ class TestDataFileAggregationBaseMethods(TestCase):
                 cmor_name=metadata['var_id'], modeling_realm='atmos',
                 frequency=FREQUENCY_VALUES['ann'],
                 cell_measures='', uid='123abc')
+            dreq = get_or_create(models.DataRequest, project=self.proj,
+                institute=institute, climate_model=climate_model,
+                experiment=experiment, variable_request=var,
+                rip_code='r1i1p1f1', start_time=0.0, end_time=23400.0,
+                time_units='days since 1950-01-01', calendar='360_day')
 
             models.DataFile.objects.create(name=dfile_name,
                 incoming_directory=self.example_files.INCOMING_DIR,
                 directory=self.example_files.INCOMING_DIR, size=1, project=self.proj,
                 climate_model=climate_model, experiment=experiment,
-                institute=institute, variable_request=var,
+                institute=institute, variable_request=var, data_request=dreq,
                 frequency=FREQUENCY_VALUES['ann'],
                 rip_code=metadata["ensemble"], online=True,
                 start_time=metadata["start_time"],
@@ -392,12 +397,18 @@ class TestDataFile(TestCase):
             positive='optimistic', variable_type=VARIABLE_TYPES['real'],
             dimensions='massive', cmor_name='var1', modeling_realm='atmos',
             frequency=FREQUENCY_VALUES['ann'], cell_measures='', uid='123abc')
+        dreq = get_or_create(models.DataRequest, project=proj, institute=institute,
+            climate_model=climate_model, experiment=experiment,
+            variable_request=var, rip_code='r1i1p1f1', start_time=0.0,
+            end_time=23400.0, time_units='days since 1950-01-01',
+            calendar='360_day')
+
 
         # Make the data file
         data_file = get_or_create(models.DataFile, name='filename.nc',
             incoming_directory='/some/dir', directory='/other/dir', size=1,
             project=proj, climate_model=climate_model, institute=institute,
-            experiment=experiment, variable_request=var,
+            experiment=experiment, variable_request=var, data_request=dreq,
             frequency=FREQUENCY_VALUES['mon'], rip_code='r1i1p1',
             data_submission=data_submission, online=True)
 
@@ -447,12 +458,18 @@ class TestChecksum(TestCase):
             positive='optimistic', variable_type=VARIABLE_TYPES['real'],
             dimensions='massive', cmor_name='var1', modeling_realm='atmos',
             frequency=FREQUENCY_VALUES['ann'], cell_measures='', uid='123abc')
+        dreq = get_or_create(models.DataRequest, project=proj, institute=institute,
+            climate_model=climate_model, experiment=experiment,
+            variable_request=var, rip_code='r1i1p1f1', start_time=0.0,
+            end_time=23400.0, time_units='days since 1950-01-01',
+            calendar='360_day')
+
 
         # Make a data file in this submission
         data_file = get_or_create(models.DataFile, name='filename.nc',
             incoming_directory='/some/dir', directory='/some/dir', size=1,
             institute=institute, project=proj, climate_model=climate_model,
-            experiment=experiment, variable_request=var,
+            experiment=experiment, variable_request=var, data_request=dreq,
             frequency=FREQUENCY_VALUES['mon'], rip_code='r1i1p1',
             data_submission=data_submission, online=True)
 
