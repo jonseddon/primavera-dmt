@@ -279,11 +279,16 @@ def _make_data_submission():
             dimensions='massive', cmor_name=metadata['var_id'],
             modeling_realm='atmos', frequency=FREQUENCY_VALUES['ann'],
             cell_measures='', uid='123abc')
+        dreq = get_or_create(DataRequest, project=proj, institute=institute,
+            climate_model=climate_model, experiment=experiment,
+            variable_request=var, rip_code='r1i1p1f1', start_time=0.0,
+            end_time=23400.0, time_units='days since 1950-01-01',
+            calendar='360_day')
 
         dfile = DataFile.objects.create(name=dfile_name, incoming_directory=test_dsub.INCOMING_DIR,
             directory=test_dsub.INCOMING_DIR, size=os.path.getsize(path),
             project=proj, climate_model=climate_model, institute=institute,
-            experiment=experiment, variable_request=var,
+            experiment=experiment, variable_request=var, data_request=dreq,
             frequency=FREQUENCY_VALUES['ann'], rip_code=m["ensemble"],
             start_time=m["start_time"], end_time=m["end_time"],
             time_units=m["time_units"], calendar=m["calendar"],

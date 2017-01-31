@@ -32,12 +32,32 @@
                     <input type="text" class="form-control" name="version" id="version" placeholder="Version" {% if request.GET.version %} value="{{ request.GET.version }}" {% endif %}>
                 </div>
                 <div class="form-group">
+                    <label class="sr-only" for="institute">Institute</label>
+                    <input type="text" class="form-control" name="institute" id="institute" placeholder="Institute" {% if request.GET.institute %} value="{{ request.GET.institute }}" {% endif %}>
+                </div>
+                <div class="form-group">
+                    <label class="sr-only" for="climate_model">Climate Model</label>
+                    <input type="text" class="form-control" name="climate_model" id="climate_model" placeholder="Climate Model" {% if request.GET.climate_model %} value="{{ request.GET.climate_model }}" {% endif %}>
+                </div>
+                <div class="form-group">
+                    <label class="sr-only" for="experiment">Experiment</label>
+                    <input type="text" class="form-control" name="experiment" id="experiment" placeholder="Experiment" {% if request.GET.experiment %} value="{{ request.GET.experiment }}" {% endif %}>
+                </div>
+                <div class="form-group">
                     <label class="sr-only" for="grid">Grid Label</label>
                     <input type="text" class="form-control" name="grid" id="grid" placeholder="Grid Label" {% if request.GET.grid %} value="{{ request.GET.grid }}" {% endif %}>
                 </div>
                 <div class="form-group">
                     <label class="sr-only" for="tape_url">Tape URL</label>
                     <input type="text" class="form-control" name="tape_url" id="tape_url" placeholder="Tape URL" {% if request.GET.tape_url %} value="{{ request.GET.tape_url }}" {% endif %}>
+                </div>
+                <div class="form-group">
+                    <label class="sr-only" for="cmor_name">CMOR Name</label>
+                    <input type="text" class="form-control" name="cmor_name" id="cmor_name" placeholder="CMOR Name" {% if request.GET.cmor_name %} value="{{ request.GET.cmor_name }}" {% endif %}>
+                </div>
+                <div class="form-group">
+                    <label class="sr-only" for="mip_table">MIP Table</label>
+                    <input type="text" class="form-control" name="mip_table" id="mip_table" placeholder="MIP Table" {% if request.GET.mip_table %} value="{{ request.GET.mip_table }}" {% endif %}>
                 </div>
                 {% if request.GET.data_submission %}
                     <input type="hidden" name="data_submission" value="{{ request.GET.data_submission }}">

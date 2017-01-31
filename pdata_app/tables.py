@@ -14,16 +14,27 @@ class DataFileTable(tables.Table):
     class Meta:
         model = DataFile
         attrs = {'class': 'paleblue'}
-        exclude = ('id', 'incoming_directory', 'size', 'project', 'institute',
-                   'climate_model', 'experiment', 'start_time', 'end_time',
-                   'variable_request', 'frequency', 'rip_code', 'time_units',
-                   'calendar', 'data_submission', 'esgf_dataset',
+        exclude = ('id', 'incoming_directory', 'size', 'project', 'start_time',
+                   'end_time', 'variable_request', 'frequency', 'rip_code',
+                   'time_units', 'calendar', 'data_submission', 'esgf_dataset',
                    'ceda_dataset', 'ceda_download_url', 'ceda_opendap_url',
                    'esgf_download_url', 'esgf_opendap_url')
 
-    checksum = tables.Column(empty_values=(), verbose_name='Checksum')
-    num_dataissues = tables.Column(empty_values=(), verbose_name='# Data Issues',
+    cmor_name = tables.Column(empty_values=(), verbose_name='CMOR Name',
+                              orderable=False)
+    mip_table = tables.Column(empty_values=(), verbose_name='MIP Table',
+                              orderable=False)
+    checksum = tables.Column(empty_values=(), verbose_name='Checksum',
+                             orderable=False)
+    num_dataissues = tables.Column(empty_values=(),
+                                   verbose_name='# Data Issues',
                                    orderable=False)
+
+    def render_cmor_name(self, record):
+        return record.variable_request.cmor_name
+
+    def render_mip_table(self, record):
+        return record.variable_request.table_name
 
     def render_checksum(self, record):
         checksum = record.checksum_set.first()
@@ -144,9 +155,15 @@ class DataRequestTable(tables.Table):
     class Meta:
         model = DataRequest
         attrs = {'class': 'paleblue'}
-        exclude = ('id', 'time_units', 'calendar')
+        exclude = ('id', 'time_units', 'calendar', 'variable_request')
         sequence = ('project', 'institute', 'climate_model', 'experiment',
-                    'rip_code', 'variable_request', 'start_time', 'end_time')
+                    'rip_code', 'cmor_name', 'mip_table', 'start_time',
+                    'end_time')
+
+    cmor_name = tables.Column(empty_values=(), verbose_name='CMOR Name',
+                              orderable=False)
+    mip_table = tables.Column(empty_values=(), verbose_name='MIP Table',
+                              orderable=False)
 
     def render_start_time(self, record):
         return record.start_date_string()
@@ -154,8 +171,11 @@ class DataRequestTable(tables.Table):
     def render_end_time(self, record):
         return record.end_date_string()
 
-    def render_variable_request(self, value):
-        return '{} ({})'.format(value.cmor_name, value.table_name)
+    def render_cmor_name(self, record):
+        return record.variable_request.cmor_name
+
+    def render_mip_table(self, record):
+        return record.variable_request.table_name
 
 
 class ESGFDatasetTable(tables.Table):
@@ -222,6 +242,11 @@ class VariableRequestQueryTable(tables.Table):
         model = VariableRequest
         attrs = {'class': 'paleblue'}
         exclude = ('id',)
+        sequence = ('cmor_name', 'table_name', 'long_name', 'units',
+                    'frequency', 'standard_name', 'var_name', 'cell_methods',
+                    'cell_measures', 'dimensions', 'positive', 'uid',
+                    'variable_type', 'modeling_realm')
+        order_by = 'var_name'
 
 
 def _to_comma_sep(list_values):
