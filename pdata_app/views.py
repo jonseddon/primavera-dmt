@@ -20,11 +20,11 @@ from .tables import (DataRequestTable, DataFileTable, DataSubmissionTable,
 from .filters import (DataRequestFilter, DataFileFilter, DataSubmissionFilter,
                       ESGFDatasetFilter, CEDADatasetFilter, DataIssueFilter,
                       VariableRequestQueryFilter)
-from .utils.table_views import PagedFilteredTableView, DataRequestFilteredView
+from .utils.table_views import PagedFilteredTableView, RequestsFilteredView
 from vocabs.vocabs import ONLINE_STATUS, STATUS_VALUES
 
 
-class DataRequestList(DataRequestFilteredView):
+class DataRequestList(RequestsFilteredView):
     model = DataRequest
     table_class = DataRequestTable
     filter_class = DataRequestFilter
@@ -32,13 +32,20 @@ class DataRequestList(DataRequestFilteredView):
     message = 'These are the data requests made...'
 
 
-class OutstandingDataRequestList(DataRequestFilteredView):
+class OutstandingDataRequestList(RequestsFilteredView):
     model = DataRequest
     table_class = DataRequestTable
     filter_class = DataRequestFilter
     page_title = 'Outstanding Data Requests'
     get_outstanding_data = True
     message = 'No files have been received for the following data requests:'
+
+
+class VariableRequestList(RequestsFilteredView):
+    model = VariableRequest
+    table_class = VariableRequestQueryTable
+    filter_class = VariableRequestQueryFilter
+    page_title = 'Variable Request'
 
 
 class DataFileList(PagedFilteredTableView):
@@ -74,13 +81,6 @@ class DataIssueList(PagedFilteredTableView):
     table_class = DataIssueTable
     filter_class = DataIssueFilter
     page_title = 'Data Issues'
-
-
-class VariableRequestQueryList(PagedFilteredTableView):
-    model = VariableRequest
-    table_class = VariableRequestQueryTable
-    filter_class = VariableRequestQueryFilter
-    page_title = 'Variable Request'
 
 
 def view_login(request):

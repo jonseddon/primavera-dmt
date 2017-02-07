@@ -36,9 +36,9 @@ urlpatterns = [
     url(r'^data_issues/$', pdata_app.views.DataIssueList.as_view(),
         name='data_issues'),
 
-    url(r'^variable_request/$',
-        pdata_app.views.VariableRequestQueryList.as_view(),
-        name='var_req_query'),
+    url(r'^variable_requests/$',
+        pdata_app.views.VariableRequestList.as_view(),
+        name='variable_requests'),
 
     url(r'^variable_query/$', pdata_app.views.view_variable_query,
         name='variable_query'),
