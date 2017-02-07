@@ -20,11 +20,11 @@ from .tables import (DataRequestTable, DataFileTable, DataSubmissionTable,
 from .filters import (DataRequestFilter, DataFileFilter, DataSubmissionFilter,
                       ESGFDatasetFilter, CEDADatasetFilter, DataIssueFilter,
                       VariableRequestQueryFilter)
-from .utils.table_views import PagedFilteredTableView, RequestsFilteredView
+from .utils.table_views import PagedFilteredTableView, DataRequestsFilteredView
 from vocabs.vocabs import ONLINE_STATUS, STATUS_VALUES
 
 
-class DataRequestList(RequestsFilteredView):
+class DataRequestList(DataRequestsFilteredView):
     model = DataRequest
     table_class = DataRequestTable
     filter_class = DataRequestFilter
@@ -32,7 +32,7 @@ class DataRequestList(RequestsFilteredView):
     message = 'These are the data requests made...'
 
 
-class OutstandingDataRequestList(RequestsFilteredView):
+class OutstandingDataRequestList(DataRequestsFilteredView):
     model = DataRequest
     table_class = DataRequestTable
     filter_class = DataRequestFilter
@@ -41,7 +41,16 @@ class OutstandingDataRequestList(RequestsFilteredView):
     message = 'No files have been received for the following data requests:'
 
 
-class VariableRequestList(RequestsFilteredView):
+class ReceivedDataRequestList(DataRequestsFilteredView):
+    model = DataRequest
+    table_class = DataRequestTable
+    filter_class = DataRequestFilter
+    page_title = 'Received Data'
+    get_received_data = True
+    message = 'The following data has been received:'
+
+
+class VariableRequestList(PagedFilteredTableView):
     model = VariableRequest
     table_class = VariableRequestQueryTable
     filter_class = VariableRequestQueryFilter

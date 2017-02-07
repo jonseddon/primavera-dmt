@@ -25,7 +25,7 @@ class PagedFilteredTableView(SingleTableView):
         return context
 
 
-class RequestsFilteredView(PagedFilteredTableView):
+class DataRequestsFilteredView(PagedFilteredTableView):
     message = None
     get_outstanding_data = False
     get_received_data = False
@@ -40,7 +40,7 @@ class RequestsFilteredView(PagedFilteredTableView):
         return self.filter.qs.distinct()
 
     def get_context_data(self, **kwargs):
-        context = super(RequestsFilteredView, self).get_context_data()
+        context = super(DataRequestsFilteredView, self).get_context_data()
         context['message'] = self.message
         context['get_outstanding_data'] = self.get_outstanding_data
         context['get_received_data'] = self.get_received_data
