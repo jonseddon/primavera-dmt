@@ -78,6 +78,9 @@ class ClimateModel(models.Model):
     def __unicode__(self):
         return self.short_name
 
+    class Meta:
+        verbose_name = "Climate Model"
+
 
 class Experiment(models.Model):
     """
@@ -134,6 +137,9 @@ class VariableRequest(models.Model):
 
     def __unicode__(self):
         return 'VariableRequest: {} ({})'.format(self.cmor_name, self.table_name)
+
+    class Meta:
+        verbose_name = "Variable Request"
 
 
 class DataFileAggregationBase(models.Model):
@@ -215,7 +221,7 @@ class DataFileAggregationBase(models.Model):
 
         earliest_obj = cf_units.num2date(earliest_time, std_units, calendar)
 
-        return earliest_obj
+        return earliest_obj.strftime('%Y-%m-%d')
 
     def end_time(self):
         std_units = Settings.get_solo().standard_time_units
@@ -235,7 +241,7 @@ class DataFileAggregationBase(models.Model):
 
         latest_obj = cf_units.num2date(latest_time, std_units, calendar)
 
-        return latest_obj
+        return latest_obj.strftime('%Y-%m-%d')
 
     def online_status(self):
         """
@@ -298,6 +304,7 @@ class DataSubmission(DataFileAggregationBase):
 
     class Meta:
         unique_together = ('incoming_directory',)
+        verbose_name = "Data Submission"
 
 
 class CEDADataset(DataFileAggregationBase):
@@ -327,6 +334,9 @@ class CEDADataset(DataFileAggregationBase):
 
     def __unicode__(self):
         return "CEDA Dataset: %s" % self.catalogue_url
+
+    class Meta:
+        verbose_name = "CEDA Dataset"
 
 
 class ESGFDataset(DataFileAggregationBase):
@@ -397,7 +407,7 @@ class ESGFDataset(DataFileAggregationBase):
         return self.get_full_id()
 
 
-class DataRequest(models.Model):
+class DataRequest(DataFileAggregationBase):
     """
     A Data Request for a given set of inputs
     """
@@ -418,10 +428,10 @@ class DataRequest(models.Model):
                                          verbose_name='Variable')
     rip_code = models.CharField(max_length=20, verbose_name="Ensemble Member",
                                 null=True, blank=True)
-    start_time = models.FloatField(verbose_name="Start time", null=False,
-                                   blank=False)
-    end_time = models.FloatField(verbose_name="End time", null=False,
-                                 blank=False)
+    request_start_time = models.FloatField(verbose_name="Start time",
+                                           null=False, blank=False)
+    request_end_time = models.FloatField(verbose_name="End time", null=False,
+                                         blank=False)
     time_units = models.CharField(verbose_name='Time units', max_length=50,
                                   null=False, blank=False)
     calendar = models.CharField(verbose_name='Calendar', max_length=20,
@@ -430,13 +440,21 @@ class DataRequest(models.Model):
 
     def start_date_string(self):
         """Return a string containing the start date"""
-        dto = cf_units.num2date(self.start_time, self.time_units, self.calendar)
+        dto = cf_units.num2date(self.request_start_time, self.time_units,
+                                self.calendar)
         return dto.strftime('%Y-%m-%d')
 
     def end_date_string(self):
         """Return a string containing the end date"""
-        dto = cf_units.num2date(self.end_time, self.time_units, self.calendar)
+        dto = cf_units.num2date(self.request_end_time, self.time_units,
+                                self.calendar)
         return dto.strftime('%Y-%m-%d')
+
+    def __unicode__(self):
+        return '{}/{} {}/{}/{}'.format(self.institute, self.climate_model,
+                                       self.experiment,
+                                       self.variable_request.table_name,
+                                       self.variable_request.cmor_name)
 
 
 class DataFile(models.Model):
@@ -549,6 +567,9 @@ class DataIssue(models.Model):
             self.date_time.strftime('%Y-%m-%d %H:%M:%S'),
             self.issue, self.reporter
         )
+
+    class Meta:
+        verbose_name = "Data Issue"
 
 
 class Checksum(models.Model):

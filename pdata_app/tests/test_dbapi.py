@@ -156,8 +156,8 @@ def _create_file_object():
         frequency=FREQUENCY_VALUES['ann'], cell_measures='', uid='123abc')
     dreq = dbapi.get_or_create(models.DataRequest, project=project,
         institute=institute, climate_model=clim_mod, experiment=expt,
-        variable_request=vble, rip_code='r1i1p1f1', start_time=0.0,
-        end_time=23400.0, time_units='days since 1950-01-01',
+        variable_request=vble, rip_code='r1i1p1f1', request_start_time=0.0,
+        request_end_time=23400.0, time_units='days since 1950-01-01',
         calendar='360_day')
 
     dsub = dbapi.get_or_create(models.DataSubmission,

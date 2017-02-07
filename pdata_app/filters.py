@@ -52,6 +52,8 @@ class DataFileFilter(django_filters.FilterSet):
 
     data_issue = django_filters.NumberFilter(name='dataissue__id')
 
+    data_request = django_filters.NumberFilter(name='data_request__id')
+
     grid = django_filters.CharFilter(name='grid', lookup_expr='icontains')
 
     cmor_name = django_filters.CharFilter(name='variable_request__cmor_name',
@@ -147,6 +149,9 @@ class DataIssueFilter(django_filters.FilterSet):
 
     data_submission = django_filters.NumberFilter(
         name='data_file__data_submission__id')
+
+    data_request = django_filters.NumberFilter(
+        name='data_file__data_request__id')
 
 
 class VariableRequestQueryFilter(django_filters.FilterSet):

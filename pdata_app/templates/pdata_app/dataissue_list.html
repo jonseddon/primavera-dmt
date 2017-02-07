@@ -10,6 +10,9 @@
             {% elif request.GET.data_submission %}
                 These are the data issues identified for data submission ...
                 <pre>{{ request.GET.data_submission_string }}</pre>
+            {% elif request.GET.data_request %}
+                These are the data issues identified for data request ...
+                <pre>{{ request.GET.data_request_string }}</pre>
             {% else %}
                 These are the data issues identified ...
             {% endif %}
@@ -42,11 +45,18 @@
                 {% if request.GET.data_file %}
                     <input type="hidden" name="data_file" value="{{ request.GET.data_file }}">
                     <input type="hidden" name="data_file_string" value="{{ request.GET.data_file_string }}">
+                    <a class="btn btn-default" href="{% url 'data_issues' %}?data_file={{ request.GET.data_file }}&data_file_string={{ request.GET.data_file_string }}">Clear</a>
+                {% elif request.GET.data_request %}
+                    <input type="hidden" name="data_request" value="{{ request.GET.data_request }}">
+                    <input type="hidden" name="data_request_string" value="{{ request.GET.data_request_string }}">
+                    <a class="btn btn-default" href="{% url 'data_issues' %}?data_request={{ request.GET.data_request }}&data_request_string={{ request.GET.data_request_string }}">Clear</a>
                 {% elif request.GET.data_submission %}
                     <input type="hidden" name="data_submission" value="{{ request.GET.data_submission }}">
                     <input type="hidden" name="data_submission_string" value="{{ request.GET.data_submission_string }}">
+                    <a class="btn btn-default" href="{% url 'data_issues' %}?data_submission={{ request.GET.data_submission }}&data_submission_string={{ request.GET.data_submission_string }}">Clear</a>
+                {% else %}
+                    <a class="btn btn-default" href="{% url 'data_issues' %}">Clear</a>
                 {% endif %}
-                <a class="btn btn-default" href="{% url 'data_issues' %}">Clear</a>
                 <input type="submit" class="btn btn-default" value="Filter" />
             </form>
 

@@ -124,8 +124,9 @@ class TestDataFileAggregationBaseMethods(TestCase):
             dreq = get_or_create(models.DataRequest, project=self.proj,
                 institute=institute, climate_model=climate_model,
                 experiment=experiment, variable_request=var,
-                rip_code='r1i1p1f1', start_time=0.0, end_time=23400.0,
-                time_units='days since 1950-01-01', calendar='360_day')
+                rip_code='r1i1p1f1', request_start_time=0.0,
+                request_end_time=23400.0, time_units='days since 1950-01-01',
+                calendar='360_day')
 
             models.DataFile.objects.create(name=dfile_name,
                 incoming_directory=self.example_files.INCOMING_DIR,
@@ -199,7 +200,7 @@ class TestDataFileAggregationBaseMethods(TestCase):
     def test_start_time(self):
         start_time = self.dsub.start_time()
 
-        expected = cf_units.netcdftime.datetime(1859, 1 ,1)
+        expected = '1859-01-01'
 
         self.assertEqual(start_time, expected)
 
@@ -211,7 +212,7 @@ class TestDataFileAggregationBaseMethods(TestCase):
 
         start_time = self.dsub.start_time()
 
-        expected = cf_units.netcdftime.datetime(1859, 1, 1)
+        expected = '1859-01-01'
 
         self.assertEqual(start_time, expected)
 
@@ -226,7 +227,7 @@ class TestDataFileAggregationBaseMethods(TestCase):
     def test_end_time(self):
         end_time = self.dsub.end_time()
 
-        expected = cf_units.netcdftime.datetime(1993, 12, 30)
+        expected = '1993-12-30'
 
         self.assertEqual(end_time, expected)
 
@@ -399,8 +400,8 @@ class TestDataFile(TestCase):
             frequency=FREQUENCY_VALUES['ann'], cell_measures='', uid='123abc')
         dreq = get_or_create(models.DataRequest, project=proj, institute=institute,
             climate_model=climate_model, experiment=experiment,
-            variable_request=var, rip_code='r1i1p1f1', start_time=0.0,
-            end_time=23400.0, time_units='days since 1950-01-01',
+            variable_request=var, rip_code='r1i1p1f1', request_start_time=0.0,
+            request_end_time=23400.0, time_units='days since 1950-01-01',
             calendar='360_day')
 
 
@@ -460,8 +461,8 @@ class TestChecksum(TestCase):
             frequency=FREQUENCY_VALUES['ann'], cell_measures='', uid='123abc')
         dreq = get_or_create(models.DataRequest, project=proj, institute=institute,
             climate_model=climate_model, experiment=experiment,
-            variable_request=var, rip_code='r1i1p1f1', start_time=0.0,
-            end_time=23400.0, time_units='days since 1950-01-01',
+            variable_request=var, rip_code='r1i1p1f1', request_start_time=0.0,
+            request_end_time=23400.0, time_units='days since 1950-01-01',
             calendar='360_day')
 
 

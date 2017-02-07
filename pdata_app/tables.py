@@ -1,5 +1,6 @@
 from urllib import urlencode
 
+from django.db.models import Count
 from django.utils.html import format_html
 from django.urls import reverse
 import django_tables2 as tables
@@ -18,7 +19,7 @@ class DataFileTable(tables.Table):
                    'end_time', 'variable_request', 'frequency', 'rip_code',
                    'time_units', 'calendar', 'data_submission', 'esgf_dataset',
                    'ceda_dataset', 'ceda_download_url', 'ceda_opendap_url',
-                   'esgf_download_url', 'esgf_opendap_url')
+                   'esgf_download_url', 'esgf_opendap_url', 'data_request')
 
     cmor_name = tables.Column(empty_values=(), verbose_name='CMOR Name',
                               orderable=False)
@@ -92,7 +93,7 @@ class DataSubmissionTable(tables.Table):
         if record.status in ['PENDING_PROCESSING', 'ARRIVED']:
             return DEFAULT_VALUE
         else:
-            num_datafiles = len(record.get_data_files())
+            num_datafiles = record.datafile_set.count()
             url_query = urlencode({'data_submission': record.id,
                                    'data_submission_string': '{}'.format(
                                        record.directory)})
@@ -106,7 +107,8 @@ class DataSubmissionTable(tables.Table):
         if record.status in ['PENDING_PROCESSING', 'ARRIVED']:
             return DEFAULT_VALUE
         else:
-            num_dataissues = len(record.get_data_issues())
+            num_dataissues = record.datafile_set.aggregate(
+                Count('dataissue', distinct=True))['dataissue__count']
             url_query = urlencode({'data_submission': record.id,
                                    'data_submission_string': '{}'.format(
                                        record.directory)})
@@ -157,18 +159,18 @@ class DataRequestTable(tables.Table):
         attrs = {'class': 'paleblue'}
         exclude = ('id', 'time_units', 'calendar', 'variable_request')
         sequence = ('project', 'institute', 'climate_model', 'experiment',
-                    'rip_code', 'cmor_name', 'mip_table', 'start_time',
-                    'end_time')
+                    'rip_code', 'cmor_name', 'mip_table', 'request_start_time',
+                    'request_end_time')
 
     cmor_name = tables.Column(empty_values=(), verbose_name='CMOR Name',
                               orderable=False)
     mip_table = tables.Column(empty_values=(), verbose_name='MIP Table',
                               orderable=False)
 
-    def render_start_time(self, record):
+    def render_request_start_time(self, record):
         return record.start_date_string()
 
-    def render_end_time(self, record):
+    def render_request_end_time(self, record):
         return record.end_date_string()
 
     def render_cmor_name(self, record):
@@ -182,16 +184,60 @@ class DataReceivedTable(DataRequestTable):
     class Meta:
         model = DataRequest
         attrs = {'class': 'paleblue'}
-        exclude = ('id', 'time_units', 'calendar', 'variable_request')
+        exclude = ('id', 'time_units', 'calendar', 'variable_request',
+                   'request_start_time', 'request_end_time')
         sequence = ('project', 'institute', 'climate_model', 'experiment',
                     'rip_code', 'cmor_name', 'mip_table', 'start_time',
                     'end_time')
 
+    start_time = tables.Column(empty_values=(), orderable=False)
+    end_time = tables.Column(empty_values=(), orderable=False)
+    online_status = tables.Column(empty_values=(), orderable=False)
+    num_files = tables.Column(empty_values=(), verbose_name='# Data Files',
+                              orderable=False)
+    num_issues = tables.Column(empty_values=(), verbose_name='# Data Issues',
+                               orderable=False)
+    tape_urls = tables.Column(empty_values=(), verbose_name='Tape URLs',
+                              orderable=False)
+    file_versions = tables.Column(empty_values=(), orderable=False)
+
     def render_start_time(self, record):
-        return record.datafile_set.earliest('start_time').start_date_string()
+        return record.start_time()
 
     def render_end_time(self, record):
-        return record.datafile_set.latest('end_time').end_date_string()
+        return record.end_time()
+
+    def render_online_status(self, record):
+        return record.online_status()
+
+    def render_num_files(self, record):
+        num_datafiles = record.datafile_set.count()
+        url_query = urlencode({'data_request': record.id,
+                               'data_request_string': '{}'.format(record)})
+        return format_html('<a href="{}?{}">{}</a>'.format(
+            reverse('data_files'),
+            url_query,
+            num_datafiles
+        ))
+
+    def render_num_issues(self, record):
+        num_dataissues = record.datafile_set.aggregate(
+            Count('dataissue', distinct=True))['dataissue__count']
+        url_query = urlencode({'data_request': record.id,
+                               'data_request_string': '{}'.format(record)})
+        return format_html('<a href="{}?{}">{}</a>'.format(
+            reverse('data_issues'),
+            url_query,
+            num_dataissues
+        ))
+
+    def render_tape_urls(self, record):
+        tape_urls = record.get_tape_urls()
+        return _to_comma_sep(tape_urls)
+
+    def render_file_versions(self, record):
+        file_versions = record.get_file_versions()
+        return _to_comma_sep(file_versions)
 
 
 class ESGFDatasetTable(tables.Table):
