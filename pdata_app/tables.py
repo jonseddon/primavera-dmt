@@ -178,6 +178,22 @@ class DataRequestTable(tables.Table):
         return record.variable_request.table_name
 
 
+class DataReceivedTable(DataRequestTable):
+    class Meta:
+        model = DataRequest
+        attrs = {'class': 'paleblue'}
+        exclude = ('id', 'time_units', 'calendar', 'variable_request')
+        sequence = ('project', 'institute', 'climate_model', 'experiment',
+                    'rip_code', 'cmor_name', 'mip_table', 'start_time',
+                    'end_time')
+
+    def render_start_time(self, record):
+        return record.datafile_set.earliest('start_time').start_date_string()
+
+    def render_end_time(self, record):
+        return record.datafile_set.latest('end_time').end_date_string()
+
+
 class ESGFDatasetTable(tables.Table):
     class Meta:
         model = ESGFDataset

@@ -44,9 +44,6 @@ urlpatterns = [
         pdata_app.views.VariableRequestList.as_view(),
         name='variable_requests'),
 
-    # url(r'^variable_query/$', pdata_app.views.view_variable_query,
-    #     name='variable_query'),
-
     url(r'^create_submission/$', pdata_app.views.create_submission,
         name='create_submission'),
 
