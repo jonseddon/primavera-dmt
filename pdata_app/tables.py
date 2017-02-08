@@ -1,6 +1,7 @@
 from urllib import urlencode
 
 from django.db.models import Count
+from django.template.defaultfilters import filesizeformat
 from django.utils.html import format_html
 from django.urls import reverse
 import django_tables2 as tables
@@ -15,11 +16,14 @@ class DataFileTable(tables.Table):
     class Meta:
         model = DataFile
         attrs = {'class': 'paleblue'}
-        exclude = ('id', 'incoming_directory', 'size', 'project', 'start_time',
+        exclude = ('id', 'incoming_directory', 'project', 'start_time',
                    'end_time', 'variable_request', 'frequency', 'rip_code',
                    'time_units', 'calendar', 'data_submission', 'esgf_dataset',
                    'ceda_dataset', 'ceda_download_url', 'ceda_opendap_url',
                    'esgf_download_url', 'esgf_opendap_url', 'data_request')
+        sequence = ['name', 'directory', 'version', 'online', 'num_dataissues',
+                    'tape_url', 'institute', 'climate_model', 'experiment',
+                    'mip_table', 'cmor_name', 'grid', 'size', 'checksum']
 
     cmor_name = tables.Column(empty_values=(), verbose_name='CMOR Name',
                               orderable=False)
@@ -56,6 +60,9 @@ class DataFileTable(tables.Table):
             url_query,
             num_dataissues
         ))
+
+    def render_size(self, value):
+        return filesizeformat(value)
 
 
 class DataSubmissionTable(tables.Table):
