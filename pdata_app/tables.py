@@ -17,13 +17,14 @@ class DataFileTable(tables.Table):
         model = DataFile
         attrs = {'class': 'paleblue'}
         exclude = ('id', 'incoming_directory', 'project', 'start_time',
-                   'end_time', 'variable_request', 'frequency', 'rip_code',
+                   'end_time', 'variable_request', 'frequency',
                    'time_units', 'calendar', 'data_submission', 'esgf_dataset',
                    'ceda_dataset', 'ceda_download_url', 'ceda_opendap_url',
                    'esgf_download_url', 'esgf_opendap_url', 'data_request')
         sequence = ['name', 'directory', 'version', 'online', 'num_dataissues',
                     'tape_url', 'institute', 'climate_model', 'experiment',
-                    'mip_table', 'cmor_name', 'grid', 'size', 'checksum']
+                    'mip_table', 'rip_code','cmor_name', 'grid', 'size',
+                    'checksum']
 
     cmor_name = tables.Column(empty_values=(), verbose_name='CMOR Name',
                               orderable=False)
@@ -166,7 +167,7 @@ class DataRequestTable(tables.Table):
         attrs = {'class': 'paleblue'}
         exclude = ('id', 'time_units', 'calendar', 'variable_request')
         sequence = ('project', 'institute', 'climate_model', 'experiment',
-                    'rip_code', 'cmor_name', 'mip_table', 'request_start_time',
+                    'mip_table', 'rip_code', 'cmor_name', 'request_start_time',
                     'request_end_time')
 
     cmor_name = tables.Column(empty_values=(), verbose_name='CMOR Name',
@@ -194,7 +195,7 @@ class DataReceivedTable(DataRequestTable):
         exclude = ('id', 'time_units', 'calendar', 'variable_request',
                    'request_start_time', 'request_end_time')
         sequence = ('project', 'institute', 'climate_model', 'experiment',
-                    'rip_code', 'cmor_name', 'mip_table', 'start_time',
+                    'mip_table', 'rip_code', 'cmor_name', 'start_time',
                     'end_time')
 
     start_time = tables.Column(empty_values=(), orderable=False)

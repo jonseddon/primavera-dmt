@@ -71,6 +71,9 @@ class DataFileFilter(django_filters.FilterSet):
     experiment = django_filters.CharFilter(name='experiment__short_name',
                                           lookup_expr='icontains')
 
+    rip_code = django_filters.CharFilter(name='rip_code',
+                                         lookup_expr='icontains')
+
 
 class DataSubmissionFilter(django_filters.FilterSet):
     class Meta:

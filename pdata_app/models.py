@@ -426,7 +426,7 @@ class DataRequest(DataFileAggregationBase):
     variable_request = models.ForeignKey(VariableRequest, null=False,
                                          on_delete=PROTECT,
                                          verbose_name='Variable')
-    rip_code = models.CharField(max_length=20, verbose_name="Ensemble Member",
+    rip_code = models.CharField(max_length=20, verbose_name="Variant Label",
                                 null=True, blank=True)
     request_start_time = models.FloatField(verbose_name="Start time",
                                            null=False, blank=False)
@@ -494,7 +494,7 @@ class DataFile(models.Model):
     data_request = models.ForeignKey(DataRequest, null=False, on_delete=PROTECT)
     frequency = models.CharField(max_length=20, choices=FREQUENCY_VALUES.items(),
         verbose_name="Time frequency", null=False, blank=False)
-    rip_code = models.CharField(max_length=20, verbose_name="RIP code",
+    rip_code = models.CharField(max_length=20, verbose_name="Variant Label",
                                 null=False, blank=False)
     grid = models.CharField(max_length=20, verbose_name='Grid Label',
                             null=True, blank=True)
