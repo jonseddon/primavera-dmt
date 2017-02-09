@@ -8,14 +8,15 @@ from django.http import HttpResponseRedirect
 from django.core.urlresolvers import reverse
 
 from .models import (DataFile, DataSubmission, ESGFDataset, CEDADataset,
-                     DataRequest, DataIssue, VariableRequest)
-from .forms import CreateSubmissionForm
+                     DataRequest, DataIssue, VariableRequest, RetrievalRequest)
+from .forms import CreateSubmissionForm, CreateRetrievalForm
 from .tables import (DataRequestTable, DataFileTable, DataSubmissionTable,
                      ESGFDatasetTable, CEDADatasetTable, DataIssueTable,
-                     VariableRequestQueryTable,DataReceivedTable)
+                     VariableRequestQueryTable, DataReceivedTable,
+                     RetrievalRequestTable)
 from .filters import (DataRequestFilter, DataFileFilter, DataSubmissionFilter,
                       ESGFDatasetFilter, CEDADatasetFilter, DataIssueFilter,
-                      VariableRequestQueryFilter)
+                      VariableRequestQueryFilter, RetrievalRequestFilter)
 from .utils.table_views import PagedFilteredTableView, DataRequestsFilteredView
 from vocabs.vocabs import STATUS_VALUES
 
@@ -92,6 +93,13 @@ class DataIssueList(PagedFilteredTableView):
     page_title = 'Data Issues'
 
 
+class RetrievalRequestList(PagedFilteredTableView):
+    model = RetrievalRequest
+    table_class = RetrievalRequestTable
+    filter_class = RetrievalRequestFilter
+    page_title = 'Retrieval Requests'
+
+
 def view_login(request):
     if request.method == 'GET':
         next_page = request.GET.get('next')
@@ -131,12 +139,6 @@ def view_home(request):
         'page_title': 'The PRIMAVERA DMT'})
 
 
-def view_retrieval_request(request):
-    return render(request, 'pdata_app/retrieval_request.html',
-                  {'request': request,
-                   'page_title': 'Retrieval Request'})
-
-
 @login_required(login_url='/login/')
 def create_submission(request):
     if request.method == 'POST':
@@ -155,6 +157,28 @@ def create_submission(request):
     return render(request, 'pdata_app/create_submission_form.html',
                   {'form': form,
                    'page_title': 'Create Data Submission'})
+
+
+# TODO fix this - post may not work
+@login_required(login_url='/login/')
+def create_retrieval(request):
+    if request.method == 'POST':
+        form = CreateRetrievalForm(request.POST)
+        if form.is_valid():
+            retrieval = form.save(commit=False)
+            retrieval.user = request.user
+            retrieval.save()
+            # add the data requests to the retrieval request now
+            return _custom_redirect('retrieval_requests')
+        else:
+            return render(request, 'pdata_app/retrieval_request_error.html',
+                      {'request': request,
+                       'page_title': 'Retrieval Request'})
+
+    else:
+        return render(request, 'pdata_app/retrieval_request_error.html',
+                      {'request': request,
+                       'page_title': 'Retrieval Request'})
 
 
 def _custom_redirect(url_name, *args, **kwargs):

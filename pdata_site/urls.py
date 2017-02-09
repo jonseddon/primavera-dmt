@@ -47,8 +47,9 @@ urlpatterns = [
     url(r'^create_submission/$', pdata_app.views.create_submission,
         name='create_submission'),
 
-    url(r'^retrieval_request/$', pdata_app.views.view_retrieval_request,
-        name='retrieval_request'),
+    url(r'^retrieval_requests/$',
+        pdata_app.views.RetrievalRequestList.as_view(),
+        name='retrieval_requests'),
 
     url(r'^et_indexer/$', et_indexer.views.view_home, name='et_indexer'),
 

@@ -7,7 +7,7 @@ from django.urls import reverse
 import django_tables2 as tables
 
 from .models import (DataRequest, DataSubmission, DataFile, ESGFDataset,
-                     CEDADataset, DataIssue, VariableRequest)
+                     CEDADataset, DataIssue, VariableRequest, RetrievalRequest)
 
 DEFAULT_VALUE = '--'
 
@@ -316,6 +316,28 @@ class VariableRequestQueryTable(tables.Table):
                     'cell_measures', 'dimensions', 'positive', 'uid',
                     'variable_type', 'modeling_realm')
         order_by = 'var_name'
+
+
+class RetrievalRequestTable(tables.Table):
+    class Meta:
+        model = RetrievalRequest
+        attrs = {'class': 'paleblue'}
+
+    data_reqs = tables.Column(empty_values=(), orderable=False,
+                              verbose_name='Data Requests')
+
+    def render_date_created(self, value):
+        return value.strftime('%Y-%m-%d %H:%M')
+
+    def render_date_complete(self, value):
+        if value:
+            return value.strftime('%Y-%m-%d %H:%M')
+        else:
+            return '--'
+
+    def render_data_reqs(self, record):
+        reqs_str = ', \n'.join([str(dr) for dr in record.data_request.all()])
+        return reqs_str
 
 
 def _to_comma_sep(list_values):

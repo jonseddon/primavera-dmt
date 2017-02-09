@@ -14,7 +14,7 @@ from vocabs import (STATUS_VALUES, FREQUENCY_VALUES, ONLINE_STATUS,
 model_names = ['Project', 'Institute', 'ClimateModel', 'Experiment',
                'DataSubmission', 'DataFile', 'ESGFDataset', 'CEDADataset',
                'DataRequest', 'DataIssue', 'Checksum', 'Settings',
-               'VariableRequest']
+               'VariableRequest', 'RetrievalRequest']
 __all__ = model_names
 
 
@@ -472,7 +472,9 @@ class DataFile(models.Model):
     incoming_directory = models.CharField(max_length=500, verbose_name="Incoming directory", null=False, blank=False)
 
     # This is where the datafile is now
-    directory = models.CharField(max_length=500, verbose_name="Current directory", null=False, blank=False)
+    directory = models.CharField(max_length=500,
+                                 verbose_name="Current directory",
+                                 null=True, blank=True)
     size = models.BigIntegerField(null=False, verbose_name="File size (bytes)")
 
     # This is the file's version
@@ -585,6 +587,30 @@ class Checksum(models.Model):
     def __unicode__(self):
         return "%s: %s (%s)" % (self.checksum_type, self.checksum_value,
                                 self.data_file.name)
+
+
+class RetrievalRequest(models.Model):
+    """
+    A collection of DataRequests to retrieve from Elastic Tape or MASS
+    """
+    class Meta:
+        verbose_name = "Retrieval Request"
+
+    data_request = models.ManyToManyField(DataRequest)
+
+    date_created = models.DateTimeField(auto_now_add=True,
+                                        verbose_name='Request Created At',
+                                        null=False, blank=False)
+    date_complete = models.DateTimeField(verbose_name='Request Completed At',
+                                         null=True, blank=True)
+
+    requester = models.CharField(max_length=60, verbose_name='Request Creator',
+                                 null=False, blank=False)
+
+    lotus_job = models.CharField(max_length=20, verbose_name='LOTUS Job ID')
+
+    def __unicode__(self):
+        return '{}'.format(self.id)
 
 
 def standardise_time_unit(time_float, time_unit, standard_unit, calendar):

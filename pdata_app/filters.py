@@ -1,6 +1,6 @@
 import django_filters
 from .models import (DataRequest, DataSubmission, DataFile, ESGFDataset,
-                     CEDADataset, DataIssue, VariableRequest)
+                     CEDADataset, DataIssue, VariableRequest, RetrievalRequest)
 
 
 class DataRequestFilter(django_filters.FilterSet):
@@ -22,10 +22,10 @@ class DataRequestFilter(django_filters.FilterSet):
                                            lookup_expr='icontains')
 
     cmor_name = django_filters.CharFilter(name='variable_request__cmor_name',
-                                                 lookup_expr='iexact')
+                                          lookup_expr='iexact')
 
     mip_table = django_filters.CharFilter(name='variable_request__table_name',
-                                                 lookup_expr='iexact')
+                                          lookup_expr='iexact')
 
     rip_code = django_filters.CharFilter(name='rip_code',
                                          lookup_expr='icontains')
@@ -210,3 +210,16 @@ class VariableRequestQueryFilter(django_filters.FilterSet):
         if value:
             return queryset.filter(cmor_name__exact='')
         return queryset
+
+
+class RetrievalRequestFilter(django_filters.FilterSet):
+    class Meta:
+        models = RetrievalRequest
+        fields = ('id', 'requester', 'date_created')
+
+    id = django_filters.NumberFilter(name='id')
+
+    requester = django_filters.CharFilter(name='requester',
+                                          lookup_expr='icontains')
+
+    date_time = django_filters.DateFromToRangeFilter(name='date_created')
