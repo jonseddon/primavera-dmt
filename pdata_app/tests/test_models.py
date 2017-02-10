@@ -71,6 +71,18 @@ class TestExperiment(TestCase):
         self.assertEqual(unicode(expt), u't')
 
 
+class ActivityId(TestCase):
+    """
+    Test ActivityId class
+    """
+    def setUp(self):
+        _p = get_or_create(models.ActivityId, short_name='t', full_name='test')
+
+    def test_unicode(self):
+        expt = models.ActivityId.objects.first()
+        self.assertEqual(unicode(expt), u't')
+
+
 class TestVariableRequest(TestCase):
     """
     Test VariableRequest class
@@ -127,13 +139,15 @@ class TestDataFileAggregationBaseMethods(TestCase):
                 rip_code='r1i1p1f1', request_start_time=0.0,
                 request_end_time=23400.0, time_units='days since 1950-01-01',
                 calendar='360_day')
+            act_id = get_or_create(models.ActivityId, short_name='HighResMIP',
+                full_name='High Resolution Model Intercomparison Project')
 
             models.DataFile.objects.create(name=dfile_name,
                 incoming_directory=self.example_files.INCOMING_DIR,
                 directory=self.example_files.INCOMING_DIR, size=1, project=self.proj,
                 climate_model=climate_model, experiment=experiment,
                 institute=institute, variable_request=var, data_request=dreq,
-                frequency=FREQUENCY_VALUES['ann'],
+                frequency=FREQUENCY_VALUES['ann'], activity_id=act_id,
                 rip_code=metadata["ensemble"], online=True,
                 start_time=metadata["start_time"],
                 end_time=metadata["end_time"],
@@ -403,7 +417,8 @@ class TestDataFile(TestCase):
             variable_request=var, rip_code='r1i1p1f1', request_start_time=0.0,
             request_end_time=23400.0, time_units='days since 1950-01-01',
             calendar='360_day')
-
+        act_id = get_or_create(models.ActivityId, short_name='HighResMIP',
+            full_name='High Resolution Model Intercomparison Project')
 
         # Make the data file
         data_file = get_or_create(models.DataFile, name='filename.nc',
@@ -411,7 +426,7 @@ class TestDataFile(TestCase):
             project=proj, climate_model=climate_model, institute=institute,
             experiment=experiment, variable_request=var, data_request=dreq,
             frequency=FREQUENCY_VALUES['mon'], rip_code='r1i1p1',
-            data_submission=data_submission, online=True)
+            activity_id=act_id, data_submission=data_submission, online=True)
 
     def test_unicode(self):
         data_file = models.DataFile.objects.first()
@@ -464,7 +479,8 @@ class TestChecksum(TestCase):
             variable_request=var, rip_code='r1i1p1f1', request_start_time=0.0,
             request_end_time=23400.0, time_units='days since 1950-01-01',
             calendar='360_day')
-
+        act_id = get_or_create(models.ActivityId, short_name='HighResMIP',
+            full_name='High Resolution Model Intercomparison Project')
 
         # Make a data file in this submission
         data_file = get_or_create(models.DataFile, name='filename.nc',
@@ -472,7 +488,7 @@ class TestChecksum(TestCase):
             institute=institute, project=proj, climate_model=climate_model,
             experiment=experiment, variable_request=var, data_request=dreq,
             frequency=FREQUENCY_VALUES['mon'], rip_code='r1i1p1',
-            data_submission=data_submission, online=True)
+            activity_id=act_id, data_submission=data_submission, online=True)
 
         # Make a checksum
         chk_sum = get_or_create(models.Checksum, data_file=data_file,

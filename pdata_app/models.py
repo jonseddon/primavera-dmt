@@ -98,6 +98,24 @@ class Experiment(models.Model):
         return self.short_name
 
 
+class ActivityId(models.Model):
+    """
+    An activity id
+    """
+    # RFK Relationships
+    # DataFile
+
+    short_name = models.CharField(max_length=100, null=False,
+        blank=False, unique=True)
+    full_name = models.CharField(max_length=300, null=False, blank=False)
+
+    def __unicode__(self):
+        return self.short_name
+
+    class Meta:
+        verbose_name = 'Activity ID'
+
+
 class VariableRequest(models.Model):
     """
     A variable requested in the CMIP6 data request
@@ -488,6 +506,9 @@ class DataFile(models.Model):
     climate_model = models.ForeignKey(ClimateModel, null=False,
                                       on_delete=PROTECT,
                                       verbose_name='Climate Model')
+    activity_id = models.ForeignKey(ActivityId, null=False,
+                                      on_delete=PROTECT,
+                                      verbose_name='Activity ID')
     experiment = models.ForeignKey(Experiment, null=False, on_delete=PROTECT,
                                    verbose_name='Experiment')
     variable_request = models.ForeignKey(VariableRequest, null=False, on_delete=PROTECT)

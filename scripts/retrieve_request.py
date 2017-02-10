@@ -8,6 +8,8 @@ import argparse
 import datetime
 import logging
 import os
+import re
+import shutil
 import subprocess
 import sys
 
@@ -27,6 +29,8 @@ logger = logging.getLogger(__name__)
 
 # The top-level directory to initially restore files to
 BASE_RETRIEVAL_DIR = '/group_workspaces/jasmin2/primavera4/.et_retrievals'
+# The top-level directory to write output data to
+BASE_OUTPUT_DIR = '/group_workspaces/jasmin2/primavera4/stream1'
 # The name of the directory to store et_get.py log files in
 LOG_FILE_DIR = '/group_workspaces/jasmin2/primavera4/.et_logs/'
 # The prefix to use on et_get.py log files
@@ -84,7 +88,7 @@ def get_et_url(tape_url):
 
 def copy_files_into_drs(retrieval, tape_url):
     """
-    Copy files from restored data into the DRS structure.
+    Copy files from the restored data into the DRS structure.
 
     :param pdata_app.models.RetrievalRequest retrieval: The retrieval object.
     :param str tape_url: The portion of the data now available on disk.
@@ -95,6 +99,7 @@ def copy_files_into_drs(retrieval, tape_url):
         data_request=retrieval.data_request.all(), tape_url=tape_url).all()
 
     for data_file in data_files:
+        # TODO might be poss to group all files in a directory into one queryset
         submission_dir = data_file.data_submission.incoming_directory
         file_sub_dir = data_file.incoming_directory
         file_rel_path = os.path.relpath(file_sub_dir, submission_dir)
@@ -107,76 +112,64 @@ def copy_files_into_drs(retrieval, tape_url):
             logger.error(msg)
             sys.exit(1)
 
+        drs_path = make_drs_path(data_file)
+        drs_dir = os.path.join(BASE_OUTPUT_DIR, drs_path)
+        dest_file_path = os.path.join(drs_dir, data_file.name)
+
+        # create the path if it doesn't exist
+        if not os.path.exists(drs_dir):
+            os.makedirs(drs_dir)
+
+        if _check_same_gws(extracted_file_path, drs_dir):
+            # if src and destination are on the same GWS then create a hard
+            # link, which will be faster and use less disk space
+            os.link(extracted_file_path, dest_file_path)
+        else:
+            # if on different GWS then will have to copy
+            shutil.copyfile(extracted_file_path, dest_file_path)
 
 
-
-
-
-def parse_args():
+def make_drs_path(data_file):
     """
-    Parse command-line arguments
+    Make the CMIP6 DRS directory path for the specified file.
+
+    :param pdata_app.models.DataFile data_file:
+    :returns: A string containing the DRS directory structure
     """
-    parser = argparse.ArgumentParser(description='Perform a PRIMAVERA '
-                                                 'retrieval request.')
-    parser.add_argument('retrieval_id', help='the id of the retrieval request '
-                                             'to carry out.', type=int)
-    parser.add_argument('-n', '--no_restore', help="don't restore data from "
-        "tape. Assume that it already has been and extract files from the "
-        "restoration directory.", action='store_true')
-    parser.add_argument('-l', '--log-level', help='set logging level to one of '
-        'debug, info, warn (the default), or error')
-    parser.add_argument('--version', action='version',
-        version='%(prog)s {}'.format(__version__))
-    args = parser.parse_args()
-
-    return args
+    return os.path.join(
+        data_file.project,
+        data_file.institute.short_name,
+        data_file.climate_model.short_name,
+        data_file.activity_id.short_name,
+        data_file.experiment.short_name,
+        data_file.rip_code,
+        data_file.variable_request.table_name,
+        data_file.variable_request.cmor_name,
+        data_file.grid,
+        data_file.version
+    )
 
 
-def main(args):
+def _check_same_gws(path1, path2):
     """
-    Main entry point
+    Check that two paths both start with the same group workspace name.
+
+    :param str path1: The first path
+    :param str path2: The second path
+    :returns: True if both paths are in the same group workspace
     """
-    logger.debug('Starting retrieve_request.py')
+    gws_pattern = r'^/group_workspaces/jasmin2/primavera\d'
+    gws1 = re.match(gws_pattern, path1)
+    gws2 = re.match(gws_pattern, path2)
 
-    # check retrieval
-    retrieval = match_one(RetrievalRequest, id=args.retrieval_id)
-    if not retrieval:
-        logger.error('Unable to find retrieval id {}'.format(
-            args.retrieval_id))
-        sys.exit(1)
+    if not gws1:
+        msg = 'Cannot determine group workspace name from {}'.format(path1)
+        raise RuntimeError(msg)
+    if not gws2:
+        msg = 'Cannot determine group workspace name from {}'.format(path2)
+        raise RuntimeError(msg)
 
-    if retrieval.date_complete:
-        logger.error('Retrieval {} was already completed, at {}. '.
-                     format(retrieval.id,
-                            retrieval.date_complete.strftime('%Y-%m-%d %H:%M')))
-        sys.exit(1)
-
-    # check if running on LOTUS and if so, set the job id in the database
-    # TODO check if running on LOTUS  and add job id to db
-
-    # Retrieve the data from tape
-    #
-    # retrieval.data_request.values('datafile__tape_url') gives:
-    # <QuerySet [{'datafile__tape_url': u'et:9876'},
-    #            {'datafile__tape_url': u'et:8765'}]>
-
-    tape_urls = list(set([qs['datafile__tape_url'] for qs in
-                          retrieval.data_request.values('datafile__tape_url')]))
-
-    for tape_url in tape_urls:
-        if not args.no_restore:
-            get_tape_url(tape_url)
-
-        copy_files_into_drs(retrieval, tape_url)
-
-
-
-    # loop through requested files
-    #    copy file to DRS
-
-    # set date_complete in the db
-
-    logger.debug('Completed retrieve_request.py')
+    return True if gws1.group(0) == gws2.group(0) else False
 
 
 def _make_logfile_name(directory=None):
@@ -233,6 +226,68 @@ def _run_command(command):
             raise RuntimeError(msg)
 
     return cmd_out.rstrip().split('\n')
+
+
+def parse_args():
+    """
+    Parse command-line arguments
+    """
+    parser = argparse.ArgumentParser(description='Perform a PRIMAVERA '
+                                                 'retrieval request.')
+    parser.add_argument('retrieval_id', help='the id of the retrieval request '
+                                             'to carry out.', type=int)
+    parser.add_argument('-n', '--no_restore', help="don't restore data from "
+        "tape. Assume that it already has been and extract files from the "
+        "restoration directory.", action='store_true')
+    parser.add_argument('-l', '--log-level', help='set logging level to one of '
+        'debug, info, warn (the default), or error')
+    parser.add_argument('--version', action='version',
+        version='%(prog)s {}'.format(__version__))
+    args = parser.parse_args()
+
+    return args
+
+
+def main(args):
+    """
+    Main entry point
+    """
+    logger.debug('Starting retrieve_request.py')
+
+    # check retrieval
+    retrieval = match_one(RetrievalRequest, id=args.retrieval_id)
+    if not retrieval:
+        logger.error('Unable to find retrieval id {}'.format(
+            args.retrieval_id))
+        sys.exit(1)
+
+    if retrieval.date_complete:
+        logger.error('Retrieval {} was already completed, at {}. '.
+                     format(retrieval.id,
+                            retrieval.date_complete.strftime('%Y-%m-%d %H:%M')))
+        sys.exit(1)
+
+    # check if running on LOTUS and if so, set the job id in the database
+    # TODO check if running on LOTUS and add job id to db
+
+    # Retrieve the data from tape
+    #
+    # retrieval.data_request.values('datafile__tape_url') gives:
+    # <QuerySet [{'datafile__tape_url': u'et:9876'},
+    #            {'datafile__tape_url': u'et:8765'}]>
+
+    tape_urls = list(set([qs['datafile__tape_url'] for qs in
+                          retrieval.data_request.values('datafile__tape_url')]))
+
+    for tape_url in tape_urls:
+        if not args.no_restore:
+            get_tape_url(tape_url)
+
+        copy_files_into_drs(retrieval, tape_url)
+
+    # TODO set date_complete in the db
+
+    logger.debug('Completed retrieve_request.py')
 
 
 if __name__ == "__main__":

@@ -23,7 +23,7 @@ from vocabs.vocabs import (FREQUENCY_VALUES, STATUS_VALUES, VARIABLE_TYPES,
 from pdata_app.utils.dbapi import get_or_create
 from pdata_app.models import (ClimateModel, Institute, Experiment, Project,
     DataSubmission, DataFile, DataRequest, ESGFDataset, CEDADataset,
-    DataIssue, Settings, VariableRequest)
+    DataIssue, Settings, VariableRequest, ActivityId)
 
 
 TIME_UNITS = 'days since 1900-01-01'
@@ -286,15 +286,17 @@ def _make_data_submission():
             variable_request=var, rip_code='r1i1p1f1', request_start_time=0.0,
             request_end_time=23400.0, time_units='days since 1950-01-01',
             calendar='360_day')
+        act_id = get_or_create(ActivityId, short_name='HighResMIP',
+            full_name='High Resolution Model Intercomparison Project')
 
         dfile = DataFile.objects.create(name=dfile_name, incoming_directory=test_dsub.INCOMING_DIR,
             directory=test_dsub.INCOMING_DIR, size=os.path.getsize(path),
             project=proj, climate_model=climate_model, institute=institute,
             experiment=experiment, variable_request=var, data_request=dreq,
             frequency=FREQUENCY_VALUES['ann'], rip_code=m["ensemble"],
-            start_time=m["start_time"], end_time=m["end_time"],
-            time_units=m["time_units"], calendar=m["calendar"],
-            data_submission=dsub, online=True)
+            activity_id=act_id, start_time=m["start_time"],
+            end_time=m["end_time"], time_units=m["time_units"],
+            calendar=m["calendar"], data_submission=dsub, online=True)
 
     return test_dsub
 
