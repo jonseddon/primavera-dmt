@@ -15,6 +15,7 @@ import sys
 
 import django
 django.setup()
+from django.utils import timezone
 
 from pdata_app.models import RetrievalRequest, DataFile
 from pdata_app.utils.dbapi import match_one
@@ -93,6 +94,8 @@ def copy_files_into_drs(retrieval, tape_url):
     :param pdata_app.models.RetrievalRequest retrieval: The retrieval object.
     :param str tape_url: The portion of the data now available on disk.
     """
+    logger.debug('Copying files from tape url {}'.format(tape_url))
+
     url_dir = _make_tape_url_dir(tape_url, skip_creation=True)
 
     data_files = DataFile.objects.filter(
@@ -128,7 +131,10 @@ def copy_files_into_drs(retrieval, tape_url):
             # if on different GWS then will have to copy
             shutil.copyfile(extracted_file_path, dest_file_path)
 
-        # TODO set directory and set online
+        # set directory and set status as being online
+        data_file.directory = drs_dir
+        data_file.online = True
+        data_file.save()
 
         # TODO check checksum????
 
@@ -286,7 +292,9 @@ def main(args):
 
         copy_files_into_drs(retrieval, tape_url)
 
-    # TODO set date_complete in the db
+    # set date_complete in the db
+    retrieval.date_complete = timezone.now()
+    retrieval.save()
 
     logger.debug('Completed retrieve_request.py')
 
