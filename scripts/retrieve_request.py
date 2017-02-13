@@ -128,6 +128,10 @@ def copy_files_into_drs(retrieval, tape_url):
             # if on different GWS then will have to copy
             shutil.copyfile(extracted_file_path, dest_file_path)
 
+        # TODO set directory and set online
+
+        # TODO check checksum????
+
 
 def make_drs_path(data_file):
     """
@@ -137,7 +141,7 @@ def make_drs_path(data_file):
     :returns: A string containing the DRS directory structure
     """
     return os.path.join(
-        data_file.project,
+        data_file.project.short_name,
         data_file.institute.short_name,
         data_file.climate_model.short_name,
         data_file.activity_id.short_name,
@@ -266,9 +270,6 @@ def main(args):
                      format(retrieval.id,
                             retrieval.date_complete.strftime('%Y-%m-%d %H:%M')))
         sys.exit(1)
-
-    # check if running on LOTUS and if so, set the job id in the database
-    # TODO check if running on LOTUS and add job id to db
 
     # Retrieve the data from tape
     #
