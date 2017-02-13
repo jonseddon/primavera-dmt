@@ -24,7 +24,8 @@ import django
 django.setup()
 
 from pdata_app.models import (Project, ClimateModel, Experiment, DataSubmission,
-    DataFile, VariableRequest, DataRequest, Checksum, Settings, Institute)
+    DataFile, VariableRequest, DataRequest, Checksum, Settings, Institute,
+    ActivityId)
 from pdata_app.utils.dbapi import get_or_create, match_one
 from pdata_app.utils.common import adler32
 from vocabs.vocabs import FREQUENCY_VALUES, STATUS_VALUES, CHECKSUM_TYPES
@@ -277,6 +278,8 @@ def identify_contents_metadata(cube):
     metadata['standard_name'] = cube.standard_name
     metadata['time_units'] = cube.coord('time').units.origin
     metadata['calendar'] = cube.coord('time').units.calendar
+    # CMIP5 doesn't have an activity id and so supply a default
+    metadata['activity_id'] = cube.attributes.get('activity_id', 'HighResMIP')
     try:
         metadata['institute'] = cube.attributes['institution_id']
     except KeyError:
@@ -359,7 +362,8 @@ def create_database_file_object(metadata, data_submission):
         (Project, 'project'),
         (ClimateModel, 'climate_model'),
         (Experiment, 'experiment'),
-        (Institute, 'institute')]
+        (Institute, 'institute'),
+        (ActivityId, 'activity_id')]
 
     metadata_objs = {}
 
@@ -422,6 +426,7 @@ def create_database_file_object(metadata, data_submission):
             project=metadata_objs['project'],
             institute=metadata_objs['institute'],
             climate_model=metadata_objs['climate_model'],
+            activity_id=metadata_objs['activity_id'],
             experiment=metadata_objs['experiment'],
             variable_request=variable, data_request=data_request,
             frequency=metadata['frequency'], rip_code=metadata['rip_code'],
@@ -434,10 +439,8 @@ def create_database_file_object(metadata, data_submission):
             data_submission=data_submission, online=True,
             grid=metadata['grid'] if 'grid' in metadata else None
         )
-    except django.db.utils.IntegrityError:
-        msg = ('Unable to submit file because it already exists in the '
-            'database with different metadata: {} ({}) .'.format(
-            metadata['basename'], metadata['directory']))
+    except django.db.utils.IntegrityError as exc:
+        msg = ('Unable to submit file: {}'.format(exc.message))
         logger.error(msg)
         raise SubmissionError(msg)
 
