@@ -18,6 +18,7 @@ django.setup()
 from django.utils import timezone
 
 from pdata_app.models import RetrievalRequest, DataFile
+from pdata_app.utils.common import md5, sha256, adler32
 from pdata_app.utils.dbapi import match_one
 
 
@@ -39,6 +40,18 @@ LOG_PREFIX = 'et_get'
 # The number of processes that et_get.py should use.
 # Between 5 and 10 are recommended
 MAX_ET_GET_PROC = 5
+
+
+class ChecksumError(Exception):
+    def __init__(self, message=''):
+        """
+        An exception to indicate that a data file's checksum does not match
+        the value recorded in the database.
+
+        :param str message: The error message text.
+        """
+        Exception.__init__(self)
+        self.message = message
 
 
 def get_tape_url(tape_url):
@@ -87,12 +100,14 @@ def get_et_url(tape_url):
     logger.debug('Restored {}'.format(tape_url))
 
 
-def copy_files_into_drs(retrieval, tape_url):
+def copy_files_into_drs(retrieval, tape_url, args):
     """
     Copy files from the restored data into the DRS structure.
 
     :param pdata_app.models.RetrievalRequest retrieval: The retrieval object.
     :param str tape_url: The portion of the data now available on disk.
+    :param argparse.Namespace args: The parsed command line arguments
+        namespace.
     """
     logger.debug('Copying files from tape url {}'.format(tape_url))
 
@@ -102,7 +117,6 @@ def copy_files_into_drs(retrieval, tape_url):
         data_request=retrieval.data_request.all(), tape_url=tape_url).all()
 
     for data_file in data_files:
-        # TODO might be poss to group all files in a directory into one queryset
         submission_dir = data_file.data_submission.incoming_directory
         file_sub_dir = data_file.incoming_directory
         file_rel_path = os.path.relpath(file_sub_dir, submission_dir)
@@ -123,20 +137,30 @@ def copy_files_into_drs(retrieval, tape_url):
         if not os.path.exists(drs_dir):
             os.makedirs(drs_dir)
 
-        if _check_same_gws(extracted_file_path, drs_dir):
-            # if src and destination are on the same GWS then create a hard
-            # link, which will be faster and use less disk space
-            os.link(extracted_file_path, dest_file_path)
+        if os.path.exists(dest_file_path):
+            msg = 'File already exists on disk: {}'.format(dest_file_path)
+            logger.warning(msg)
         else:
-            # if on different GWS then will have to copy
-            shutil.copyfile(extracted_file_path, dest_file_path)
+            if _check_same_gws(extracted_file_path, drs_dir):
+                # if src and destination are on the same GWS then create a hard
+                # link, which will be faster and use less disk space
+                os.link(extracted_file_path, dest_file_path)
+            else:
+                # if on different GWS then will have to copy
+                shutil.copyfile(extracted_file_path, dest_file_path)
+
+        if not args.skip_checksums:
+            try:
+                _check_file_checksum(data_file, dest_file_path)
+            except ChecksumError:
+                # warning message has already been displayed and so take no
+                # further action
+                pass
 
         # set directory and set status as being online
         data_file.directory = drs_dir
         data_file.online = True
         data_file.save()
-
-        # TODO check checksum????
 
 
 def make_drs_path(data_file):
@@ -158,6 +182,32 @@ def make_drs_path(data_file):
         data_file.grid,
         data_file.version
     )
+
+
+def _check_file_checksum(data_file, file_path):
+    """
+    Check that a restored file's checksum matches the value in the database.
+
+    :param pdata_app.models.DataFile data_file: the database file object
+    :param str file_path: the path to the restored file
+    :raises ChecksumError: if the checksums don't match.
+    """
+    checksum_methods = {'ADLER32': adler32,
+                        'MD5': md5,
+                        'SHA256': sha256}
+
+    # there is only likely to be one checksum and so chose the last one
+    checksum_obj = data_file.checksum_set.last()
+
+    file_checksum = checksum_methods[checksum_obj.checksum_type](file_path)
+
+    if file_checksum != checksum_obj.checksum_value:
+        msg = ('Checksum for restored file does not match its value in the '
+               'database.\n {}: {}:{}\nDatabase: {}:{}'.format(file_path,
+               checksum_obj.checksum_type, file_checksum,
+               checksum_obj.checksum_type, checksum_obj.checksum_value))
+        logger.warning(msg)
+        raise ChecksumError(msg)
 
 
 def _check_same_gws(path1, path2):
@@ -245,10 +295,12 @@ def parse_args():
     parser = argparse.ArgumentParser(description='Perform a PRIMAVERA '
                                                  'retrieval request.')
     parser.add_argument('retrieval_id', help='the id of the retrieval request '
-                                             'to carry out.', type=int)
+        'to carry out.', type=int)
     parser.add_argument('-n', '--no_restore', help="don't restore data from "
         "tape. Assume that it already has been and extract files from the "
         "restoration directory.", action='store_true')
+    parser.add_argument('-s', '--skip_checksums', help="don't check the "
+        "checksums on restored files.", action='store_true')
     parser.add_argument('-l', '--log-level', help='set logging level to one of '
         'debug, info, warn (the default), or error')
     parser.add_argument('--version', action='version',
@@ -290,7 +342,7 @@ def main(args):
         if not args.no_restore:
             get_tape_url(tape_url)
 
-        copy_files_into_drs(retrieval, tape_url)
+        copy_files_into_drs(retrieval, tape_url, args)
 
     # set date_complete in the db
     retrieval.date_complete = timezone.now()
