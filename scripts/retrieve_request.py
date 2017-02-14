@@ -114,7 +114,7 @@ def copy_files_into_drs(retrieval, tape_url, args):
     url_dir = _make_tape_url_dir(tape_url, skip_creation=True)
 
     data_files = DataFile.objects.filter(
-        data_request=retrieval.data_request.all(), tape_url=tape_url).all()
+        data_request__in=retrieval.data_request.all(), tape_url=tape_url).all()
 
     for data_file in data_files:
         submission_dir = data_file.data_submission.incoming_directory
@@ -145,9 +145,13 @@ def copy_files_into_drs(retrieval, tape_url, args):
                 # if src and destination are on the same GWS then create a hard
                 # link, which will be faster and use less disk space
                 os.link(extracted_file_path, dest_file_path)
+                logger.debug('Created link to:\n{}\nat:\n{}'.format(
+                    extracted_file_path, dest_file_path))
             else:
                 # if on different GWS then will have to copy
                 shutil.copyfile(extracted_file_path, dest_file_path)
+                logger.debug('Copied:\n{}\nto:\n{}'.format(
+                    extracted_file_path, dest_file_path))
 
         if not args.skip_checksums:
             try:
@@ -161,6 +165,8 @@ def copy_files_into_drs(retrieval, tape_url, args):
         data_file.directory = drs_dir
         data_file.online = True
         data_file.save()
+
+    logger.debug('Finished copying files from tape url {}'.format(tape_url))
 
 
 def make_drs_path(data_file):
@@ -198,6 +204,12 @@ def _check_file_checksum(data_file, file_path):
 
     # there is only likely to be one checksum and so chose the last one
     checksum_obj = data_file.checksum_set.last()
+
+    if not checksum_obj:
+        msg = ('No checksum exists in the database. Skipping check for {}'.
+               format(file_path))
+        logger.warning(msg)
+        return
 
     file_checksum = checksum_methods[checksum_obj.checksum_type](file_path)
 
