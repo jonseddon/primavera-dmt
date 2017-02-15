@@ -8,7 +8,7 @@ django.setup()
 
 from django.test import TestCase
 
-from pdata_app.utils.dbapi import get_or_create
+from pdata_app.utils.dbapi import get_or_create, match_one
 from pdata_app.models import (Project, Institute, ClimateModel, ActivityId,
                               Experiment, VariableRequest, DataRequest,
                               RetrievalRequest, DataFile, DataSubmission)
@@ -72,6 +72,10 @@ class TestIntegrationTests(TestCase):
         self.mock_copyfile = patch.start()
         self.addCleanup(patch.stop)
 
+        patch = mock.patch('scripts.retrieve_request.logger')
+        self.mock_logger = patch.start()
+        self.addCleanup(patch.stop)
+
         # create the necessary DB objects
         proj = get_or_create(Project, short_name="CMIP6", full_name="6th "
             "Coupled Model Intercomparison Project")
@@ -117,7 +121,7 @@ class TestIntegrationTests(TestCase):
             start_time=0.,
             end_time=359.,
             time_units='days since 1950-01-01',
-            calendar=CALENDARS['360_day'],
+            calendar=CALENDARS['360_day'], grid='gn',
             version='v12345678', tape_url='et:1234',
             data_submission=dsub)
         self.ret_req = get_or_create(RetrievalRequest, requester='bob')
@@ -126,10 +130,27 @@ class TestIntegrationTests(TestCase):
 
     def test_simplest(self):
         class ArgparseNamespace(object):
-            retrieval_id = 1
+            retrieval_id = RetrievalRequest.objects.first().id
+            no_restore = False
+            skip_checksums = True
+
+        self.mock_exists.return_value = [
+            False, # _make_tape_url_dir()
+            True, # if not os.path.exists(extracted_file_path):
+            True, # if not os.path.exists(drs_dir):
+            False # if os.path.exists(dest_file_path):
+        ]
 
         ns = ArgparseNamespace()
+        main(ns)
 
-        # main(ns)
+        df = match_one(DataFile, name='file_one.nc')
+        self.assertIsNotNone(df)
 
+        self.mock_link.assert_called_once()
 
+        self.assertTrue(df.online)
+        self.assertEqual(df.directory, u'/group_workspaces/jasmin2/primavera4/'
+                                       'stream1/CMIP6/MOHC/MY-MODEL/'
+                                       'HighResMIP/experiment/r1i1p1f1/'
+                                       'my-table/my-var/gn/v12345678')
