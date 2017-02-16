@@ -1,8 +1,10 @@
 import os
+import re
 import urllib
 
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.decorators import login_required
+from django.db.models import Sum
 from django.shortcuts import render, redirect
 from django.http import HttpResponseRedirect
 from django.core.urlresolvers import reverse
@@ -159,7 +161,29 @@ def create_submission(request):
                    'page_title': 'Create Data Submission'})
 
 
-# TODO fix this - post may not work
+@login_required(login_url='/login/')
+def confirm_retrieval(request):
+    if request.method == 'POST':
+        data_req_ids = []
+        for key in request.POST:
+            components = re.match(r'^request_data_req_(\d+)$', key)
+            if components:
+                data_req_ids.append(int(components.group(1)))
+        data_req_strs = [str(DataRequest.objects.filter(id=req).first())
+                         for req in data_req_ids]
+        request_size = sum([DataRequest.objects.filter(id=req).first().
+                            datafile_set.aggregate(Sum('size'))['size__sum']
+                            for req in data_req_ids])
+        # TODO include link to return to query page
+        return render(request, 'pdata_app/confirm_retrieval_request.html',
+                      {'request': request, 'data_reqs':data_req_strs,
+                       'request_size': request_size,
+                       'page_title': 'Confirm Retrieval Request'})
+    else:
+        # TODO do something intelligent
+        pass
+
+
 @login_required(login_url='/login/')
 def create_retrieval(request):
     if request.method == 'POST':

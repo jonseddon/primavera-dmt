@@ -52,6 +52,21 @@
             </form>
         </p>
 
+        {% if get_received_data %}
+            <form action="{% url 'confirm_retrieval' %}" method="post">
+                {% csrf_token %}
+        {% endif %}
+
+
         {% render_table table %}
+
+
+        {% if get_received_data %}
+                <p>
+                <input type="submit" class="btn btn-default" value="Create Retrieval Request" />
+                </p>
+            </form>
+        {% endif %}
+
 
     {% endblock %}

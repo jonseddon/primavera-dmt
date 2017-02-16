@@ -51,6 +51,12 @@ urlpatterns = [
         pdata_app.views.RetrievalRequestList.as_view(),
         name='retrieval_requests'),
 
+    url(r'^confirm_retrieval/$', pdata_app.views.confirm_retrieval,
+        name='confirm_retrieval'),
+
+    url(r'^create_retrieval/$', pdata_app.views.create_retrieval,
+        name='create_retrieval'),
+
     url(r'^et_indexer/$', et_indexer.views.view_home, name='et_indexer'),
 
     url(r'^et_indexer/datafiles/$', et_indexer.views.DatafileList.as_view(),

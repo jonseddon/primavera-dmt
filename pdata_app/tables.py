@@ -9,6 +9,8 @@ import django_tables2 as tables
 from .models import (DataRequest, DataSubmission, DataFile, ESGFDataset,
                      CEDADataset, DataIssue, VariableRequest, RetrievalRequest)
 
+from vocabs.vocabs import ONLINE_STATUS
+
 DEFAULT_VALUE = '--'
 
 
@@ -196,7 +198,8 @@ class DataReceivedTable(DataRequestTable):
                    'request_start_time', 'request_end_time')
         sequence = ('project', 'institute', 'climate_model', 'experiment',
                     'mip_table', 'rip_code', 'cmor_name', 'start_time',
-                    'end_time')
+                    'end_time', 'online_status', 'num_files', 'num_issues',
+                    'tape_urls', 'file_versions', 'retrieval_request')
 
     start_time = tables.Column(empty_values=(), orderable=False)
     end_time = tables.Column(empty_values=(), orderable=False)
@@ -208,6 +211,9 @@ class DataReceivedTable(DataRequestTable):
     tape_urls = tables.Column(empty_values=(), verbose_name='Tape URLs',
                               orderable=False)
     file_versions = tables.Column(empty_values=(), orderable=False)
+
+    retrieval_request = tables.Column(empty_values=(), orderable=False,
+                                      verbose_name='Request Retrieval?')
 
     def render_start_time(self, record):
         return record.start_time()
@@ -246,6 +252,16 @@ class DataReceivedTable(DataRequestTable):
     def render_file_versions(self, record):
         file_versions = record.get_file_versions()
         return _to_comma_sep(file_versions)
+
+    def render_retrieval_request(self, record):
+        if record.online_status() != ONLINE_STATUS.online:
+            return format_html(
+                '<div class="checkbox" style="text-align:center;'
+                'vertical-align:middle"><label><input type="checkbox" '
+                'name="request_data_req_{}"></label></div>'.format(record.id)
+            )
+        else:
+            return format_html('&nbsp;')
 
 
 class ESGFDatasetTable(tables.Table):
