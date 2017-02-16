@@ -336,7 +336,7 @@ def main(args):
         sys.exit(1)
 
     if retrieval.date_complete:
-        logger.error('Retrieval {} was already completed, at {}. '.
+        logger.error('Retrieval {} was already completed, at {}.'.
                      format(retrieval.id,
                             retrieval.date_complete.strftime('%Y-%m-%d %H:%M')))
         sys.exit(1)
