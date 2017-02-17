@@ -628,8 +628,6 @@ class RetrievalRequest(models.Model):
     requester = models.CharField(max_length=60, verbose_name='Request Creator',
                                  null=False, blank=False)
 
-    lotus_job = models.CharField(max_length=20, verbose_name='LOTUS Job ID')
-
     def __unicode__(self):
         return '{}'.format(self.id)
 
