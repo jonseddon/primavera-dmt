@@ -55,6 +55,7 @@
         {% if get_received_data %}
             <form action="{% url 'confirm_retrieval' %}" method="post">
                 {% csrf_token %}
+                <input type="hidden" name="variables_received_url" value="{{ request.get_full_path }}">
         {% endif %}
 
 
@@ -63,7 +64,11 @@
 
         {% if get_received_data %}
                 <p>
+                {% if user.is_authenticated %}
                 <input type="submit" class="btn btn-default" value="Create Retrieval Request" />
+                {% else %}
+                <a class="btn btn-default" href="{% url 'login' %}?next={% url 'received_data' %}">Login to create Retrieval Requests</a>
+                {% endif %}
                 </p>
             </form>
         {% endif %}

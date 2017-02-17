@@ -339,6 +339,7 @@ class RetrievalRequestTable(tables.Table):
     class Meta:
         model = RetrievalRequest
         attrs = {'class': 'paleblue'}
+        order_by = '-date_created'
 
     data_reqs = tables.Column(empty_values=(), orderable=False,
                               verbose_name='Data Requests')

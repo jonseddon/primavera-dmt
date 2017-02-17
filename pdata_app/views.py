@@ -11,7 +11,7 @@ from django.core.urlresolvers import reverse
 
 from .models import (DataFile, DataSubmission, ESGFDataset, CEDADataset,
                      DataRequest, DataIssue, VariableRequest, RetrievalRequest)
-from .forms import CreateSubmissionForm, CreateRetrievalForm
+from .forms import CreateSubmissionForm
 from .tables import (DataRequestTable, DataFileTable, DataSubmissionTable,
                      ESGFDatasetTable, CEDADatasetTable, DataIssueTable,
                      VariableRequestQueryTable, DataReceivedTable,
@@ -165,40 +165,48 @@ def create_submission(request):
 def confirm_retrieval(request):
     if request.method == 'POST':
         data_req_ids = []
+        # loop through the items in the POST from the form and identify any
+        # DataRequest object ids that have been requested
         for key in request.POST:
             components = re.match(r'^request_data_req_(\d+)$', key)
             if components:
                 data_req_ids.append(int(components.group(1)))
+        # get a string representation of each id
+        # TODO what if id doesn't exist?
         data_req_strs = [str(DataRequest.objects.filter(id=req).first())
                          for req in data_req_ids]
+        # get the total size of the retrieval request
         request_size = sum([DataRequest.objects.filter(id=req).first().
                             datafile_set.aggregate(Sum('size'))['size__sum']
                             for req in data_req_ids])
-        # TODO include link to return to query page
+        # generate the confirmation page
         return render(request, 'pdata_app/confirm_retrieval_request.html',
                       {'request': request, 'data_reqs':data_req_strs,
-                       'request_size': request_size,
-                       'page_title': 'Confirm Retrieval Request'})
+                       'page_title': 'Confirm Retrieval Request',
+                       'return_url': request.POST['variables_received_url'],
+                       'data_request_ids': ','.join(map(str, data_req_ids)),
+                       'request_size': request_size})
     else:
         # TODO do something intelligent
-        pass
+        return render(request, 'pdata_app/retrieval_request_error.html',
+                      {'request': request,
+                       'page_title': 'Retrieval Request'})
 
 
 @login_required(login_url='/login/')
 def create_retrieval(request):
     if request.method == 'POST':
-        form = CreateRetrievalForm(request.POST)
-        if form.is_valid():
-            retrieval = form.save(commit=False)
-            retrieval.user = request.user
-            retrieval.save()
-            # add the data requests to the retrieval request now
-            return _custom_redirect('retrieval_requests')
-        else:
-            return render(request, 'pdata_app/retrieval_request_error.html',
-                      {'request': request,
-                       'page_title': 'Retrieval Request'})
-
+        # create the request
+        retrieval = RetrievalRequest.objects.create(requester=str(request.user))
+        retrieval.save()
+        # add the data requests asked for
+        data_req_ids = [int(req_id) for req_id in
+                        request.POST['data_request_ids'].split(',')]
+        data_reqs = DataRequest.objects.filter(id__in=data_req_ids)
+        retrieval.data_request.add(*data_reqs)
+        retrieval.save()
+        # redirect to the retrieval just created
+        return _custom_redirect('retrieval_requests', id=retrieval.id)
     else:
         return render(request, 'pdata_app/retrieval_request_error.html',
                       {'request': request,

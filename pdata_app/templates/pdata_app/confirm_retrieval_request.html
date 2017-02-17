@@ -2,20 +2,19 @@
 
     {% block contents %}
         <p>
-        All retrievals are dependent on there being sufficient group workspace
+        <ul>
+        <li>All retrievals are dependent on there being sufficient group workspace
         disk space available.
-        </p>
-
-        <p>
-        By requesting the retrieval of this data you agree to delete this data/request
-        its deletion as soon as you have completed your analysis of of it to free
-        disk space for other users.
-        </p>
-
-        <p>
-        Data may be deleted from the group workspace at any time to free up space
+        <li>By requesting the retrieval of this data you agree
+        to delete this data/request its deletion as soon as you have completed
+        your analysis of of it to free disk space for other users.
+        <li>Data may be deleted from the group workspace at any time to free up space
         for other users.
+        <li>You will be emailed when the data has been restored for you.
+        </ul>
         </p>
+
+        <hr>
 
         <p>
         The data requests requested for restoration from tape are:
@@ -36,12 +35,15 @@
         from tape to group workspace?
         </p>
 
-        <!--<p>
-            <form method="POST">
+        <p>
+            <form method="POST" action="{% url 'create_retrieval' %}" method="post">
                 {% csrf_token %}
-                {{ form.as_p }}
 
-                <button type="submit" class="save btn btn-default">Create Submission</button>
+                <input type="hidden" name="data_request_ids" value="{{ data_request_ids }}">
+
+                <button type="submit" class="save btn btn-default">Confirm Retrieval Request</button>
+
+                <a class="btn btn-default" href="{{ return_url }}" autofocus>Cancel</a>
             </form>
-        </p>-->
+        </p>
     {% endblock %}
