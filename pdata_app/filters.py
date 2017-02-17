@@ -226,3 +226,10 @@ class RetrievalRequestFilter(django_filters.FilterSet):
                                           lookup_expr='icontains')
 
     date_time = django_filters.DateFromToRangeFilter(name='date_created')
+
+    incomplete = django_filters.MethodFilter()
+
+    def filter_incomplete(self, queryset, value):
+        if value:
+            return queryset.filter(date_complete__isnull=True)
+        return queryset
