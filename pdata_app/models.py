@@ -493,7 +493,7 @@ class DataFile(models.Model):
     directory = models.CharField(max_length=500,
                                  verbose_name="Current directory",
                                  null=True, blank=True)
-    size = models.BigIntegerField(null=False, verbose_name="File size (bytes)")
+    size = models.BigIntegerField(null=False, verbose_name="File size")
 
     # This is the file's version
     version = models.CharField(max_length=10, verbose_name='File Version',
