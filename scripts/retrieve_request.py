@@ -117,10 +117,9 @@ def copy_files_into_drs(retrieval, tape_url, args):
         data_request__in=retrieval.data_request.all(), tape_url=tape_url).all()
 
     for data_file in data_files:
-        submission_dir = data_file.data_submission.incoming_directory
-        file_sub_dir = data_file.incoming_directory
-        file_rel_path = os.path.relpath(file_sub_dir, submission_dir)
-        extracted_file_path = os.path.join(url_dir, file_rel_path,
+        file_submission_dir = data_file.incoming_directory
+        extracted_file_path = os.path.join(url_dir,
+                                           file_submission_dir.lstrip('/'),
                                            data_file.name)
         if not os.path.exists(extracted_file_path):
             msg = ('Unable to find file {} in the extracted data at {}. The '

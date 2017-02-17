@@ -168,7 +168,13 @@ class TestIntegrationTests(TestCase):
         df = match_one(DataFile, name='file_one.nc')
         self.assertIsNotNone(df)
 
-        self.mock_link.assert_called_once()
+        self.mock_link.assert_called_once_with(
+            '/group_workspaces/jasmin2/primavera4/.et_retrievals/et_1234/gws/'
+            'MOHC/MY-MODEL/incoming/v12345678/file_one.nc',
+            u'/group_workspaces/jasmin2/primavera4/stream1/CMIP6/MOHC/MY-MODEL/'
+            u'HighResMIP/experiment/r1i1p1f1/my-table/my-var/gn/v12345678/'
+            u'file_one.nc'
+        )
 
         self.assertTrue(df.online)
         self.assertEqual(df.directory, u'/group_workspaces/jasmin2/primavera4/'
