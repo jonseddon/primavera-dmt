@@ -1,6 +1,6 @@
 from urllib import urlencode
 
-from django.db.models import Count
+from django.db.models import Count, Sum
 from django.template.defaultfilters import filesizeformat
 from django.utils.html import format_html
 from django.urls import reverse
@@ -199,7 +199,8 @@ class DataReceivedTable(DataRequestTable):
         sequence = ('project', 'institute', 'climate_model', 'experiment',
                     'mip_table', 'rip_code', 'cmor_name', 'start_time',
                     'end_time', 'online_status', 'num_files', 'num_issues',
-                    'tape_urls', 'file_versions', 'retrieval_request')
+                    'tape_urls', 'file_versions', 'total_data_size',
+                    'retrieval_request')
 
     start_time = tables.Column(empty_values=(), orderable=False)
     end_time = tables.Column(empty_values=(), orderable=False)
@@ -211,9 +212,10 @@ class DataReceivedTable(DataRequestTable):
     tape_urls = tables.Column(empty_values=(), verbose_name='Tape URLs',
                               orderable=False)
     file_versions = tables.Column(empty_values=(), orderable=False)
-
     retrieval_request = tables.Column(empty_values=(), orderable=False,
                                       verbose_name='Request Retrieval?')
+    total_data_size = tables.Column(empty_values=(), orderable=False,
+                                      verbose_name='Data Size')
 
     def render_start_time(self, record):
         return record.start_time()
@@ -262,6 +264,10 @@ class DataReceivedTable(DataRequestTable):
             )
         else:
             return format_html('&nbsp;')
+
+    def render_total_data_size(self, record):
+        return filesizeformat(
+            record.datafile_set.aggregate(Sum('size'))['size__sum'])
 
 
 class ESGFDatasetTable(tables.Table):
