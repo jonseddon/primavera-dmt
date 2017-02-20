@@ -8,7 +8,8 @@ expected climate models, experiments, etc.
 import django
 django.setup()
 
-from pdata_app.models import Project, ClimateModel, Experiment, Institute
+from pdata_app.models import (Project, ClimateModel, Experiment, Institute,
+                              ActivityId)
 from pdata_app.utils.dbapi import get_or_create
 
 
@@ -19,6 +20,11 @@ def main():
     # Projects
     proj = get_or_create(Project, short_name='CMIP6',
         full_name='Coupled Model Intercomparison Project Phase 6')
+
+    # Activty ID
+    act_id = get_or_create(ActivityId, short_name='HighResMIP',
+                           full_name='High Resolution Model Intercomparison '
+                                     'Project')
 
     # Experiments General
     expt = get_or_create(Experiment, short_name='historical',

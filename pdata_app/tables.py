@@ -1,11 +1,15 @@
 from urllib import urlencode
 
+from django.db.models import Count, Sum
+from django.template.defaultfilters import filesizeformat
 from django.utils.html import format_html
 from django.urls import reverse
 import django_tables2 as tables
 
 from .models import (DataRequest, DataSubmission, DataFile, ESGFDataset,
-                     CEDADataset, DataIssue, VariableRequest)
+                     CEDADataset, DataIssue, VariableRequest, RetrievalRequest)
+
+from vocabs.vocabs import ONLINE_STATUS
 
 DEFAULT_VALUE = '--'
 
@@ -14,27 +18,25 @@ class DataFileTable(tables.Table):
     class Meta:
         model = DataFile
         attrs = {'class': 'paleblue'}
-        exclude = ('id', 'incoming_directory', 'size', 'project', 'start_time',
-                   'end_time', 'variable_request', 'frequency', 'rip_code',
+        exclude = ('id', 'incoming_directory', 'project', 'start_time',
+                   'end_time', 'variable_request', 'frequency',
                    'time_units', 'calendar', 'data_submission', 'esgf_dataset',
                    'ceda_dataset', 'ceda_download_url', 'ceda_opendap_url',
-                   'esgf_download_url', 'esgf_opendap_url')
+                   'esgf_download_url', 'esgf_opendap_url', 'data_request')
+        sequence = ['name', 'directory', 'version', 'online', 'num_dataissues',
+                    'tape_url', 'institute', 'climate_model', 'experiment',
+                    'mip_table', 'rip_code','cmor_name', 'grid', 'size',
+                    'checksum']
 
     cmor_name = tables.Column(empty_values=(), verbose_name='CMOR Name',
-                              orderable=False)
+                              accessor='variable_request.cmor_name')
     mip_table = tables.Column(empty_values=(), verbose_name='MIP Table',
-                              orderable=False)
+                              accessor='variable_request.table_name')
     checksum = tables.Column(empty_values=(), verbose_name='Checksum',
                              orderable=False)
     num_dataissues = tables.Column(empty_values=(),
                                    verbose_name='# Data Issues',
                                    orderable=False)
-
-    def render_cmor_name(self, record):
-        return record.variable_request.cmor_name
-
-    def render_mip_table(self, record):
-        return record.variable_request.table_name
 
     def render_checksum(self, record):
         checksum = record.checksum_set.first()
@@ -56,15 +58,18 @@ class DataFileTable(tables.Table):
             num_dataissues
         ))
 
+    def render_size(self, value):
+        return filesizeformat(value)
+
 
 class DataSubmissionTable(tables.Table):
     class Meta:
         model = DataSubmission
         attrs = {'class': 'paleblue'}
-        exclude = ('id', 'incoming_directory')
-        sequence = ('directory', 'status', 'date_submitted', 'user',
-                    'online_status', 'num_files', 'num_issues',
-                    'earliest_date', 'latest_date', 'tape_urls',
+        exclude = ('id',)
+        sequence = ('incoming_directory', 'directory', 'status',
+                    'date_submitted', 'user', 'online_status', 'num_files',
+                    'num_issues', 'earliest_date', 'latest_date', 'tape_urls',
                     'file_versions')
         order_by = '-date_submitted'
 
@@ -92,7 +97,7 @@ class DataSubmissionTable(tables.Table):
         if record.status in ['PENDING_PROCESSING', 'ARRIVED']:
             return DEFAULT_VALUE
         else:
-            num_datafiles = len(record.get_data_files())
+            num_datafiles = record.datafile_set.count()
             url_query = urlencode({'data_submission': record.id,
                                    'data_submission_string': '{}'.format(
                                        record.directory)})
@@ -106,7 +111,8 @@ class DataSubmissionTable(tables.Table):
         if record.status in ['PENDING_PROCESSING', 'ARRIVED']:
             return DEFAULT_VALUE
         else:
-            num_dataissues = len(record.get_data_issues())
+            num_dataissues = record.datafile_set.aggregate(
+                Count('dataissue', distinct=True))['dataissue__count']
             url_query = urlencode({'data_submission': record.id,
                                    'data_submission_string': '{}'.format(
                                        record.directory)})
@@ -157,25 +163,99 @@ class DataRequestTable(tables.Table):
         attrs = {'class': 'paleblue'}
         exclude = ('id', 'time_units', 'calendar', 'variable_request')
         sequence = ('project', 'institute', 'climate_model', 'experiment',
-                    'rip_code', 'cmor_name', 'mip_table', 'start_time',
-                    'end_time')
+                    'mip_table', 'rip_code', 'cmor_name', 'request_start_time',
+                    'request_end_time')
 
     cmor_name = tables.Column(empty_values=(), verbose_name='CMOR Name',
-                              orderable=False)
+                              accessor='variable_request.cmor_name')
     mip_table = tables.Column(empty_values=(), verbose_name='MIP Table',
-                              orderable=False)
+                              accessor='variable_request.table_name')
 
-    def render_start_time(self, record):
+    def render_request_start_time(self, record):
         return record.start_date_string()
 
-    def render_end_time(self, record):
+    def render_request_end_time(self, record):
         return record.end_date_string()
 
-    def render_cmor_name(self, record):
-        return record.variable_request.cmor_name
 
-    def render_mip_table(self, record):
-        return record.variable_request.table_name
+class DataReceivedTable(DataRequestTable):
+    class Meta:
+        model = DataRequest
+        attrs = {'class': 'paleblue'}
+        exclude = ('id', 'time_units', 'calendar', 'variable_request',
+                   'request_start_time', 'request_end_time')
+        sequence = ('project', 'institute', 'climate_model', 'experiment',
+                    'mip_table', 'rip_code', 'cmor_name', 'start_time',
+                    'end_time', 'online_status', 'num_files', 'num_issues',
+                    'tape_urls', 'file_versions', 'total_data_size',
+                    'retrieval_request')
+
+    start_time = tables.Column(empty_values=(), orderable=False)
+    end_time = tables.Column(empty_values=(), orderable=False)
+    online_status = tables.Column(empty_values=(), orderable=False)
+    num_files = tables.Column(empty_values=(), verbose_name='# Data Files',
+                              orderable=False)
+    num_issues = tables.Column(empty_values=(), verbose_name='# Data Issues',
+                               orderable=False)
+    tape_urls = tables.Column(empty_values=(), verbose_name='Tape URLs',
+                              orderable=False)
+    file_versions = tables.Column(empty_values=(), orderable=False)
+    retrieval_request = tables.Column(empty_values=(), orderable=False,
+                                      verbose_name='Request Retrieval?')
+    total_data_size = tables.Column(empty_values=(), orderable=False,
+                                      verbose_name='Data Size')
+
+    def render_start_time(self, record):
+        return record.start_time()
+
+    def render_end_time(self, record):
+        return record.end_time()
+
+    def render_online_status(self, record):
+        return record.online_status()
+
+    def render_num_files(self, record):
+        num_datafiles = record.datafile_set.count()
+        url_query = urlencode({'data_request': record.id,
+                               'data_request_string': '{}'.format(record)})
+        return format_html('<a href="{}?{}">{}</a>'.format(
+            reverse('data_files'),
+            url_query,
+            num_datafiles
+        ))
+
+    def render_num_issues(self, record):
+        num_dataissues = record.datafile_set.aggregate(
+            Count('dataissue', distinct=True))['dataissue__count']
+        url_query = urlencode({'data_request': record.id,
+                               'data_request_string': '{}'.format(record)})
+        return format_html('<a href="{}?{}">{}</a>'.format(
+            reverse('data_issues'),
+            url_query,
+            num_dataissues
+        ))
+
+    def render_tape_urls(self, record):
+        tape_urls = record.get_tape_urls()
+        return _to_comma_sep(tape_urls)
+
+    def render_file_versions(self, record):
+        file_versions = record.get_file_versions()
+        return _to_comma_sep(file_versions)
+
+    def render_retrieval_request(self, record):
+        if record.online_status() != ONLINE_STATUS.online:
+            return format_html(
+                '<div class="checkbox" style="text-align:center;'
+                'vertical-align:middle"><label><input type="checkbox" '
+                'name="request_data_req_{}"></label></div>'.format(record.id)
+            )
+        else:
+            return format_html('&nbsp;')
+
+    def render_total_data_size(self, record):
+        return filesizeformat(
+            record.datafile_set.aggregate(Sum('size'))['size__sum'])
 
 
 class ESGFDatasetTable(tables.Table):
@@ -247,6 +327,29 @@ class VariableRequestQueryTable(tables.Table):
                     'cell_measures', 'dimensions', 'positive', 'uid',
                     'variable_type', 'modeling_realm')
         order_by = 'var_name'
+
+
+class RetrievalRequestTable(tables.Table):
+    class Meta:
+        model = RetrievalRequest
+        attrs = {'class': 'paleblue'}
+        order_by = '-date_created'
+
+    data_reqs = tables.Column(empty_values=(), orderable=False,
+                              verbose_name='Data Requests')
+
+    def render_date_created(self, value):
+        return value.strftime('%Y-%m-%d %H:%M')
+
+    def render_date_complete(self, value):
+        if value:
+            return value.strftime('%Y-%m-%d %H:%M')
+        else:
+            return '--'
+
+    def render_data_reqs(self, record):
+        reqs_str = ', \n'.join([str(dr) for dr in record.data_request.all()])
+        return reqs_str
 
 
 def _to_comma_sep(list_values):

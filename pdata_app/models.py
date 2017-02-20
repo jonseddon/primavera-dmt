@@ -14,7 +14,7 @@ from vocabs import (STATUS_VALUES, FREQUENCY_VALUES, ONLINE_STATUS,
 model_names = ['Project', 'Institute', 'ClimateModel', 'Experiment',
                'DataSubmission', 'DataFile', 'ESGFDataset', 'CEDADataset',
                'DataRequest', 'DataIssue', 'Checksum', 'Settings',
-               'VariableRequest']
+               'VariableRequest', 'RetrievalRequest']
 __all__ = model_names
 
 
@@ -78,6 +78,9 @@ class ClimateModel(models.Model):
     def __unicode__(self):
         return self.short_name
 
+    class Meta:
+        verbose_name = "Climate Model"
+
 
 class Experiment(models.Model):
     """
@@ -93,6 +96,24 @@ class Experiment(models.Model):
 
     def __unicode__(self):
         return self.short_name
+
+
+class ActivityId(models.Model):
+    """
+    An activity id
+    """
+    # RFK Relationships
+    # DataFile
+
+    short_name = models.CharField(max_length=100, null=False,
+        blank=False, unique=True)
+    full_name = models.CharField(max_length=300, null=False, blank=False)
+
+    def __unicode__(self):
+        return self.short_name
+
+    class Meta:
+        verbose_name = 'Activity ID'
 
 
 class VariableRequest(models.Model):
@@ -134,6 +155,9 @@ class VariableRequest(models.Model):
 
     def __unicode__(self):
         return 'VariableRequest: {} ({})'.format(self.cmor_name, self.table_name)
+
+    class Meta:
+        verbose_name = "Variable Request"
 
 
 class DataFileAggregationBase(models.Model):
@@ -215,7 +239,7 @@ class DataFileAggregationBase(models.Model):
 
         earliest_obj = cf_units.num2date(earliest_time, std_units, calendar)
 
-        return earliest_obj
+        return earliest_obj.strftime('%Y-%m-%d')
 
     def end_time(self):
         std_units = Settings.get_solo().standard_time_units
@@ -235,7 +259,7 @@ class DataFileAggregationBase(models.Model):
 
         latest_obj = cf_units.num2date(latest_time, std_units, calendar)
 
-        return latest_obj
+        return latest_obj.strftime('%Y-%m-%d')
 
     def online_status(self):
         """
@@ -286,7 +310,7 @@ class DataSubmission(DataFileAggregationBase):
     # Current directory
     directory = models.CharField(max_length=500,
                                  verbose_name='Current Directory',
-                                 blank=False, null=False)
+                                 blank=True, null=True)
     user = models.CharField(max_length=100, blank=False, null=False,
                             verbose_name='User')
     date_submitted = models.DateTimeField(auto_now_add=True,
@@ -298,6 +322,7 @@ class DataSubmission(DataFileAggregationBase):
 
     class Meta:
         unique_together = ('incoming_directory',)
+        verbose_name = "Data Submission"
 
 
 class CEDADataset(DataFileAggregationBase):
@@ -327,6 +352,9 @@ class CEDADataset(DataFileAggregationBase):
 
     def __unicode__(self):
         return "CEDA Dataset: %s" % self.catalogue_url
+
+    class Meta:
+        verbose_name = "CEDA Dataset"
 
 
 class ESGFDataset(DataFileAggregationBase):
@@ -397,7 +425,7 @@ class ESGFDataset(DataFileAggregationBase):
         return self.get_full_id()
 
 
-class DataRequest(models.Model):
+class DataRequest(DataFileAggregationBase):
     """
     A Data Request for a given set of inputs
     """
@@ -416,12 +444,12 @@ class DataRequest(models.Model):
     variable_request = models.ForeignKey(VariableRequest, null=False,
                                          on_delete=PROTECT,
                                          verbose_name='Variable')
-    rip_code = models.CharField(max_length=20, verbose_name="Ensemble Member",
+    rip_code = models.CharField(max_length=20, verbose_name="Variant Label",
                                 null=True, blank=True)
-    start_time = models.FloatField(verbose_name="Start time", null=False,
-                                   blank=False)
-    end_time = models.FloatField(verbose_name="End time", null=False,
-                                 blank=False)
+    request_start_time = models.FloatField(verbose_name="Start time",
+                                           null=False, blank=False)
+    request_end_time = models.FloatField(verbose_name="End time", null=False,
+                                         blank=False)
     time_units = models.CharField(verbose_name='Time units', max_length=50,
                                   null=False, blank=False)
     calendar = models.CharField(verbose_name='Calendar', max_length=20,
@@ -430,13 +458,21 @@ class DataRequest(models.Model):
 
     def start_date_string(self):
         """Return a string containing the start date"""
-        dto = cf_units.num2date(self.start_time, self.time_units, self.calendar)
+        dto = cf_units.num2date(self.request_start_time, self.time_units,
+                                self.calendar)
         return dto.strftime('%Y-%m-%d')
 
     def end_date_string(self):
         """Return a string containing the end date"""
-        dto = cf_units.num2date(self.end_time, self.time_units, self.calendar)
+        dto = cf_units.num2date(self.request_end_time, self.time_units,
+                                self.calendar)
         return dto.strftime('%Y-%m-%d')
+
+    def __unicode__(self):
+        return '{}/{} {}/{}/{}'.format(self.institute, self.climate_model,
+                                       self.experiment,
+                                       self.variable_request.table_name,
+                                       self.variable_request.cmor_name)
 
 
 class DataFile(models.Model):
@@ -454,8 +490,10 @@ class DataFile(models.Model):
     incoming_directory = models.CharField(max_length=500, verbose_name="Incoming directory", null=False, blank=False)
 
     # This is where the datafile is now
-    directory = models.CharField(max_length=500, verbose_name="Current directory", null=False, blank=False)
-    size = models.BigIntegerField(null=False, verbose_name="File size (bytes)")
+    directory = models.CharField(max_length=500,
+                                 verbose_name="Current directory",
+                                 null=True, blank=True)
+    size = models.BigIntegerField(null=False, verbose_name="File size")
 
     # This is the file's version
     version = models.CharField(max_length=10, verbose_name='File Version',
@@ -468,13 +506,16 @@ class DataFile(models.Model):
     climate_model = models.ForeignKey(ClimateModel, null=False,
                                       on_delete=PROTECT,
                                       verbose_name='Climate Model')
+    activity_id = models.ForeignKey(ActivityId, null=False,
+                                      on_delete=PROTECT,
+                                      verbose_name='Activity ID')
     experiment = models.ForeignKey(Experiment, null=False, on_delete=PROTECT,
                                    verbose_name='Experiment')
     variable_request = models.ForeignKey(VariableRequest, null=False, on_delete=PROTECT)
     data_request = models.ForeignKey(DataRequest, null=False, on_delete=PROTECT)
     frequency = models.CharField(max_length=20, choices=FREQUENCY_VALUES.items(),
         verbose_name="Time frequency", null=False, blank=False)
-    rip_code = models.CharField(max_length=20, verbose_name="RIP code",
+    rip_code = models.CharField(max_length=20, verbose_name="Variant Label",
                                 null=False, blank=False)
     grid = models.CharField(max_length=20, verbose_name='Grid Label',
                             null=True, blank=True)
@@ -550,6 +591,9 @@ class DataIssue(models.Model):
             self.issue, self.reporter
         )
 
+    class Meta:
+        verbose_name = "Data Issue"
+
 
 class Checksum(models.Model):
     """
@@ -564,6 +608,28 @@ class Checksum(models.Model):
     def __unicode__(self):
         return "%s: %s (%s)" % (self.checksum_type, self.checksum_value,
                                 self.data_file.name)
+
+
+class RetrievalRequest(models.Model):
+    """
+    A collection of DataRequests to retrieve from Elastic Tape or MASS
+    """
+    class Meta:
+        verbose_name = "Retrieval Request"
+
+    data_request = models.ManyToManyField(DataRequest)
+
+    date_created = models.DateTimeField(auto_now_add=True,
+                                        verbose_name='Request Created At',
+                                        null=False, blank=False)
+    date_complete = models.DateTimeField(verbose_name='Request Completed At',
+                                         null=True, blank=True)
+
+    requester = models.CharField(max_length=60, verbose_name='Request Creator',
+                                 null=False, blank=False)
+
+    def __unicode__(self):
+        return '{}'.format(self.id)
 
 
 def standardise_time_unit(time_float, time_unit, standard_unit, calendar):

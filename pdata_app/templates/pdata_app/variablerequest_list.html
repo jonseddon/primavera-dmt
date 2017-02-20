@@ -11,7 +11,7 @@
         <p>These are the variable requests identified in version 01.beta.37 of the CMIP6 data request with some modifications for known issues ...</p>
 
         <p>
-            <form class="form-inline" action="{% url 'var_req_query' %}" method="get">
+            <form class="form-inline" action="{% url 'variable_requests' %}" method="get">
                 <div class="form-group">
                     <label class="sr-only" for="cmor_name">CMOR Name</label>
                     <input type="text" class="form-control" name="cmor_name" id="cmor_name" placeholder="CMOR Name" {% if request.GET.cmor_name %} value="{{ request.GET.cmor_name }}" {% endif %}>
@@ -73,7 +73,7 @@
                         <input id="nameless" type="checkbox" name="nameless" value="1" {% if request.GET.nameless %}checked{% endif %} onchange="updateCmorName()"> Blank CMOR name only<sup><a href="#fn1">1</a></sup>
                     </label>
                 </div>
-                <a class="btn btn-default" href="{% url 'var_req_query' %}">Clear</a>
+                <a class="btn btn-default" href="{% url 'variable_requests' %}">Clear</a>
                 <input type="submit" class="btn btn-default" value="Filter" />
             </form>
 

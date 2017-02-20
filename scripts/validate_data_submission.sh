@@ -26,6 +26,9 @@
 #   Any additional options or arguments are passed through as-is to the specified
 #   processing application. Please see the validate_data_submission.py options.
 
+# add the adler32 checksum to the path
+export PATH=$PATH:/group_workspaces/jasmin2/primavera1/tools/adler32
+
 DMT_DIR=/home/users/jseddon/primavera/primavera-dmt/
 
 . /home/users/jseddon/primavera/venvs/django/bin/activate

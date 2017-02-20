@@ -1,0 +1,49 @@
+{% extends "pdata_app/base.html" %}
+
+    {% block contents %}
+        <p>
+        <ul>
+        <li>All retrievals are dependent on there being sufficient group workspace
+        disk space available.
+        <li>By requesting the retrieval of this data you agree
+        to delete this data/request its deletion as soon as you have completed
+        your analysis of of it to free disk space for other users.
+        <li>Data may be deleted from the group workspace at any time to free up space
+        for other users.
+        <li>You will be emailed when the data has been restored for you.
+        </ul>
+        </p>
+
+        <hr>
+
+        <p>
+        The data requests requested for restoration from tape are:
+        </p>
+
+        <p>
+            <ul>
+                {{ data_reqs|unordered_list }}
+            </ul>
+        </p>
+
+        <p>
+            Total size of retrieval request is {{ request_size|filesizeformat }}.
+        </p>
+
+        <p>
+        Are you sure that you want to request that the following data be restored
+        from tape to group workspace?
+        </p>
+
+        <p>
+            <form method="POST" action="{% url 'create_retrieval' %}" method="post">
+                {% csrf_token %}
+
+                <input type="hidden" name="data_request_ids" value="{{ data_request_ids }}">
+
+                <button type="submit" class="save btn btn-default">Confirm Retrieval Request</button>
+
+                <a class="btn btn-default" href="{{ return_url }}" autofocus>Cancel</a>
+            </form>
+        </p>
+    {% endblock %}
