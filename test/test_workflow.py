@@ -12,6 +12,7 @@ import cf_units
 import pytz
 
 from django.conf import settings
+from django.contrib.auth.models import User
 from django.test import TestCase
 from django.test.utils import get_runner
 from django.utils.timezone import make_aware
@@ -261,9 +262,10 @@ def _make_data_submission():
     test_dsub = datasets.test_data_submission
     test_dsub.create_test_files()
 
+    user = get_or_create(User, username='fred')
     dsub = get_or_create(DataSubmission, status=STATUS_VALUES.ARRIVED,
                incoming_directory=test_dsub.INCOMING_DIR,
-               directory=test_dsub.INCOMING_DIR)
+               directory=test_dsub.INCOMING_DIR, user=user)
 
     for dfile_name in test_dsub.files:
         path = os.path.join(test_dsub.INCOMING_DIR, dfile_name)

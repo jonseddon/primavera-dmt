@@ -9,6 +9,7 @@ import cf_units
 from numpy.testing import assert_almost_equal
 import pytz
 
+from django.contrib.auth.models import User
 from django.test import TestCase
 from django.core.exceptions import ValidationError
 from django.utils.timezone import make_aware
@@ -110,9 +111,10 @@ class TestDataFileAggregationBaseMethods(TestCase):
         # Creates an example data submission. No files should be created on disk,
         # but the database will be altered.
         self.example_files = test_data_submission
+        user = get_or_create(User, username='fred')
         self.dsub = get_or_create(models.DataSubmission, status=STATUS_VALUES.ARRIVED,
             incoming_directory=test_data_submission.INCOMING_DIR,
-            directory=test_data_submission.INCOMING_DIR, user='primavera')
+            directory=test_data_submission.INCOMING_DIR, user=user)
 
         for dfile_name in self.example_files.files:
             metadata = _extract_file_metadata(os.path.join(
@@ -231,9 +233,10 @@ class TestDataFileAggregationBaseMethods(TestCase):
         self.assertEqual(start_time, expected)
 
     def test_times_are_none(self):
+        user = get_or_create(User, username='fred')
         empty_sub = get_or_create(models.DataSubmission,
             status=STATUS_VALUES.ARRIVED, incoming_directory='/some/dir',
-            directory='/some/dir', user='primavera')
+            directory='/some/dir', user=user)
 
         self.assertIsNone(empty_sub.start_time())
         self.assertIsNone(empty_sub.end_time())
@@ -326,9 +329,11 @@ class TestDataSubmission(TestCase):
     Test DataSubmission class
     """
     def setUp(self):
+        user = get_or_create(User, username='fred')
+
         _p = get_or_create(models.DataSubmission,
             status=STATUS_VALUES['EXPECTED'], incoming_directory='/some/dir',
-            directory='/other/dir')
+            directory='/other/dir', user=user)
 
     def test_unicode(self):
         data_sub = models.DataSubmission.objects.first()
@@ -395,9 +400,10 @@ class TestDataFile(TestCase):
     """
     def setUp(self):
         # Make the objects required by a file
+        user = get_or_create(User, username='fred')
         data_submission = get_or_create(models.DataSubmission,
             status=STATUS_VALUES.ARRIVED, incoming_directory='/some/dir',
-            directory='/some/dir')
+            directory='/some/dir', user=user)
         proj = get_or_create(models.Project, short_name='CMIP6',
             full_name='6th Coupled Model Intercomparison Project')
         climate_model = get_or_create(models.ClimateModel,
@@ -455,9 +461,10 @@ class TestChecksum(TestCase):
     """
     def setUp(self):
         # Make a data submission
+        user = get_or_create(User, username='fred')
         data_submission = get_or_create(models.DataSubmission,
             status=STATUS_VALUES.ARRIVED, incoming_directory='/some/dir',
-            directory='/some/dir')
+            directory='/some/dir', user=user)
 
         # Make the objects required by a file
         proj = get_or_create(models.Project, short_name='CMIP6',
@@ -497,32 +504,6 @@ class TestChecksum(TestCase):
     def test_unicode(self):
         chk_sum = models.Checksum.objects.all()[0]
         self.assertEqual(unicode(chk_sum), u'ADLER32: 12345678 (filename.nc)')
-
-
-class TestStandardiseTimeUnit(TestCase):
-    """
-    Test _standardise_time_unit()
-    """
-    def test_same_units(self):
-        time_unit = 'days since 2000-01-01'
-        time_num = 3.14159
-
-        actual = models.standardise_time_unit(time_num, time_unit, time_unit, '360_day')
-        assert_almost_equal(actual, time_num)
-
-    def test_different_units(self):
-        old_unit = 'days since 2000-01-01'
-        new_unit = 'days since 2000-02-01'
-        time_num = 33.14159
-
-        actual = models.standardise_time_unit(time_num, old_unit, new_unit, '360_day')
-        expected = 3.14159
-        assert_almost_equal(actual, expected, decimal=5)
-
-    def test_none(self):
-        time_unit = 'days since 2000-01-01'
-        self.assertIsNone(models.standardise_time_unit(None, time_unit,
-                                                       time_unit, '360_day'))
 
 
 def _extract_file_metadata(file_path):

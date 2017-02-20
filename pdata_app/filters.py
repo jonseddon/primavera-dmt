@@ -92,7 +92,8 @@ class DataSubmissionFilter(django_filters.FilterSet):
     tape_url = django_filters.CharFilter(name='datafile__tape_url',
                                         lookup_expr='icontains')
 
-    user = django_filters.CharFilter(lookup_expr='icontains')
+    user = django_filters.CharFilter(name = 'user__username',
+                                     lookup_expr='icontains')
 
 
 class ESGFDatasetFilter(django_filters.FilterSet):
@@ -222,7 +223,7 @@ class RetrievalRequestFilter(django_filters.FilterSet):
 
     id = django_filters.NumberFilter(name='id')
 
-    requester = django_filters.CharFilter(name='requester',
+    requester = django_filters.CharFilter(name='requester__username',
                                           lookup_expr='icontains')
 
     date_time = django_filters.DateFromToRangeFilter(name='date_created')

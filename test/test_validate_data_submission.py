@@ -1,6 +1,7 @@
 """
 test_validate_data_submission.py - unit tests for validate_data_submission.py
 """
+from django.contrib.auth.models import User
 from django.test import TestCase
 import mock
 
@@ -60,8 +61,9 @@ class TestUpdateDatabaseSubmission(TestCase):
     @mock.patch('scripts.validate_data_submission.create_database_file_object')
     def setUp(self, mock_create_file):
         self.mock_create_file = mock_create_file
+        user = get_or_create(User, username='fred')
         self.ds = get_or_create(DataSubmission, incoming_directory='/dir',
-                                directory='/dir', user='primavera',
+                                directory='/dir', user=user,
                                 status=STATUS_VALUES['PENDING_PROCESSING'])
         self.metadata = [{'file': 'file1'},]
         update_database_submission(self.metadata, self.ds)

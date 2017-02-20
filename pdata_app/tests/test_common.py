@@ -7,6 +7,7 @@ from numpy.testing import assert_almost_equal
 from django.test import TestCase
 
 from pdata_app.utils.common import (make_partial_date_time,
+                                    standardise_time_unit,
                                     calc_last_day_in_month, pdt2num)
 
 class TestMakePartialDateTime(TestCase):
@@ -108,3 +109,29 @@ class TestPdt2Num(TestCase):
         pdt = PartialDateTime(2016)
         self.assertRaises(ValueError, pdt2num, pdt, 'days since 2016-08-20',
             'gregorian')
+
+
+class TestStandardiseTimeUnit(TestCase):
+    """
+    Test _standardise_time_unit()
+    """
+    def test_same_units(self):
+        time_unit = 'days since 2000-01-01'
+        time_num = 3.14159
+
+        actual = standardise_time_unit(time_num, time_unit, time_unit, '360_day')
+        assert_almost_equal(actual, time_num)
+
+    def test_different_units(self):
+        old_unit = 'days since 2000-01-01'
+        new_unit = 'days since 2000-02-01'
+        time_num = 33.14159
+
+        actual = standardise_time_unit(time_num, old_unit, new_unit, '360_day')
+        expected = 3.14159
+        assert_almost_equal(actual, expected, decimal=5)
+
+    def test_none(self):
+        time_unit = 'days since 2000-01-01'
+        self.assertIsNone(standardise_time_unit(None, time_unit,
+                                                time_unit, '360_day'))

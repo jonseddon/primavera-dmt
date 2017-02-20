@@ -2,12 +2,14 @@ import re
 
 import cf_units
 
+from django.contrib.auth.models import User
 from django.db import models
 from django.utils import timezone
 from solo.models import SingletonModel
 from django.db.models import PROTECT, SET_NULL, CASCADE
 from django.core.exceptions import ValidationError
 
+from pdata_app.utils.common import standardise_time_unit
 from vocabs import (STATUS_VALUES, FREQUENCY_VALUES, ONLINE_STATUS,
     CHECKSUM_TYPES, VARIABLE_TYPES, CALENDARS)
 
@@ -311,8 +313,8 @@ class DataSubmission(DataFileAggregationBase):
     directory = models.CharField(max_length=500,
                                  verbose_name='Current Directory',
                                  blank=True, null=True)
-    user = models.CharField(max_length=100, blank=False, null=False,
-                            verbose_name='User')
+    user = models.ForeignKey(User, blank=False, null=False,
+                             verbose_name='User')
     date_submitted = models.DateTimeField(auto_now_add=True,
                                           verbose_name='Date Submitted',
                                           null=False, blank=False)
@@ -625,32 +627,21 @@ class RetrievalRequest(models.Model):
     date_complete = models.DateTimeField(verbose_name='Request Completed At',
                                          null=True, blank=True)
 
-    requester = models.CharField(max_length=60, verbose_name='Request Creator',
+    requester = models.ForeignKey(User, verbose_name='Request Creator',
                                  null=False, blank=False)
 
     def __unicode__(self):
         return '{}'.format(self.id)
 
 
-def standardise_time_unit(time_float, time_unit, standard_unit, calendar):
+class EmailQueue(models.Model):
     """
-    Standardise a floating point time in one time unit by returning the
-    corresponding time in the `standard_unit`. The original value is returned if
-    it is already in the `standard_unit`. None is returned if the `time_float`
-    is None.
-
-    :param float time_float:
-    :param str time_unit:
-    :param str standard_unit:
-    :returns: A floating point representation of the old time in `new_unit`
+    A collection of emails that have been queued to send
     """
-    if time_float is None:
-        return None
+    recipient = models.ForeignKey(User)
 
-    if time_unit == standard_unit:
-        return time_float
+    subject = models.CharField(max_length=400, blank=False)
 
-    date_time = cf_units.num2date(time_float, time_unit, calendar)
-    corrected_time = cf_units.date2num(date_time, standard_unit, calendar)
+    message = models.CharField(max_length=10000, blank=False)
 
-    return corrected_time
+    sent = models.BooleanField(default=False, null=False)
