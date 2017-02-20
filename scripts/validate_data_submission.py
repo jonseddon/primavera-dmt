@@ -22,7 +22,8 @@ import django
 django.setup()
 
 from pdata_app.models import (Project, ClimateModel, Experiment, DataSubmission,
-    DataFile, VariableRequest, Checksum, Settings, Institute)
+    DataFile, VariableRequest, DataRequest, Checksum, Settings, Institute,
+    ActivityId)
 from pdata_app.utils.dbapi import get_or_create, match_one
 from pdata_app.utils.common import (adler32, make_partial_date_time,
                                     list_files, pdt2num)
@@ -254,6 +255,8 @@ def identify_contents_metadata(cube):
     metadata['standard_name'] = cube.standard_name
     metadata['time_units'] = cube.coord('time').units.origin
     metadata['calendar'] = cube.coord('time').units.calendar
+    # CMIP5 doesn't have an activity id and so supply a default
+    metadata['activity_id'] = cube.attributes.get('activity_id', 'HighResMIP')
     try:
         metadata['institute'] = cube.attributes['institution_id']
     except KeyError:
@@ -336,7 +339,8 @@ def create_database_file_object(metadata, data_submission):
         (Project, 'project'),
         (ClimateModel, 'climate_model'),
         (Experiment, 'experiment'),
-        (Institute, 'institute')]
+        (Institute, 'institute'),
+        (ActivityId, 'activity_id')]
 
     metadata_objs = {}
 
@@ -363,6 +367,20 @@ def create_database_file_object(metadata, data_submission):
         logger.error(msg)
         raise SubmissionError(msg)
 
+    # find the data request
+    dreq_match = match_one(DataRequest, project=metadata_objs['project'],
+                           institute=metadata_objs['institute'],
+                           climate_model=metadata_objs['climate_model'],
+                           experiment=metadata_objs['experiment'],
+                           variable_request=variable)
+    if dreq_match:
+        data_request = dreq_match
+    else:
+        msg = ('No data request found for file: {}. Please create a '
+            'data request and resubmit.'.format(metadata['basename']))
+        logger.error(msg)
+        raise SubmissionError(msg)
+
     time_units = Settings.get_solo().standard_time_units
 
     # find the version number from the date in the submission directory path
@@ -385,22 +403,21 @@ def create_database_file_object(metadata, data_submission):
             project=metadata_objs['project'],
             institute=metadata_objs['institute'],
             climate_model=metadata_objs['climate_model'],
+            activity_id=metadata_objs['activity_id'],
             experiment=metadata_objs['experiment'],
-            variable_request=variable, frequency=metadata['frequency'],
-            rip_code=metadata['rip_code'],
+            variable_request=variable, data_request=data_request,
+            frequency=metadata['frequency'], rip_code=metadata['rip_code'],
             start_time=pdt2num(metadata['start_date'], time_units,
-                               metadata['calendar']),
+                                metadata['calendar']),
             end_time=pdt2num(metadata['end_date'], time_units,
-                             metadata['calendar'], start_of_period=False),
+                              metadata['calendar'], start_of_period=False),
             time_units=time_units, calendar=metadata['calendar'],
             version=version_string,
             data_submission=data_submission, online=True,
             grid=metadata['grid'] if 'grid' in metadata else None
         )
-    except django.db.utils.IntegrityError:
-        msg = ('Unable to submit file because it already exists in the '
-            'database with different metadata: {} ({}) .'.format(
-            metadata['basename'], metadata['directory']))
+    except django.db.utils.IntegrityError as exc:
+        msg = ('Unable to submit file: {}'.format(exc.message))
         logger.error(msg)
         raise SubmissionError(msg)
 
@@ -448,12 +465,17 @@ def move_rejected_files(submission_dir):
 
 def send_rejection_email(submission_dir, rejection_dir):
     """
-    Send an email to the submission's creator wanring them of validation
+    Send an email to the submission's creator warning them of validation
     failure.
 
     :param str submission_dir:
     :param str rejection_dir:
     """
+    # TODO consider how much information to include.
+    # Can it include enough to allow users to identify why it failed and what
+    # they need to do to correct the data. If it's due to a missing data
+    # request then the data request list needs to be updated and it's not a
+    # user problem.
     pass
 
 

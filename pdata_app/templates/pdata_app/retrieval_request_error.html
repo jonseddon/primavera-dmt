@@ -1,0 +1,12 @@
+{% extends "pdata_app/base.html" %}
+{% load staticfiles %}
+
+    {% block contents %}
+        <p><strong>Error: </strong>The retrieval request could not be generated.
+        Please <a href="{% url 'received_data' %}">return to the Variables
+        Received page</a> to try creating another retrieval request. If the
+        problem persists then please contact Jon Seddon
+        <a href="mailto:jon.seddon@metoffice.gov.uk">
+        jon.seddon@metoffice.gov.uk</a>.</p>
+
+    {% endblock %}

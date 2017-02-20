@@ -23,3 +23,25 @@ class PagedFilteredTableView(SingleTableView):
         context[self.context_filter_name] = self.filter
         context['page_title'] = self.page_title
         return context
+
+
+class DataRequestsFilteredView(PagedFilteredTableView):
+    message = None
+    get_outstanding_data = False
+    get_received_data = False
+
+    def get_queryset(self, **kwargs):
+        qs = super(PagedFilteredTableView, self).get_queryset()
+        if self.get_outstanding_data:
+            qs = qs.filter(datafile__isnull=True)
+        if self.get_received_data:
+            qs = qs.filter(datafile__isnull=False)
+        self.filter = self.filter_class(self.request.GET, queryset=qs)
+        return self.filter.qs.distinct()
+
+    def get_context_data(self, **kwargs):
+        context = super(DataRequestsFilteredView, self).get_context_data()
+        context['message'] = self.message
+        context['get_outstanding_data'] = self.get_outstanding_data
+        context['get_received_data'] = self.get_received_data
+        return context

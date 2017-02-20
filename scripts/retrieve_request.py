@@ -1,0 +1,404 @@
+#!/usr/bin/env python2.7
+"""
+retrieve_request.py
+
+This script is run by the admin to perform a retrieval request.
+"""
+import argparse
+import datetime
+import logging
+import os
+import re
+import shutil
+import subprocess
+import sys
+
+import django
+django.setup()
+from django.utils import timezone
+
+from pdata_app.models import RetrievalRequest, DataFile
+from pdata_app.utils.common import md5, sha256, adler32
+from pdata_app.utils.dbapi import match_one
+
+
+__version__ = '0.1.0b1'
+
+DEFAULT_LOG_LEVEL = logging.WARNING
+DEFAULT_LOG_FORMAT = '%(levelname)s: %(message)s'
+
+logger = logging.getLogger(__name__)
+
+# The top-level directory to initially restore files to
+BASE_RETRIEVAL_DIR = '/group_workspaces/jasmin2/primavera4/.et_retrievals'
+# The top-level directory to write output data to
+BASE_OUTPUT_DIR = '/group_workspaces/jasmin2/primavera4/stream1'
+# The name of the directory to store et_get.py log files in
+LOG_FILE_DIR = '/group_workspaces/jasmin2/primavera4/.et_logs/'
+# The prefix to use on et_get.py log files
+LOG_PREFIX = 'et_get'
+# The number of processes that et_get.py should use.
+# Between 5 and 10 are recommended
+MAX_ET_GET_PROC = 5
+
+
+class ChecksumError(Exception):
+    def __init__(self, message=''):
+        """
+        An exception to indicate that a data file's checksum does not match
+        the value recorded in the database.
+
+        :param str message: The error message text.
+        """
+        Exception.__init__(self)
+        self.message = message
+
+
+def get_tape_url(tape_url):
+    """
+    Get all of the data from `tape_url`.
+
+    :param str tape_url: The URL of the tape data to fetch.
+    """
+    if tape_url.startswith('et:'):
+        get_et_url(tape_url)
+    else:
+        msg = ('Only ET is currently supported. Tape url {} is not '
+               'understood.'.format(tape_url))
+        logger.error(msg)
+        raise NotImplementedError(msg)
+
+
+def get_et_url(tape_url):
+    """
+    Get all of the data from `tape_url`, which is already known to be an ET url.
+
+    :param str tape_url: The url to fetch
+    """
+    logger.debug('Starting restoring {}'.format(tape_url))
+
+    batch_id = tape_url.split(':')[1]
+
+    retrieval_dir = _make_tape_url_dir(tape_url)
+
+    logger.debug('Restoring to {}'.format(retrieval_dir))
+
+    cmd = 'et_get.py -v -l {} -b {} -r {} -t {}'.format(
+        _make_logfile_name(LOG_FILE_DIR), batch_id, retrieval_dir,
+        MAX_ET_GET_PROC)
+
+    logger.debug('et_get.py command is:\n{}'.format(cmd))
+
+    try:
+        # cmd_out = _run_command(cmd)
+        pass
+    except RuntimeError as exc:
+        logger.error('et_get.py command for batch id {} failed\n{}'.
+                     format(batch_id, exc.message))
+        sys.exit(1)
+
+    logger.debug('Restored {}'.format(tape_url))
+
+
+def copy_files_into_drs(retrieval, tape_url, args):
+    """
+    Copy files from the restored data into the DRS structure.
+
+    :param pdata_app.models.RetrievalRequest retrieval: The retrieval object.
+    :param str tape_url: The portion of the data now available on disk.
+    :param argparse.Namespace args: The parsed command line arguments
+        namespace.
+    """
+    logger.debug('Copying files from tape url {}'.format(tape_url))
+
+    url_dir = _make_tape_url_dir(tape_url, skip_creation=True)
+
+    data_files = DataFile.objects.filter(
+        data_request__in=retrieval.data_request.all(), tape_url=tape_url).all()
+
+    for data_file in data_files:
+        file_submission_dir = data_file.incoming_directory
+        extracted_file_path = os.path.join(url_dir,
+                                           file_submission_dir.lstrip('/'),
+                                           data_file.name)
+        if not os.path.exists(extracted_file_path):
+            msg = ('Unable to find file {} in the extracted data at {}. The '
+                   'expected path was {}'.format(data_file.name, url_dir,
+                                                 extracted_file_path))
+            logger.error(msg)
+            sys.exit(1)
+
+        drs_path = construct_drs_path(data_file)
+        if not args.alternative:
+            drs_dir = os.path.join(BASE_OUTPUT_DIR, drs_path)
+        else:
+            drs_dir = os.path.join(args.alternative, drs_path)
+        dest_file_path = os.path.join(drs_dir, data_file.name)
+
+        # create the path if it doesn't exist
+        if not os.path.exists(drs_dir):
+            os.makedirs(drs_dir)
+
+        if os.path.exists(dest_file_path):
+            msg = 'File already exists on disk: {}'.format(dest_file_path)
+            logger.warning(msg)
+        else:
+            if _check_same_gws(extracted_file_path, drs_dir):
+                # if src and destination are on the same GWS then create a hard
+                # link, which will be faster and use less disk space
+                os.link(extracted_file_path, dest_file_path)
+                logger.debug('Created link to:\n{}\nat:\n{}'.format(
+                    extracted_file_path, dest_file_path))
+            else:
+                # if on different GWS then will have to copy
+                shutil.copyfile(extracted_file_path, dest_file_path)
+                logger.debug('Copied:\n{}\nto:\n{}'.format(
+                    extracted_file_path, dest_file_path))
+
+        if not args.skip_checksums:
+            try:
+                _check_file_checksum(data_file, dest_file_path)
+            except ChecksumError:
+                # warning message has already been displayed and so take no
+                # further action
+                pass
+
+        # create symbolic link from main directory if storing data in an
+        # alternative directory
+        if args.alternative:
+            primary_path = os.path.join(BASE_OUTPUT_DIR, drs_path)
+            if not os.path.exists(primary_path):
+                os.makedirs(primary_path)
+            os.symlink(dest_file_path,
+                       os.path.join(primary_path, data_file.name))
+
+        # set directory and set status as being online
+        data_file.directory = drs_dir
+        data_file.online = True
+        data_file.save()
+
+    logger.debug('Finished copying files from tape url {}'.format(tape_url))
+
+
+def construct_drs_path(data_file):
+    """
+    Make the CMIP6 DRS directory path for the specified file.
+
+    :param pdata_app.models.DataFile data_file:
+    :returns: A string containing the DRS directory structure
+    """
+    return os.path.join(
+        data_file.project.short_name,
+        data_file.institute.short_name,
+        data_file.climate_model.short_name,
+        data_file.activity_id.short_name,
+        data_file.experiment.short_name,
+        data_file.rip_code,
+        data_file.variable_request.table_name,
+        data_file.variable_request.cmor_name,
+        data_file.grid,
+        data_file.version
+    )
+
+
+def _check_file_checksum(data_file, file_path):
+    """
+    Check that a restored file's checksum matches the value in the database.
+
+    :param pdata_app.models.DataFile data_file: the database file object
+    :param str file_path: the path to the restored file
+    :raises ChecksumError: if the checksums don't match.
+    """
+    checksum_methods = {'ADLER32': adler32,
+                        'MD5': md5,
+                        'SHA256': sha256}
+
+    # there is only likely to be one checksum and so chose the last one
+    checksum_obj = data_file.checksum_set.last()
+
+    if not checksum_obj:
+        msg = ('No checksum exists in the database. Skipping check for {}'.
+               format(file_path))
+        logger.warning(msg)
+        return
+
+    file_checksum = checksum_methods[checksum_obj.checksum_type](file_path)
+
+    if file_checksum != checksum_obj.checksum_value:
+        msg = ('Checksum for restored file does not match its value in the '
+               'database.\n {}: {}:{}\nDatabase: {}:{}'.format(file_path,
+               checksum_obj.checksum_type, file_checksum,
+               checksum_obj.checksum_type, checksum_obj.checksum_value))
+        logger.warning(msg)
+        raise ChecksumError(msg)
+
+
+def _check_same_gws(path1, path2):
+    """
+    Check that two paths both start with the same group workspace name.
+
+    :param str path1: The first path
+    :param str path2: The second path
+    :returns: True if both paths are in the same group workspace
+    """
+    gws_pattern = r'^/group_workspaces/jasmin2/primavera\d'
+    gws1 = re.match(gws_pattern, path1)
+    gws2 = re.match(gws_pattern, path2)
+
+    if not gws1:
+        msg = 'Cannot determine group workspace name from {}'.format(path1)
+        raise RuntimeError(msg)
+    if not gws2:
+        msg = 'Cannot determine group workspace name from {}'.format(path2)
+        raise RuntimeError(msg)
+
+    return True if gws1.group(0) == gws2.group(0) else False
+
+
+def _make_logfile_name(directory=None):
+    """
+    From the current date and time make a filename for a log-file.
+
+    :param str directory: The optional directory path to prepend to the
+        generated filename
+    :returns: The name of a log file to use
+    """
+    time_str = datetime.datetime.utcnow().strftime('%Y%m%d%H%M%S')
+    filename = '{}_{}.txt'.format(LOG_PREFIX, time_str)
+    if directory:
+        return os.path.join(directory, filename)
+    else:
+        return filename
+
+
+def _make_tape_url_dir(tape_url, skip_creation=False):
+    """
+    Make the directory to store the specified URL in and return its path
+
+    :param str tape_url: The url to construct a directory for.
+    :param bool skip_creation: If true then don't try to create the directory
+        and just return its path.
+    :returns: The directory path to store this tape_url in.
+    """
+    dir_name = os.path.join(BASE_RETRIEVAL_DIR, tape_url.replace(':', '_'))
+
+    if not skip_creation:
+        if not os.path.exists(dir_name):
+            os.mkdir(dir_name)
+
+    return dir_name
+
+
+def _run_command(command):
+    """
+    Run the command specified and return any output to stdout or stderr as
+    a list of strings.
+    :param str command: The complete command to run.
+    :returns: Any output from the command as a list of strings.
+    :raises RuntimeError: If the command did not complete successfully.
+    """
+    cmd_out = None
+    try:
+        cmd_out = subprocess.check_output(command, stderr=subprocess.STDOUT,
+                                          shell=True)
+    except subprocess.CalledProcessError as exc:
+        msg = ('Command did not complete sucessfully.\ncommmand:\n{}\n'
+               'produced error:\n{}'.format(command, exc.output))
+        logger.warning(msg)
+        if exc.returncode != 0:
+            raise RuntimeError(msg)
+
+    return cmd_out.rstrip().split('\n')
+
+
+def parse_args():
+    """
+    Parse command-line arguments
+    """
+    parser = argparse.ArgumentParser(description='Perform a PRIMAVERA '
+                                                 'retrieval request.')
+    parser.add_argument('retrieval_id', help='the id of the retrieval request '
+        'to carry out.', type=int)
+    parser.add_argument('-a', '--alternative', help="store data in alternative "
+        "directory and create a symbolic link to each file from the main "
+        "retrieval directory")
+    parser.add_argument('-n', '--no_restore', help="don't restore data from "
+        "tape. Assume that it already has been and extract files from the "
+        "restoration directory.", action='store_true')
+    parser.add_argument('-s', '--skip_checksums', help="don't check the "
+        "checksums on restored files.", action='store_true')
+    parser.add_argument('-l', '--log-level', help='set logging level to one of '
+        'debug, info, warn (the default), or error')
+    parser.add_argument('--version', action='version',
+        version='%(prog)s {}'.format(__version__))
+    args = parser.parse_args()
+
+    return args
+
+
+def main(args):
+    """
+    Main entry point
+    """
+    logger.debug('Starting retrieve_request.py')
+
+    # check retrieval
+    retrieval = match_one(RetrievalRequest, id=args.retrieval_id)
+    if not retrieval:
+        logger.error('Unable to find retrieval id {}'.format(
+            args.retrieval_id))
+        sys.exit(1)
+
+    if retrieval.date_complete:
+        logger.error('Retrieval {} was already completed, at {}.'.
+                     format(retrieval.id,
+                            retrieval.date_complete.strftime('%Y-%m-%d %H:%M')))
+        sys.exit(1)
+
+    # Retrieve the data from tape
+    #
+    # retrieval.data_request.values('datafile__tape_url') gives:
+    # <QuerySet [{'datafile__tape_url': u'et:9876'},
+    #            {'datafile__tape_url': u'et:8765'}]>
+
+    tape_urls = list(set([qs['datafile__tape_url'] for qs in
+                          retrieval.data_request.values('datafile__tape_url')]))
+
+    for tape_url in tape_urls:
+        if not args.no_restore:
+            get_tape_url(tape_url)
+
+        copy_files_into_drs(retrieval, tape_url, args)
+
+    # set date_complete in the db
+    retrieval.date_complete = timezone.now()
+    retrieval.save()
+
+    logger.debug('Completed retrieve_request.py')
+
+
+if __name__ == "__main__":
+    cmd_args = parse_args()
+
+    # Disable propagation and discard any existing handlers.
+    logger.propagate = False
+    if len(logger.handlers):
+        logger.handlers = []
+
+    # set-up the logger
+    console = logging.StreamHandler(stream=sys.stdout)
+    fmtr = logging.Formatter(fmt=DEFAULT_LOG_FORMAT)
+    if cmd_args.log_level:
+        try:
+            logger.setLevel(getattr(logging, cmd_args.log_level.upper()))
+        except AttributeError:
+            logger.setLevel(logging.WARNING)
+            logger.error('log-level must be one of: debug, info, warn or error')
+            sys.exit(1)
+    else:
+        logger.setLevel(DEFAULT_LOG_LEVEL)
+    console.setFormatter(fmtr)
+    logger.addHandler(console)
+
+    # run the code
+    main(cmd_args)

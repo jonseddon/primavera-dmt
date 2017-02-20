@@ -328,11 +328,11 @@ def main():
                                     climate_model=model_objs[col_num],
                                     experiment=expt,
                                     variable_request=var_req_obj,
-                                    start_time=date2num(
+                                    request_start_time=date2num(
                                         experiments[expt.short_name]['start_date'],
                                         std_units, institutes[col_num]['calendar']
                                     ),
-                                    end_time=date2num(
+                                    request_end_time=date2num(
                                         experiments[expt.short_name]['end_date'],
                                         std_units, institutes[col_num]['calendar']
                                     ),

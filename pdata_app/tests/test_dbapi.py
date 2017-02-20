@@ -154,15 +154,22 @@ def _create_file_object():
         positive='optimistic', variable_type=VARIABLE_TYPES['real'],
         dimensions='massive', cmor_name='var1', modeling_realm='atmos',
         frequency=FREQUENCY_VALUES['ann'], cell_measures='', uid='123abc')
-
+    dreq = dbapi.get_or_create(models.DataRequest, project=project,
+        institute=institute, climate_model=clim_mod, experiment=expt,
+        variable_request=vble, rip_code='r1i1p1f1', request_start_time=0.0,
+        request_end_time=23400.0, time_units='days since 1950-01-01',
+        calendar='360_day')
     dsub = dbapi.get_or_create(models.DataSubmission,
         status=STATUS_VALUES['EXPECTED'], incoming_directory='/some/dir',
         directory='/some/dir')
+    act_id = dbapi.get_or_create(models.ActivityId, short_name='HighResMIP',
+        full_name='High Resolution Model Intercomparison Project')
 
     data_file = dbapi.get_or_create(models.DataFile, name='test',
         incoming_directory='/some/dir', directory='/some/dir', size=1,
         project=project, climate_model=clim_mod, institute=institute,
-        experiment=expt, variable_request=vble, frequency='t',
-        rip_code='r1i1p1', data_submission=dsub, online=False)
+        experiment=expt, variable_request=vble, data_request= dreq,
+        activity_id=act_id, frequency='t', rip_code='r1i1p1',
+        data_submission=dsub, online=False)
 
     return data_file
