@@ -29,20 +29,14 @@ class DataFileTable(tables.Table):
                     'checksum']
 
     cmor_name = tables.Column(empty_values=(), verbose_name='CMOR Name',
-                              orderable=False)
+                              accessor='variable_request.cmor_name')
     mip_table = tables.Column(empty_values=(), verbose_name='MIP Table',
-                              orderable=False)
+                              accessor='variable_request.table_name')
     checksum = tables.Column(empty_values=(), verbose_name='Checksum',
                              orderable=False)
     num_dataissues = tables.Column(empty_values=(),
                                    verbose_name='# Data Issues',
                                    orderable=False)
-
-    def render_cmor_name(self, record):
-        return record.variable_request.cmor_name
-
-    def render_mip_table(self, record):
-        return record.variable_request.table_name
 
     def render_checksum(self, record):
         checksum = record.checksum_set.first()
@@ -72,10 +66,10 @@ class DataSubmissionTable(tables.Table):
     class Meta:
         model = DataSubmission
         attrs = {'class': 'paleblue'}
-        exclude = ('id', 'incoming_directory')
-        sequence = ('directory', 'status', 'date_submitted', 'user',
-                    'online_status', 'num_files', 'num_issues',
-                    'earliest_date', 'latest_date', 'tape_urls',
+        exclude = ('id',)
+        sequence = ('incoming_directory', 'directory', 'status',
+                    'date_submitted', 'user', 'online_status', 'num_files',
+                    'num_issues', 'earliest_date', 'latest_date', 'tape_urls',
                     'file_versions')
         order_by = '-date_submitted'
 
@@ -173,21 +167,15 @@ class DataRequestTable(tables.Table):
                     'request_end_time')
 
     cmor_name = tables.Column(empty_values=(), verbose_name='CMOR Name',
-                              orderable=False)
+                              accessor='variable_request.cmor_name')
     mip_table = tables.Column(empty_values=(), verbose_name='MIP Table',
-                              orderable=False)
+                              accessor='variable_request.table_name')
 
     def render_request_start_time(self, record):
         return record.start_date_string()
 
     def render_request_end_time(self, record):
         return record.end_date_string()
-
-    def render_cmor_name(self, record):
-        return record.variable_request.cmor_name
-
-    def render_mip_table(self, record):
-        return record.variable_request.table_name
 
 
 class DataReceivedTable(DataRequestTable):
