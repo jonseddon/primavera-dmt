@@ -1,3 +1,4 @@
+#!/usr/bin/env python2.7
 """
 email.py - various functions to work with emails in the pdata application
 """
@@ -55,8 +56,8 @@ def main():
                 subject=email.subject,
                 body=email.message,
                 from_email=FROM_ADDRESS,
-                reply_to=REPLY_TO_ADDRESS,
-                to=email.recipient.email
+                reply_to=(REPLY_TO_ADDRESS,),
+                to=(email.recipient.email,)
             )
 
             try:
