@@ -1,7 +1,6 @@
 """
 test_validate_data_submission.py - unit tests for validate_data_submission.py
 """
-from numpy.testing import assert_almost_equal
 from django.test import TestCase
 import mock
 
@@ -11,7 +10,6 @@ from iris.time import PartialDateTime
 
 from scripts.validate_data_submission import (_check_start_end_times,
     _check_contiguity, identify_filename_metadata, FileValidationError,
-    _make_partial_date_time, _pdt2num, _calc_last_day_in_month,
     update_database_submission)
 from pdata_app.models import DataSubmission
 from pdata_app.utils.dbapi import get_or_create
@@ -75,57 +73,6 @@ class TestUpdateDatabaseSubmission(TestCase):
     def test_create_db_file_called(self):
         self.mock_create_file.assert_called_once_with(self.metadata[0],
                                                       self.ds)
-
-
-class TestPdt2Num(TestCase):
-    def test_year_month_day(self):
-        pdt = PartialDateTime(2016, 8, 22)
-        actual = _pdt2num(pdt, 'days since 2016-08-20', 'gregorian')
-
-        expected = 2.
-
-        self.assertEqual(actual, expected)
-
-    def test_year_month(self):
-        pdt = PartialDateTime(2016, 8)
-        actual = _pdt2num(pdt, 'days since 2016-08-20', 'gregorian')
-
-        expected = -19.
-
-        self.assertEqual(actual, expected)
-
-    def test_year_month_end_period(self):
-        pdt = PartialDateTime(2016, 8)
-        actual = _pdt2num(pdt, 'days since 2016-08-20', 'gregorian',
-            start_of_period=False)
-
-        expected = 11.
-
-        self.assertEqual(actual, expected)
-
-    def test_year_month_end_period_360_day(self):
-        pdt = PartialDateTime(2016, 8)
-        actual = _pdt2num(pdt, 'days since 2016-08-20', '360_day',
-            start_of_period=False)
-
-        expected = 10.
-
-        self.assertEqual(actual, expected)
-
-    def test_date_time(self):
-        pdt = PartialDateTime(2016, 8, 22, 14, 42, 11)
-        actual = _pdt2num(pdt, 'days since 2016-08-20', 'gregorian')
-
-        expected = 2.6126273148148148
-
-        assert_almost_equal(actual, expected)
-
-    @mock.patch('scripts.validate_data_submission.logger')
-    def test_year(self, mock_logger):
-        # logger mocked to prevent error from appearing on screen
-        pdt = PartialDateTime(2016)
-        self.assertRaises(ValueError, _pdt2num, pdt, 'days since 2016-08-20',
-            'gregorian')
 
 
 class TestCheckStartEndTimes(TestCase):
@@ -192,55 +139,3 @@ class TestCheckDataPoint(TestCase):
     def test_todo(self):
         # TODO: figure put how to test this function
         pass
-
-
-class TestMakePartialDateTime(TestCase):
-    def test_yyyymm(self):
-        expected = PartialDateTime(year=2014, month=8)
-        actual = _make_partial_date_time('201408')
-        self.assertEqual(actual, expected)
-
-    def test_yyyymmdd(self):
-        expected = PartialDateTime(year=2014, month=8, day=1)
-        actual = _make_partial_date_time('20140801')
-        self.assertEqual(actual, expected)
-
-    def test_yyyy(self):
-        self.assertRaises(ValueError, _make_partial_date_time, '2014')
-
-
-class TestCalcLastDayInMonth(TestCase):
-    def test_31_days(self):
-        actual = _calc_last_day_in_month(2016, 10, calendar='gregorian')
-
-        self.assertEqual(actual, 31)
-
-    def test_30_days(self):
-        actual = _calc_last_day_in_month(2016, 10, calendar='360_day')
-
-        self.assertEqual(actual, 30)
-
-    def test_360_day_february(self):
-        actual = _calc_last_day_in_month(2016, 2, calendar='360_day')
-
-        self.assertEqual(actual, 30)
-
-    def test_gregorian_february(self):
-        actual = _calc_last_day_in_month(2015, 2, calendar='gregorian')
-
-        self.assertEqual(actual, 28)
-
-    def test_gregorian_leap_year(self):
-        actual = _calc_last_day_in_month(2016, 2, calendar='gregorian')
-
-        self.assertEqual(actual, 29)
-
-    def test_360_day_december(self):
-        actual = _calc_last_day_in_month(2016, 12, calendar='360_day')
-
-        self.assertEqual(actual, 30)
-
-    def test_gregorian_december(self):
-        actual = _calc_last_day_in_month(2016, 12, calendar='gregorian')
-
-        self.assertEqual(actual, 31)

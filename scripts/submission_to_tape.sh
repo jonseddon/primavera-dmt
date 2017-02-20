@@ -2,17 +2,15 @@
 #BSUB -o /home/users/jseddon/lotus/%J.o
 #BSUB -e /home/users/jseddon/lotus/%J.e
 #BSUB -q short-serial
-#BSUB -n 8
-#BSUB -R "span[hosts=1]"
 #BSUB -W 01:00
 #
 # SYNOPSIS
 #
-#   validate_data_submission.sh <options> <directory>
+#   submission_to_tape.sh <options> <directory>
 #
 # DESCRIPTION
 #
-#   This script is a thin shell wrapper around the validate_data_submission.py
+#   This script is a thin shell wrapper around the submission_to_tape.py
 #   Python script. All options are passed through to the Python script after
 #   some initialisation has been performed.
 #
@@ -24,10 +22,7 @@
 # OPTIONS
 #
 #   Any additional options or arguments are passed through as-is to the specified
-#   processing application. Please see the validate_data_submission.py options.
-
-# add the adler32 checksum to the path
-export PATH=$PATH:/group_workspaces/jasmin2/primavera1/tools/adler32
+#   processing application. Please see the submission_to_tape.py options.
 
 DMT_DIR=/home/users/jseddon/primavera/primavera-dmt/
 
@@ -35,4 +30,4 @@ DMT_DIR=/home/users/jseddon/primavera/primavera-dmt/
 
 cd $DMT_DIR
 . $DMT_DIR/setup_jon.sh
-$DMT_DIR/scripts/validate_data_submission.py --log-level debug --processes 8 "$@"
+$DMT_DIR/scripts/submission_to_tape.py --log-level debug "$@"

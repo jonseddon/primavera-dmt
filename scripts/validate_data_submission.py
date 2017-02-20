@@ -17,8 +17,6 @@ import shutil
 import sys
 
 import iris
-from iris.time import PartialDateTime
-import cf_units
 
 import django
 django.setup()
@@ -27,7 +25,8 @@ from pdata_app.models import (Project, ClimateModel, Experiment, DataSubmission,
     DataFile, VariableRequest, DataRequest, Checksum, Settings, Institute,
     ActivityId)
 from pdata_app.utils.dbapi import get_or_create, match_one
-from pdata_app.utils.common import adler32
+from pdata_app.utils.common import (adler32, make_partial_date_time,
+                                    list_files, pdt2num)
 from vocabs.vocabs import FREQUENCY_VALUES, STATUS_VALUES, CHECKSUM_TYPES
 
 __version__ = '0.1.0b'
@@ -59,28 +58,6 @@ class SubmissionError(Exception):
         """
         Exception.__init__(self)
         self.message = message
-
-
-def list_files(directory, suffix='.nc'):
-    """
-    Return a list of all the files with the specified suffix in the submission
-    directory structure and sub-directories.
-
-    :param str directory: The root directory of the submission
-    :param str suffix: The suffix of the files of interest
-    :returns: A list of absolute filepaths
-    """
-    nc_files = []
-
-    dir_files = os.listdir(directory)
-    for filename in dir_files:
-        file_path = os.path.join(directory, filename)
-        if os.path.isdir(file_path):
-            nc_files.extend(list_files(file_path))
-        elif file_path.endswith(suffix):
-            nc_files.append(file_path)
-
-    return nc_files
 
 
 def identify_and_validate(filenames, project, num_processes, file_format):
@@ -210,8 +187,8 @@ def identify_filename_metadata(filename, file_format='CMIP6'):
             if cmpt_name == 'date_string':
                 start_date, end_date = cmpt.split('-')
                 try:
-                    metadata['start_date'] = _make_partial_date_time(start_date)
-                    metadata['end_date'] = _make_partial_date_time(end_date)
+                    metadata['start_date'] = make_partial_date_time(start_date)
+                    metadata['end_date'] = make_partial_date_time(end_date)
                 except ValueError:
                     msg = 'Unknown date format in filename: {}'.format(filename)
                     logger.debug(msg)
@@ -430,9 +407,9 @@ def create_database_file_object(metadata, data_submission):
             experiment=metadata_objs['experiment'],
             variable_request=variable, data_request=data_request,
             frequency=metadata['frequency'], rip_code=metadata['rip_code'],
-            start_time=_pdt2num(metadata['start_date'], time_units,
+            start_time=pdt2num(metadata['start_date'], time_units,
                                 metadata['calendar']),
-            end_time=_pdt2num(metadata['end_date'], time_units,
+            end_time=pdt2num(metadata['end_date'], time_units,
                               metadata['calendar'], start_of_period=False),
             time_units=time_units, calendar=metadata['calendar'],
             version=version_string,
@@ -477,8 +454,11 @@ def move_rejected_files(submission_dir):
         logger.error(msg)
         return submission_dir
 
-    msg = 'Data submission moved to {}'.format(rejected_dir)
-    logger.debug(msg)
+    new_rejected_dir = os.path.join(rejected_dir,
+        os.path.basename(os.path.abspath(submission_dir)))
+
+    msg = 'Data submission moved to {}'.format(new_rejected_dir)
+    logger.error(msg)
 
     return rejected_dir
 
@@ -533,53 +513,6 @@ def _get_submission_object(submission_dir):
         raise SubmissionError(msg)
 
     return data_sub
-
-
-def _pdt2num(pdt, time_units, calendar, start_of_period=True):
-    """
-    Convert an Iris PartialDateTime object into a Python datetime object. If
-    the day of the month is not specified in `pdt` then it is set as 1 in the
-    output unless `start_of_period` isn't True, when 30 is used as the day of the
-    month (because a 360 day calendar is assumed).
-
-    :param iris.time.PartialDateTime pdt: The partial date time to convert
-    :param str time_units: The units used in this time
-    :param str calendar:
-    :param bool start_of_period: If true and no day is specified then day is
-        set to 1, otherwise day is set to 30.
-    :returns: A float representation of `pdt` relative to `time_units`
-    """
-    datetime_attrs = {}
-
-    compulsory_attrs = ['year', 'month']
-
-    for attr in compulsory_attrs:
-        attr_value = getattr(pdt, attr)
-        if attr_value:
-            datetime_attrs[attr] = attr_value
-        else:
-            msg = '{} must be defined in: {}'.format(attr, pdt)
-            logger.error(msg)
-            raise ValueError(msg)
-
-    if pdt.day:
-        datetime_attrs['day'] = pdt.day
-    else:
-        if start_of_period:
-            datetime_attrs['day'] = 1
-        else:
-            datetime_attrs['day'] = _calc_last_day_in_month(pdt.year, pdt.month,
-                calendar)
-
-    optional_attrs = ['hour', 'minute', 'second', 'microsecond']
-    for attr in optional_attrs:
-        attr_value = getattr(pdt, attr)
-        if attr_value:
-            datetime_attrs[attr] = attr_value
-
-    dt_obj = cf_units.netcdftime.datetime(**datetime_attrs)
-
-    return cf_units.date2num(dt_obj, time_units, calendar)
 
 
 def _check_start_end_times(cube, metadata):
@@ -659,59 +592,6 @@ def _check_data_point(cube, metadata):
         return True
 
 
-def _make_partial_date_time(date_string):
-    """
-    Convert the fields in `date_string` into a PartialDateTime object. Formats
-    that are known about are:
-
-    YYYMM
-    YYYYMMDD
-
-    :param str date_string: The date string to process
-    :returns: An Iris PartialDateTime object containing as much information as
-        could be deduced from date_string
-    :rtype: iris.time.PartialDateTime
-    :raises ValueError: If the string is not in a known format.
-    """
-    if len(date_string) == 6:
-        pdt_str = PartialDateTime(year=int(date_string[0:4]),
-            month=int(date_string[4:6]))
-    elif len(date_string) == 8:
-        pdt_str = PartialDateTime(year=int(date_string[0:4]),
-            month=int(date_string[4:6]), day=int(date_string[6:8]))
-    else:
-        raise ValueError('Unknown date string format')
-
-    return pdt_str
-
-
-def _calc_last_day_in_month(year, month, calendar):
-    """
-    Calculate the last day of the specified month using the calendar given.
-
-    :param str year: The year
-    :param str month: The month
-    :param str calendar: The calendar to use, which must be supported by
-        cf_units
-    :returns: The last day of the specified month
-    :rtype: int
-    """
-    ref_units = 'days since 1969-07-21'
-
-    if month == 12:
-        start_next_month_obj = cf_units.netcdftime.datetime(year + 1, 1, 1)
-    else:
-        start_next_month_obj = cf_units.netcdftime.datetime(year, month + 1, 1)
-
-    start_next_month = cf_units.date2num(start_next_month_obj, ref_units,
-        calendar)
-
-    end_this_month = cf_units.num2date(start_next_month - 1, ref_units,
-        calendar)
-
-    return end_this_month.day
-
-
 def parse_args():
     """
     Parse command-line arguments
@@ -759,8 +639,8 @@ def main(args):
     logger.debug('%s files identified', len(data_files))
 
     try:
-        data_sub = _get_submission_object(submission_dir)
         if not args.validate_only:
+            data_sub = _get_submission_object(submission_dir)
             if data_sub.status != 'ARRIVED':
                 msg = "The submission's status is not ARRIVED."
                 logger.error(msg)
