@@ -128,8 +128,11 @@ def copy_files_into_drs(retrieval, tape_url, args):
             logger.error(msg)
             sys.exit(1)
 
-        drs_path = make_drs_path(data_file)
-        drs_dir = os.path.join(BASE_OUTPUT_DIR, drs_path)
+        drs_path = construct_drs_path(data_file)
+        if not args.alternative:
+            drs_dir = os.path.join(BASE_OUTPUT_DIR, drs_path)
+        else:
+            drs_dir = os.path.join(args.alternative, drs_path)
         dest_file_path = os.path.join(drs_dir, data_file.name)
 
         # create the path if it doesn't exist
@@ -160,6 +163,15 @@ def copy_files_into_drs(retrieval, tape_url, args):
                 # further action
                 pass
 
+        # create symbolic link from main directory if storing data in an
+        # alternative directory
+        if args.alternative:
+            primary_path = os.path.join(BASE_OUTPUT_DIR, drs_path)
+            if not os.path.exists(primary_path):
+                os.makedirs(primary_path)
+            os.symlink(dest_file_path,
+                       os.path.join(primary_path, data_file.name))
+
         # set directory and set status as being online
         data_file.directory = drs_dir
         data_file.online = True
@@ -168,7 +180,7 @@ def copy_files_into_drs(retrieval, tape_url, args):
     logger.debug('Finished copying files from tape url {}'.format(tape_url))
 
 
-def make_drs_path(data_file):
+def construct_drs_path(data_file):
     """
     Make the CMIP6 DRS directory path for the specified file.
 
@@ -307,6 +319,9 @@ def parse_args():
                                                  'retrieval request.')
     parser.add_argument('retrieval_id', help='the id of the retrieval request '
         'to carry out.', type=int)
+    parser.add_argument('-a', '--alternative', help="store data in alternative "
+        "directory and create a symbolic link to each file from the main "
+        "retrieval directory")
     parser.add_argument('-n', '--no_restore', help="don't restore data from "
         "tape. Assume that it already has been and extract files from the "
         "restoration directory.", action='store_true')

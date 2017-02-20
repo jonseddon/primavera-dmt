@@ -70,6 +70,10 @@ class TestIntegrationTests(TestCase):
         self.mock_exists = patch.start()
         self.addCleanup(patch.stop)
 
+        patch = mock.patch('scripts.retrieve_request.os.symlink')
+        self.mock_symlink = patch.start()
+        self.addCleanup(patch.stop)
+
         patch = mock.patch('scripts.retrieve_request.shutil.copyfile')
         self.mock_copyfile = patch.start()
         self.addCleanup(patch.stop)
@@ -144,7 +148,6 @@ class TestIntegrationTests(TestCase):
             grid='gn', version='v12345678', tape_url='et:8765',
             data_submission=dsub)
 
-
     def test_simplest(self):
         ret_req = get_or_create(RetrievalRequest, requester='bob')
         ret_req.data_request.add(self.dreq1)
@@ -154,6 +157,7 @@ class TestIntegrationTests(TestCase):
             retrieval_id = ret_req.id
             no_restore = False
             skip_checksums = True
+            alternative = None
 
         self.mock_exists.side_effect = [
             False, # _make_tape_url_dir()
@@ -191,6 +195,7 @@ class TestIntegrationTests(TestCase):
             retrieval_id = ret_req.id
             no_restore = False
             skip_checksums = True
+            alternative = None
 
         self.mock_exists.side_effect = [
             # first tape_url
@@ -236,6 +241,7 @@ class TestIntegrationTests(TestCase):
             retrieval_id = ret_req_id
             no_restore = False
             skip_checksums = True
+            alternative = None
 
         ns = ArgparseNamespace()
 
@@ -254,9 +260,50 @@ class TestIntegrationTests(TestCase):
             retrieval_id = ret_req.id
             no_restore = False
             skip_checksums = True
+            alternative = None
+
 
         ns = ArgparseNamespace()
         self.assertRaises(SystemExit, main, ns)
         self.mock_logger.error.assert_called_with('Retrieval {} was already '
                                                   'completed, at {}.'.format(
             ret_req.id, completion_time.strftime('%Y-%m-%d %H:%M')))
+
+    def test_alternative_dir(self):
+        ret_req = get_or_create(RetrievalRequest, requester='bob')
+        ret_req.data_request.add(self.dreq1)
+        ret_req.save()
+
+        class ArgparseNamespace(object):
+            retrieval_id = ret_req.id
+            no_restore = False
+            skip_checksums = True
+            alternative = '/group_workspaces/jasmin2/primavera3/spare_dir'
+
+        self.mock_exists.side_effect = [
+            False, # _make_tape_url_dir()
+            True, # if not os.path.exists(extracted_file_path):
+            True, # if not os.path.exists(drs_dir):
+            False, # if os.path.exists(dest_file_path):
+            True # if not os.path.exists(primary_path):
+        ]
+
+        ns = ArgparseNamespace()
+        main(ns)
+
+        self.mock_copyfile.assert_called_once_with(
+            '/group_workspaces/jasmin2/primavera4/.et_retrievals/et_1234/gws/'
+            'MOHC/MY-MODEL/incoming/v12345678/file_one.nc',
+            u'/group_workspaces/jasmin2/primavera3/spare_dir/CMIP6/MOHC/'
+            u'MY-MODEL/HighResMIP/experiment/r1i1p1f1/my-table/my-var/gn/'
+            u'v12345678/file_one.nc'
+        )
+
+        self.mock_symlink.assert_called_once_with(
+            u'/group_workspaces/jasmin2/primavera3/spare_dir/CMIP6/MOHC/'
+            u'MY-MODEL/HighResMIP/experiment/r1i1p1f1/my-table/my-var/gn/'
+            u'v12345678/file_one.nc',
+            u'/group_workspaces/jasmin2/primavera4/stream1/CMIP6/MOHC/MY-MODEL/'
+            u'HighResMIP/experiment/r1i1p1f1/my-table/my-var/gn/v12345678/'
+            u'file_one.nc'
+        )

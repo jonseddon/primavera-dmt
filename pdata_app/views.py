@@ -206,7 +206,7 @@ def create_retrieval(request):
         retrieval.data_request.add(*data_reqs)
         retrieval.save()
         # redirect to the retrieval just created
-        return _custom_redirect('retrieval_requests', id=retrieval.id)
+        return _custom_redirect('retrieval_requests')
     else:
         return render(request, 'pdata_app/retrieval_request_error.html',
                       {'request': request,
