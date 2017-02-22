@@ -16,10 +16,13 @@ import shutil
 import sys
 
 from primavera_val import (identify_filename_metadata, validate_file_contents,
-                           identify_contents_metadata, load_cube)
+                           identify_contents_metadata, load_cube,
+                           FileValidationError)
 
 import django
 django.setup()
+
+from django.contrib.auth.models import User
 
 from pdata_app.models import (Project, ClimateModel, Experiment, DataSubmission,
     DataFile, VariableRequest, DataRequest, Checksum, Settings, Institute,
@@ -35,28 +38,15 @@ DEFAULT_LOG_FORMAT = '%(levelname)s: %(message)s'
 
 logger = logging.getLogger(__name__)
 
-
-class FileValidationError(Exception):
-    def __init__(self, message=''):
-        """
-        An exception to indicate that a data file has failed validation.
-
-        :param str message: The error message text.
-        """
-        Exception.__init__(self)
-        self.message = message
+CONTACT_PERSON_USER_ID = 'jseddon'
 
 
 class SubmissionError(Exception):
-    def __init__(self, message=''):
-        """
-        An exception to indicate that there has been an error that means that
-        the data submission cannot continue.
-
-        :param str message: The error message text.
-        """
-        Exception.__init__(self)
-        self.message = message
+    """
+    An exception to indicate that there has been an error that means that
+    the data submission cannot continue.
+    """
+    pass
 
 
 def identify_and_validate(filenames, project, num_processes, file_format):
@@ -119,6 +109,9 @@ def identify_and_validate_file(params, output, error_event):
         error has occurred in another process and processing should end
     """
     while True:
+        # close existing connections so that a fresh connection is made
+        django.db.connections.close_all()
+
         if error_event.is_set():
             return
 
@@ -134,7 +127,7 @@ def identify_and_validate_file(params, output, error_event):
             verify_fk_relationships(metadata)
 
             cube = load_cube(filename)
-            metadata.update(identify_contents_metadata(cube))
+            metadata.update(identify_contents_metadata(cube, filename))
 
             validate_file_contents(cube, metadata)
         except SubmissionError:
@@ -286,7 +279,7 @@ def create_database_file_object(metadata, data_submission):
         )
     except django.db.utils.IntegrityError as exc:
         msg = ('Unable to submit file {}: {}'.format(metadata['basename'],
-                                                       exc.message))
+                                                     exc.message))
         logger.error(msg)
         raise SubmissionError(msg)
 
@@ -323,33 +316,84 @@ def move_rejected_files(submission_dir):
         logger.error(msg)
         return submission_dir
 
-    new_rejected_dir = os.path.join(rejected_dir,
+    submission_rejected_dir = os.path.join(rejected_dir,
         os.path.basename(os.path.abspath(submission_dir)))
 
-    msg = 'Data submission moved to {}'.format(new_rejected_dir)
+    msg = 'Data submission moved to {}'.format(submission_rejected_dir)
     logger.error(msg)
 
-    return rejected_dir
+    return submission_rejected_dir
 
 
-def send_rejection_email(data_sub, rejection_dir):
+def send_user_rejection_email(data_sub):
     """
     Send an email to the submission's creator warning them of validation
     failure.
 
     :param pdata_app.models.DataSubmission data_sub:
-    :param str rejection_dir:
     """
-    # TODO consider how much information to include.
-    # Can it include enough to allow users to identify why it failed and what
-    # they need to do to correct the data. If it's due to a missing data
-    # request then the data request list needs to be updated and it's not a
-    # user problem.
-    msg = ('Dear {first_name} {surname},\n'
-           '\n'
-           'Your data submission in {incoming_dir} has failed validation and '
-           'has been moved to {rejected_dir}.')
+    val_tool_url = ('http://proj.badc.rl.ac.uk/primavera-private/wiki/JASMIN/'
+                    'HowTo#SoftwarepackagesinstalledonthePRIMAVERAworkspace')
 
+    contact_user = User.objects.get(username=CONTACT_PERSON_USER_ID)
+    contact_string = '{} {} ({})'.format(contact_user.first_name,
+                                         contact_user.last_name,
+                                         contact_user.email)
+
+    msg = (
+        'Dear {first_name} {surname},\n'
+        '\n'
+        'Your data submission in {incoming_dir} has failed validation and '
+        'has been moved to {rejected_dir}.\n'
+        '\n'
+        'Please run the validation tool ({val_tool_url}) to check why this '
+        'submission failed validation. Once the data is passing validation '
+        'then please resubmit the corrected data.\n'
+        '\n'
+        'Please contact {contact_person} if you '
+        'have any questions.\n'
+        '\n'
+        'Thanks,\n'
+        '\n'
+        '{friendly_name}'.format(
+        first_name=data_sub.user.first_name, surname=data_sub.user.last_name,
+        incoming_dir=data_sub.incoming_directory,
+        rejected_dir=data_sub.directory, val_tool_url=val_tool_url,
+        contact_person=contact_string,
+        friendly_name=contact_user.first_name
+    ))
+
+    _email = EmailQueue.objects.create(
+        recipient=data_sub.user,
+        subject='PRIMAVERA data submission failed validation',
+        message=msg)
+
+
+def send_admin_rejection_email(data_sub):
+    """
+    Send the admin user an email warning them that a submission failed due to
+    a server problem (missing data request, etc).
+
+    :param pdata_app.models.DataSubmission data_sub:
+    """
+    admin_user = User.objects.get(username=CONTACT_PERSON_USER_ID)
+
+    msg = (
+        'Data submission {} from incoming directory {} failed validation due '
+        'to a SubmissionError being raised. Please run the validation script '
+        'manually on this submission and correct the error.\n'
+        '\n'
+        'Thanks,\n'
+        '\n'
+        '{}'.format(data_sub.id, data_sub.incoming_directory,
+                    admin_user.first_name)
+    )
+
+    _email = EmailQueue.objects.create(
+        recipient=admin_user,
+        subject='Submission {} failed validation'.format(data_sub.id),
+        message=msg
+    )
 
 
 def set_status_rejected(data_sub, rejected_dir):
@@ -386,8 +430,6 @@ def _get_submission_object(submission_dir):
         raise SubmissionError(msg)
 
     return data_sub
-
-
 
 
 def parse_args():
@@ -437,15 +479,21 @@ def main(args):
     logger.debug('%s files identified', len(data_files))
 
     try:
-        if not args.validate_only:
-            data_sub = _get_submission_object(submission_dir)
-            if data_sub.status != 'ARRIVED':
-                msg = "The submission's status is not ARRIVED."
-                logger.error(msg)
-                raise SubmissionError(msg)
+        data_sub = _get_submission_object(submission_dir)
 
-        validated_metadata = identify_and_validate(data_files, args.project,
-            args.processes, args.file_format)
+        try:
+            if not args.validate_only:
+                if data_sub.status != 'ARRIVED':
+                    msg = "The submission's status is not ARRIVED."
+                    logger.error(msg)
+                    raise SubmissionError(msg)
+
+            validated_metadata = identify_and_validate(data_files, args.project,
+                args.processes, args.file_format)
+        except SubmissionError:
+            if not args.validate_only:
+                send_admin_rejection_email(data_sub)
+            raise
 
         logger.debug('%s files validated successfully', len(validated_metadata))
 
@@ -456,8 +504,8 @@ def main(args):
 
         if not args.relaxed and len(validated_metadata) != len(data_files):
             rejected_dir = move_rejected_files(submission_dir)
-            send_rejection_email(data_sub, rejected_dir)
             set_status_rejected(data_sub, rejected_dir)
+            send_user_rejection_email(data_sub)
             msg = ('Not all files passed validation. Please fix these errors '
                 'and then re-run this script.')
             logger.error(msg)

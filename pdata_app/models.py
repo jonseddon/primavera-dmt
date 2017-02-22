@@ -16,7 +16,7 @@ from vocabs import (STATUS_VALUES, FREQUENCY_VALUES, ONLINE_STATUS,
 model_names = ['Project', 'Institute', 'ClimateModel', 'Experiment',
                'DataSubmission', 'DataFile', 'ESGFDataset', 'CEDADataset',
                'DataRequest', 'DataIssue', 'Checksum', 'Settings',
-               'VariableRequest', 'RetrievalRequest']
+               'VariableRequest', 'RetrievalRequest', 'EmailQueue']
 __all__ = model_names
 
 
@@ -645,3 +645,6 @@ class EmailQueue(models.Model):
     message = models.CharField(max_length=10000, blank=False)
 
     sent = models.BooleanField(default=False, null=False)
+
+    def __unicode__(self):
+        return '{} {}'.format(self.recipient.email, self.subject)
