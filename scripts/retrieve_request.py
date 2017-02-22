@@ -15,9 +15,10 @@ import sys
 
 import django
 django.setup()
+from django.contrib.auth.models import User
 from django.utils import timezone
 
-from pdata_app.models import RetrievalRequest, DataFile
+from pdata_app.models import Settings, RetrievalRequest, DataFile, EmailQueue
 from pdata_app.utils.common import md5, sha256, adler32
 from pdata_app.utils.dbapi import match_one
 
@@ -311,6 +312,41 @@ def _run_command(command):
     return cmd_out.rstrip().split('\n')
 
 
+def _email_user_success(retrieval):
+    """
+    Send an email to request's creator advising them that their data's been
+    successfully restored.
+
+    :param pdata_app.models.RetrievalRequest retrieval: the retrieval object
+    """
+    contact_user_id = Settings.get_solo().contact_user_id
+    contact_user = User.objects.get(username=contact_user_id)
+
+    msg = (
+        'Dear {},\n'
+        '\n'
+        'Your retriavl request number {} has now been restored from elastic '
+        'tape to group workspace. The data will be available in the DRS '
+        'directory structure at {}.\n'
+        '\n'
+        'To free up disk space on the group workspaces we would be grateful '
+        'if this data could be deleted as soon as you have finished analysing '
+        'it.\n'
+        '\n'
+        'Thanks,\n'
+        '\n'
+        '{}'.format(retrieval.requester.first_name, retrieval.id,
+                    BASE_OUTPUT_DIR, contact_user.first_name)
+    )
+
+    _email = EmailQueue.objects.create(
+        recipient=retrieval.requester,
+        subject=('[PRIMAVERA_DMT] Retrieval Request {} Complete'.
+                 format(retrieval.id)),
+        message=msg
+    )
+
+
 def parse_args():
     """
     Parse command-line arguments
@@ -373,6 +409,9 @@ def main(args):
     # set date_complete in the db
     retrieval.date_complete = timezone.now()
     retrieval.save()
+
+    # send an email to advise the user that their data's been restored
+    _email_user_success(retrieval)
 
     logger.debug('Completed retrieve_request.py')
 

@@ -27,6 +27,9 @@ class Settings(SingletonModel):
     is_paused = models.BooleanField(default=False, null=False)
     standard_time_units = models.CharField(max_length=50,
         verbose_name='Standard Time Units', default='days since 1950-01-01')
+    contact_user_id = models.CharField(max_length=20,
+                                       verbose_name='Contact User ID',
+                                       default='jseddon')
 
     class Meta:
         verbose_name = "Settings"

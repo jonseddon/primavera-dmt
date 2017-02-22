@@ -335,7 +335,8 @@ def send_user_rejection_email(data_sub):
     val_tool_url = ('http://proj.badc.rl.ac.uk/primavera-private/wiki/JASMIN/'
                     'HowTo#SoftwarepackagesinstalledonthePRIMAVERAworkspace')
 
-    contact_user = User.objects.get(username=CONTACT_PERSON_USER_ID)
+    contact_user_id = Settings.get_solo().contact_user_id
+    contact_user = User.objects.get(username=contact_user_id)
     contact_string = '{} {} ({})'.format(contact_user.first_name,
                                          contact_user.last_name,
                                          contact_user.email)
@@ -365,7 +366,7 @@ def send_user_rejection_email(data_sub):
 
     _email = EmailQueue.objects.create(
         recipient=data_sub.user,
-        subject='PRIMAVERA data submission failed validation',
+        subject='[PRIMAVERA_DMT] Data submission failed validation',
         message=msg)
 
 
@@ -376,7 +377,8 @@ def send_admin_rejection_email(data_sub):
 
     :param pdata_app.models.DataSubmission data_sub:
     """
-    admin_user = User.objects.get(username=CONTACT_PERSON_USER_ID)
+    admin_user_id = Settings.get_solo().contact_user_id
+    admin_user = User.objects.get(username=admin_user_id)
 
     msg = (
         'Data submission {} from incoming directory {} failed validation due '
@@ -391,7 +393,8 @@ def send_admin_rejection_email(data_sub):
 
     _email = EmailQueue.objects.create(
         recipient=admin_user,
-        subject='Submission {} failed validation'.format(data_sub.id),
+        subject=('[PRIMAVERA_DMT] Submission {} failed validation'.
+                 format(data_sub.id)),
         message=msg
     )
 
