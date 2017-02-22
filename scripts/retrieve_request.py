@@ -325,7 +325,7 @@ def _email_user_success(retrieval):
     msg = (
         'Dear {},\n'
         '\n'
-        'Your retriavl request number {} has now been restored from elastic '
+        'Your retrieval request number {} has now been restored from elastic '
         'tape to group workspace. The data will be available in the DRS '
         'directory structure at {}.\n'
         '\n'
