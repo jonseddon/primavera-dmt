@@ -11,23 +11,25 @@ import itertools
 import logging
 from multiprocessing import Process, Manager
 import os
-import random
 import re
 import shutil
 import sys
 
-import iris
+from primavera_val import (identify_filename_metadata, validate_file_contents,
+                           identify_contents_metadata, load_cube,
+                           FileValidationError)
 
 import django
 django.setup()
 
+from django.contrib.auth.models import User
+
 from pdata_app.models import (Project, ClimateModel, Experiment, DataSubmission,
     DataFile, VariableRequest, DataRequest, Checksum, Settings, Institute,
-    ActivityId)
+    ActivityId, EmailQueue)
 from pdata_app.utils.dbapi import get_or_create, match_one
-from pdata_app.utils.common import (adler32, make_partial_date_time,
-                                    list_files, pdt2num)
-from vocabs.vocabs import FREQUENCY_VALUES, STATUS_VALUES, CHECKSUM_TYPES
+from pdata_app.utils.common import adler32, list_files, pdt2num
+from vocabs.vocabs import STATUS_VALUES, CHECKSUM_TYPES
 
 __version__ = '0.1.0b'
 
@@ -36,28 +38,15 @@ DEFAULT_LOG_FORMAT = '%(levelname)s: %(message)s'
 
 logger = logging.getLogger(__name__)
 
-
-class FileValidationError(Exception):
-    def __init__(self, message=''):
-        """
-        An exception to indicate that a data file has failed validation.
-
-        :param str message: The error message text.
-        """
-        Exception.__init__(self)
-        self.message = message
+CONTACT_PERSON_USER_ID = 'jseddon'
 
 
 class SubmissionError(Exception):
-    def __init__(self, message=''):
-        """
-        An exception to indicate that there has been an error that means that
-        the data submission cannot continue.
-
-        :param str message: The error message text.
-        """
-        Exception.__init__(self)
-        self.message = message
+    """
+    An exception to indicate that there has been an error that means that
+    the data submission cannot continue.
+    """
+    pass
 
 
 def identify_and_validate(filenames, project, num_processes, file_format):
@@ -120,6 +109,9 @@ def identify_and_validate_file(params, output, error_event):
         error has occurred in another process and processing should end
     """
     while True:
+        # close existing connections so that a fresh connection is made
+        django.db.connections.close_all()
+
         if error_event.is_set():
             return
 
@@ -135,7 +127,7 @@ def identify_and_validate_file(params, output, error_event):
             verify_fk_relationships(metadata)
 
             cube = load_cube(filename)
-            metadata.update(identify_contents_metadata(cube))
+            metadata.update(identify_contents_metadata(cube, filename))
 
             validate_file_contents(cube, metadata)
         except SubmissionError:
@@ -150,67 +142,6 @@ def identify_and_validate_file(params, output, error_event):
             output.append(metadata)
 
 
-def identify_filename_metadata(filename, file_format='CMIP6'):
-    """
-    Identify all of the required metadata from the filename and file contents
-
-    :param str filename: The file's complete path
-    :param str file_format: The CMOR version of the netCDF files, one out of-
-        CMIP5 or CMIP6
-    :returns: A dictionary containing the identified metadata
-    :raises FileValidationError: If unable to parse the date string
-    """
-    if file_format == 'CMIP5':
-        components = ['cmor_name', 'table', 'climate_model', 'experiment',
-        'rip_code', 'date_string']
-    elif file_format == 'CMIP6':
-        components = ['cmor_name', 'table', 'experiment', 'climate_model',
-        'rip_code', 'grid','date_string']
-    else:
-        raise NotImplementedError('file_format must be CMIP5 or CMIP6')
-
-    basename = os.path.basename(filename)
-    directory = os.path.dirname(filename)
-    metadata = {'basename': basename, 'directory': directory}
-
-    # split the filename into sections
-    filename_sects = basename.rstrip('.nc').split('_')
-
-    # but if experiment present_day was in the filename, join these sections
-    # back together
-    if filename_sects[3] == 'present' and filename_sects[4] == 'day':
-        filename_sects[3] += '_' + filename_sects.pop(4)
-
-    # deduce as much as possible from the filename
-    try:
-        for cmpt_name, cmpt in zip(components, filename_sects):
-            if cmpt_name == 'date_string':
-                start_date, end_date = cmpt.split('-')
-                try:
-                    metadata['start_date'] = make_partial_date_time(start_date)
-                    metadata['end_date'] = make_partial_date_time(end_date)
-                except ValueError:
-                    msg = 'Unknown date format in filename: {}'.format(filename)
-                    logger.debug(msg)
-                    raise FileValidationError(msg)
-            else:
-                metadata[cmpt_name] = cmpt
-    except ValueError:
-        msg = 'Unknown filename format: {}'.format(filename)
-        logger.debug(msg)
-        raise FileValidationError(msg)
-
-    metadata['filesize'] = os.path.getsize(filename)
-
-    for freq in FREQUENCY_VALUES:
-        if freq in metadata['table'].lower():
-            metadata['frequency'] = freq
-            break
-    if 'frequency' not in metadata:
-        # set a blank frequency if one hasn't been found
-        metadata['frequency'] = ''
-
-    return metadata
 
 
 def verify_fk_relationships(metadata):
@@ -237,76 +168,6 @@ def verify_fk_relationships(metadata):
             raise SubmissionError(msg)
 
     return True
-
-
-def identify_contents_metadata(cube):
-    """
-    Uses Iris to get additional metadata from the files contents
-
-    :param iris.cube.Cube cube: The loaded file to check
-    :returns: A dictionary of the identified metadata
-    """
-    metadata = {}
-
-    # This could be None if cube.var_name isn't defined
-    metadata['var_name'] = cube.var_name
-    metadata['units'] = str(cube.units)
-    metadata['long_name'] = cube.long_name
-    metadata['standard_name'] = cube.standard_name
-    metadata['time_units'] = cube.coord('time').units.origin
-    metadata['calendar'] = cube.coord('time').units.calendar
-    # CMIP5 doesn't have an activity id and so supply a default
-    metadata['activity_id'] = cube.attributes.get('activity_id', 'HighResMIP')
-    try:
-        metadata['institute'] = cube.attributes['institution_id']
-    except KeyError:
-        # CMIP5 uses institute_id but we should not be processing CMIP5 data
-        # but handle it just in case
-        metadata['institute'] = cube.attributes['institute_id']
-
-    return metadata
-
-
-def load_cube(filename):
-    """
-    Loads the specified file into a single Iris cube
-
-    :param str filename: The path of the file to load
-    :returns: An Iris cube containing the loaded file
-    :raises FileValidationError: If the file generates more than a single cube
-    """
-    iris.FUTURE.netcdf_promote = True
-
-    try:
-        cubes = iris.load(filename)
-    except Exception:
-        msg = 'Unable to load data from file: {}'.format(filename)
-        logger.debug(msg)
-        raise FileValidationError(msg)
-
-    var_name = os.path.basename(filename).split('_')[0]
-
-    var_cubes = cubes.extract(iris.Constraint(cube_func=lambda cube: cube.var_name == var_name))
-
-    if not var_cubes:
-        msg = "Filename '{}' does not load to a single variable".format(filename)
-        logger.debug(msg)
-        raise FileValidationError(msg)
-
-    return var_cubes[0]
-
-
-def validate_file_contents(cube, metadata):
-    """
-    Check whether the contents of the cube loaded from a file are valid
-
-    :param iris.cube.Cube cube: The loaded file to check
-    :param dict metadata: Metadata obtained from the file
-    :returns: A boolean
-    """
-    _check_start_end_times(cube, metadata)
-    _check_contiguity(cube, metadata)
-    _check_data_point(cube, metadata)
 
 
 def update_database_submission(validated_metadata, data_sub):
@@ -397,7 +258,7 @@ def create_database_file_object(metadata, data_submission):
     # slightly different metadata then django.db.utils.IntegrityError is
     # raised
     try:
-        data_file = get_or_create(DataFile, name=metadata['basename'],
+        data_file = DataFile.objects.create(name=metadata['basename'],
             incoming_directory=metadata['directory'],
             directory=metadata['directory'], size=metadata['filesize'],
             project=metadata_objs['project'],
@@ -417,7 +278,8 @@ def create_database_file_object(metadata, data_submission):
             grid=metadata['grid'] if 'grid' in metadata else None
         )
     except django.db.utils.IntegrityError as exc:
-        msg = ('Unable to submit file: {}'.format(exc.message))
+        msg = ('Unable to submit file {}: {}'.format(metadata['basename'],
+                                                     exc.message))
         logger.error(msg)
         raise SubmissionError(msg)
 
@@ -454,29 +316,87 @@ def move_rejected_files(submission_dir):
         logger.error(msg)
         return submission_dir
 
-    new_rejected_dir = os.path.join(rejected_dir,
+    submission_rejected_dir = os.path.join(rejected_dir,
         os.path.basename(os.path.abspath(submission_dir)))
 
-    msg = 'Data submission moved to {}'.format(new_rejected_dir)
+    msg = 'Data submission moved to {}'.format(submission_rejected_dir)
     logger.error(msg)
 
-    return rejected_dir
+    return submission_rejected_dir
 
 
-def send_rejection_email(submission_dir, rejection_dir):
+def send_user_rejection_email(data_sub):
     """
     Send an email to the submission's creator warning them of validation
     failure.
 
-    :param str submission_dir:
-    :param str rejection_dir:
+    :param pdata_app.models.DataSubmission data_sub:
     """
-    # TODO consider how much information to include.
-    # Can it include enough to allow users to identify why it failed and what
-    # they need to do to correct the data. If it's due to a missing data
-    # request then the data request list needs to be updated and it's not a
-    # user problem.
-    pass
+    val_tool_url = ('http://proj.badc.rl.ac.uk/primavera-private/wiki/JASMIN/'
+                    'HowTo#SoftwarepackagesinstalledonthePRIMAVERAworkspace')
+
+    contact_user_id = Settings.get_solo().contact_user_id
+    contact_user = User.objects.get(username=contact_user_id)
+    contact_string = '{} {} ({})'.format(contact_user.first_name,
+                                         contact_user.last_name,
+                                         contact_user.email)
+
+    msg = (
+        'Dear {first_name} {surname},\n'
+        '\n'
+        'Your data submission in {incoming_dir} has failed validation and '
+        'has been moved to {rejected_dir}.\n'
+        '\n'
+        'Please run the validation tool ({val_tool_url}) to check why this '
+        'submission failed validation. Once the data is passing validation '
+        'then please resubmit the corrected data.\n'
+        '\n'
+        'Please contact {contact_person} if you '
+        'have any questions.\n'
+        '\n'
+        'Thanks,\n'
+        '\n'
+        '{friendly_name}'.format(
+        first_name=data_sub.user.first_name, surname=data_sub.user.last_name,
+        incoming_dir=data_sub.incoming_directory,
+        rejected_dir=data_sub.directory, val_tool_url=val_tool_url,
+        contact_person=contact_string,
+        friendly_name=contact_user.first_name
+    ))
+
+    _email = EmailQueue.objects.create(
+        recipient=data_sub.user,
+        subject='[PRIMAVERA_DMT] Data submission failed validation',
+        message=msg)
+
+
+def send_admin_rejection_email(data_sub):
+    """
+    Send the admin user an email warning them that a submission failed due to
+    a server problem (missing data request, etc).
+
+    :param pdata_app.models.DataSubmission data_sub:
+    """
+    admin_user_id = Settings.get_solo().contact_user_id
+    admin_user = User.objects.get(username=admin_user_id)
+
+    msg = (
+        'Data submission {} from incoming directory {} failed validation due '
+        'to a SubmissionError being raised. Please run the validation script '
+        'manually on this submission and correct the error.\n'
+        '\n'
+        'Thanks,\n'
+        '\n'
+        '{}'.format(data_sub.id, data_sub.incoming_directory,
+                    admin_user.first_name)
+    )
+
+    _email = EmailQueue.objects.create(
+        recipient=admin_user,
+        subject=('[PRIMAVERA_DMT] Submission {} failed validation'.
+                 format(data_sub.id)),
+        message=msg
+    )
 
 
 def set_status_rejected(data_sub, rejected_dir):
@@ -513,83 +433,6 @@ def _get_submission_object(submission_dir):
         raise SubmissionError(msg)
 
     return data_sub
-
-
-def _check_start_end_times(cube, metadata):
-    """
-    Check whether the start and end dates match those in the metadata
-
-    :param iris.cube.Cube cube: The loaded file to check
-    :param dict metadata: Metadata obtained from the file
-    :returns: True if the times match
-    :raises FileValidationError: If the times don't match
-    """
-    file_start_date = metadata['start_date']
-    file_end_date = metadata['end_date']
-
-    time = cube.coord('time')
-    data_start = time.units.num2date(time.points[0])
-    data_end = time.units.num2date(time.points[-1])
-
-    if file_start_date != data_start:
-        msg = ('Start date in filename does not match the first time in the '
-            'file ({}): {}'.format(str(data_start), metadata['basename']))
-        logger.debug(msg)
-        raise FileValidationError(msg)
-    elif file_end_date != data_end:
-        msg = ('End date in filename does not match the last time in the '
-            'file ({}): {}'.format(str(data_end), metadata['basename']))
-        logger.debug(msg)
-        raise FileValidationError(msg)
-    else:
-        return True
-
-
-def _check_contiguity(cube, metadata):
-    """
-    Check whether the time coordinate is contiguous
-
-    :param iris.cube.Cube cube: The loaded file to check
-    :param dict metadata: Metadata obtained from the file
-    :returns: True if the data is contiguous
-    :raises FileValidationError: If the data isn't contiguous
-    """
-    time_coord = cube.coord('time')
-
-    if not time_coord.is_contiguous():
-        msg = ('The points in the time dimension in the file are not '
-            'contiguous: {}'.format(metadata['basename']))
-        logger.debug(msg)
-        raise FileValidationError(msg)
-    else:
-        return True
-
-
-def _check_data_point(cube, metadata):
-    """
-    Check whether a data point can be loaded
-
-    :param iris.cube.Cube cube: The loaded file to check
-    :param dict metadata: Metadata obtained from the file
-    :returns: True if a data point was read without any exceptions being raised
-    :raises FileValidationError: If there was a problem reading the data point
-    """
-    point_index = []
-
-    for dim_length in cube.shape:
-        point_index.append(int(random.random() * dim_length))
-
-    point_index = tuple(point_index)
-
-    try:
-        data_point = cube.data[point_index]
-    except Exception:
-        msg = 'Unable to extract data point {} from file: {}'.format(
-            point_index, metadata['basename'])
-        logger.debug(msg)
-        raise FileValidationError(msg)
-    else:
-        return True
 
 
 def parse_args():
@@ -639,15 +482,21 @@ def main(args):
     logger.debug('%s files identified', len(data_files))
 
     try:
-        if not args.validate_only:
-            data_sub = _get_submission_object(submission_dir)
-            if data_sub.status != 'ARRIVED':
-                msg = "The submission's status is not ARRIVED."
-                logger.error(msg)
-                raise SubmissionError(msg)
+        data_sub = _get_submission_object(submission_dir)
 
-        validated_metadata = identify_and_validate(data_files, args.project,
-            args.processes, args.file_format)
+        try:
+            if not args.validate_only:
+                if data_sub.status != 'ARRIVED':
+                    msg = "The submission's status is not ARRIVED."
+                    logger.error(msg)
+                    raise SubmissionError(msg)
+
+            validated_metadata = identify_and_validate(data_files, args.project,
+                args.processes, args.file_format)
+        except SubmissionError:
+            if not args.validate_only:
+                send_admin_rejection_email(data_sub)
+            raise
 
         logger.debug('%s files validated successfully', len(validated_metadata))
 
@@ -658,8 +507,8 @@ def main(args):
 
         if not args.relaxed and len(validated_metadata) != len(data_files):
             rejected_dir = move_rejected_files(submission_dir)
-            send_rejection_email(submission_dir, rejected_dir)
             set_status_rejected(data_sub, rejected_dir)
+            send_user_rejection_email(data_sub)
             msg = ('Not all files passed validation. Please fix these errors '
                 'and then re-run this script.')
             logger.error(msg)

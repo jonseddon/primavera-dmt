@@ -214,3 +214,28 @@ def get_temp_filename(suffix):
     filename = 'temp' + zero_padded + '.' + suffix
 
     return os.path.join(gettempdir(), filename)
+
+
+def standardise_time_unit(time_float, time_unit, standard_unit, calendar):
+    """
+    Standardise a floating point time in one time unit by returning the
+    corresponding time in the `standard_unit`. The original value is returned if
+    it is already in the `standard_unit`. None is returned if the `time_float`
+    is None.
+
+    :param float time_float: The time to change
+    :param str time_unit: The original time's units
+    :param str standard_unit: The new unit
+    :returns: A floating point representation of the old time in
+        `standard_unit`
+    """
+    if time_float is None:
+        return None
+
+    if time_unit == standard_unit:
+        return time_float
+
+    date_time = cf_units.num2date(time_float, time_unit, calendar)
+    corrected_time = cf_units.date2num(date_time, standard_unit, calendar)
+
+    return corrected_time

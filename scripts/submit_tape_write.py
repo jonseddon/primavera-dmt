@@ -15,7 +15,7 @@ from pdata_app.models import DataSubmission
 from vocabs.vocabs import STATUS_VALUES
 
 TAPE_WRITE_SCRIPT = ('/home/users/jseddon/primavera/primavera-dmt/scripts/'
-    'submission_to_tape.sh')
+    'run_primavera submission_to_tape.py')
 LOTUS_OPTIONS = '-o ~/lotus/%J.o -q short-serial -W 01:00'
 
 

@@ -197,7 +197,7 @@ def confirm_retrieval(request):
 def create_retrieval(request):
     if request.method == 'POST':
         # create the request
-        retrieval = RetrievalRequest.objects.create(requester=str(request.user))
+        retrieval = RetrievalRequest.objects.create(requester=request.user)
         retrieval.save()
         # add the data requests asked for
         data_req_ids = [int(req_id) for req_id in

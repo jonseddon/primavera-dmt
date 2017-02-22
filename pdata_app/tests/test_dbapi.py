@@ -1,8 +1,9 @@
 """
 Unit tests for pdata_app.utils.dbapi
 """
-from django.test import TestCase
+from django.contrib.auth.models import User
 from django.db.utils import IntegrityError
+from django.test import TestCase
 
 from pdata_app.utils import dbapi
 from pdata_app import models
@@ -159,9 +160,10 @@ def _create_file_object():
         variable_request=vble, rip_code='r1i1p1f1', request_start_time=0.0,
         request_end_time=23400.0, time_units='days since 1950-01-01',
         calendar='360_day')
+    user = dbapi.get_or_create(User, username='fred')
     dsub = dbapi.get_or_create(models.DataSubmission,
         status=STATUS_VALUES['EXPECTED'], incoming_directory='/some/dir',
-        directory='/some/dir')
+        directory='/some/dir', user=user)
     act_id = dbapi.get_or_create(models.ActivityId, short_name='HighResMIP',
         full_name='High Resolution Model Intercomparison Project')
 

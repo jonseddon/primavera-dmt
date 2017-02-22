@@ -1,0 +1,32 @@
+#!/bin/bash
+#BSUB -o /home/users/jseddon/lotus/%J.o
+#BSUB -e /home/users/jseddon/lotus/%J.e
+#BSUB -q short-serial
+#BSUB -W 01:00
+#
+# SYNOPSIS
+#
+#   run_primavera <python_script.py> <options>
+#
+# DESCRIPTION
+#
+#   This script is a thin shell wrapper around Python scripts. All options are
+#   passed through to the Python script after some initialisation has been
+#   performed.
+#
+# OPTIONS
+#
+#   Any additional options or arguments are passed through as-is to the specified
+#   processing application.
+
+DMT_DIR=~jseddon/primavera/primavera-dmt
+
+source ~jseddon/primavera/venvs/django/bin/activate
+
+export DJANGO_SETTINGS_MODULE=pdata_site.settings
+export PYTHONPATH=$DMT_DIR:$PYTHONPATH
+
+PYTHON_SCRIPT=$1
+shift
+
+$DMT_DIR/scripts/$PYTHON_SCRIPT "$@"

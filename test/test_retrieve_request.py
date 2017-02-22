@@ -7,6 +7,7 @@ import mock
 import django
 django.setup()
 
+from django.contrib.auth.models import User
 from django.test import TestCase
 from django.utils.timezone import make_aware
 
@@ -116,10 +117,10 @@ class TestIntegrationTests(TestCase):
             experiment=experiment, variable_request=var2, rip_code='r1i1p1f1',
             request_start_time=0.0, request_end_time=23400.0,
             time_units='days since 1950-01-01', calendar='360_day')
+        self.user = get_or_create(User, username='fred')
         dsub = get_or_create(DataSubmission, status=STATUS_VALUES['VALIDATED'],
             incoming_directory=incoming_directory,
-            directory=incoming_directory,
-            user='fred')
+            directory=incoming_directory, user=self.user)
         df1 = get_or_create( DataFile, name='file_one.nc',
             incoming_directory=incoming_directory, directory=None, size=1,
             project=proj, climate_model=climate_model, experiment=experiment,
@@ -149,7 +150,7 @@ class TestIntegrationTests(TestCase):
             data_submission=dsub)
 
     def test_simplest(self):
-        ret_req = get_or_create(RetrievalRequest, requester='bob')
+        ret_req = get_or_create(RetrievalRequest, requester=self.user)
         ret_req.data_request.add(self.dreq1)
         ret_req.save()
 
@@ -187,7 +188,7 @@ class TestIntegrationTests(TestCase):
                                        u'my-table/my-var/gn/v12345678')
 
     def test_multiple_tapes(self):
-        ret_req = get_or_create(RetrievalRequest, requester='fred')
+        ret_req = get_or_create(RetrievalRequest, requester=self.user)
         ret_req.data_request.add(self.dreq1, self.dreq2)
         ret_req.save()
 
@@ -253,7 +254,7 @@ class TestIntegrationTests(TestCase):
         completion_time = datetime.datetime(2017, 10, 31, 23, 59, 59)
         completion_time = make_aware(completion_time)
 
-        ret_req = get_or_create(RetrievalRequest, requester='jim',
+        ret_req = get_or_create(RetrievalRequest, requester=self.user,
                                 date_complete=completion_time)
 
         class ArgparseNamespace(object):
@@ -270,7 +271,7 @@ class TestIntegrationTests(TestCase):
             ret_req.id, completion_time.strftime('%Y-%m-%d %H:%M')))
 
     def test_alternative_dir(self):
-        ret_req = get_or_create(RetrievalRequest, requester='bob')
+        ret_req = get_or_create(RetrievalRequest, requester=self.user)
         ret_req.data_request.add(self.dreq1)
         ret_req.save()
 
