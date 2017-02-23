@@ -84,7 +84,8 @@ def parse_args():
     parser.add_argument('-o', '--overwrite', help='write the submission to '
                                                   'elastic tape, even if the '
                                                   'submission has already '
-                                                  'been written to tape')
+                                                  'been written to tape',
+                        action='store_true')
     parser.add_argument('-l', '--log-level', help='set logging level to one '
                                                   'of debug, info, warn (the '
                                                   'default), or error')
