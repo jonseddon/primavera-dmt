@@ -15,6 +15,13 @@ urlpatterns = [
 
     url(r'^logout/$', pdata_app.views.view_logout, name='logout'),
 
+    url(r'^password_change/$', pdata_app.views.view_change_password,
+        name='change_password'),
+
+    url(r'^password_change/done/$',
+        pdata_app.views.view_change_password_success,
+        name='password_change_done'),
+
     url(r'^files/$', pdata_app.views.DataFileList.as_view(), name='data_files'),
 
     url(r'^submissions/$', pdata_app.views.DataSubmissionList.as_view(),

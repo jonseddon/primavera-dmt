@@ -2,7 +2,8 @@ import os
 import re
 import urllib
 
-from django.contrib.auth import authenticate, login, logout
+from django.contrib.auth import (authenticate, login, logout,
+                                 update_session_auth_hash)
 from django.contrib.auth.decorators import login_required
 from django.db.models import Sum
 from django.shortcuts import render, redirect
@@ -11,7 +12,7 @@ from django.core.urlresolvers import reverse
 
 from .models import (DataFile, DataSubmission, ESGFDataset, CEDADataset,
                      DataRequest, DataIssue, VariableRequest, RetrievalRequest)
-from .forms import CreateSubmissionForm
+from .forms import CreateSubmissionForm, PasswordChangeBootstrapForm
 from .tables import (DataRequestTable, DataFileTable, DataSubmissionTable,
                      ESGFDatasetTable, CEDADatasetTable, DataIssueTable,
                      VariableRequestQueryTable, DataReceivedTable,
@@ -136,9 +137,27 @@ def view_logout(request):
     return redirect('home')
 
 
+def view_change_password(request):
+    if request.method == 'POST':
+        form = PasswordChangeBootstrapForm(request.user, request.POST)
+        if form.is_valid():
+            user = form.save()
+            update_session_auth_hash(request, user)  # Important!
+            return redirect('password_change_done')
+    else:
+        form = PasswordChangeBootstrapForm(request.user)
+    return render(request, 'pdata_app/change_password.html',
+                  {'form': form, 'page_title': 'Change Password'})
+
+
+def view_change_password_success(request):
+    return render(request, 'pdata_app/change_password_success.html',
+                  {'request': request, 'page_title': 'Change Password'})
+
+
 def view_home(request):
-    return render(request, 'pdata_app/home.html', {'request': request,
-        'page_title': 'The PRIMAVERA DMT'})
+    return render(request, 'pdata_app/home.html',
+                  {'request': request, 'page_title': 'The PRIMAVERA DMT'})
 
 
 @login_required(login_url='/login/')
