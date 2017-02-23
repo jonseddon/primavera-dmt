@@ -47,6 +47,8 @@ def main():
 
     :return:
     """
+    num_sent = 0
+
     for email in EmailQueue.objects.filter(sent=False):
         if not email.recipient.email:
             msg = 'No email address is available for user {}'.format(
@@ -70,6 +72,9 @@ def main():
             else:
                 email.sent = True
                 email.save()
+                num_sent += 1
+
+    logger.debug('{} emails sent'.format(num_sent))
 
 
 if __name__ == '__main__':
