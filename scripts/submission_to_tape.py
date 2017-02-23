@@ -81,6 +81,10 @@ def parse_args():
                                                  'elastic tape')
     parser.add_argument('directory', help="the submission's top-level "
                                           "initial directory")
+    parser.add_argument('-o', '--overwrite', help='write the submission to '
+                                                  'elastic tape, even if the '
+                                                  'submission has already '
+                                                  'been written to tape')
     parser.add_argument('-l', '--log-level', help='set logging level to one '
                                                   'of debug, info, warn (the '
                                                   'default), or error')
@@ -93,7 +97,17 @@ def main(args):
     """
     Main entry point
     """
-    data_sub = _get_submission_object(args.directory)
+    try:
+        data_sub = _get_submission_object(args.directory)
+    except ValueError as exc:
+        sys.exit(1)
+
+    if data_sub.get_tape_urls() and not args.overwrite:
+        msg = ('Data submission has already been written to tape. Re-run this '
+               'script with the -o, --overwrite option to force it to be '
+               'written again.')
+        logger.error(msg)
+        sys.exit(1)
 
     # make a file containing the paths of the files to write to tape
     filelist_name = get_temp_filename('filelist.txt')
