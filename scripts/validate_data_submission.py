@@ -165,7 +165,7 @@ def verify_fk_relationships(metadata):
         if not results:
             msg = ('There is no existing database entry for {}: {} in file: {}'.
                 format(check_str, metadata[check_str], metadata['basename']))
-            logger.warning(msg)
+            logger.error(msg)
             raise SubmissionError(msg)
 
     return True
