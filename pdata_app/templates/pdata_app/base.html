@@ -63,6 +63,10 @@
                     <li><a href="{% url 'outstanding_data' %}">Outstanding Data Query</a></li>
                     <li role="separator" class="divider"></li>
                     <li><a href="{% url 'create_submission' %}">Create Submission</a></li>
+                    <li role="separator" class="divider"></li>
+                    {% if user.is_authenticated %}
+                    <li><a href="{% url 'password_change' %}">Change Password</a></li>
+                    {% endif %}
                   </ul>
                 </li>
               </ul>

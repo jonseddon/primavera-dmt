@@ -16,7 +16,7 @@ urlpatterns = [
     url(r'^logout/$', pdata_app.views.view_logout, name='logout'),
 
     url(r'^password_change/$', pdata_app.views.view_change_password,
-        name='change_password'),
+        name='password_change'),
 
     url(r'^password_change/done/$',
         pdata_app.views.view_change_password_success,

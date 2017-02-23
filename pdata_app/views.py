@@ -137,6 +137,7 @@ def view_logout(request):
     return redirect('home')
 
 
+@login_required(login_url='/login/')
 def view_change_password(request):
     if request.method == 'POST':
         form = PasswordChangeBootstrapForm(request.user, request.POST)
