@@ -11,6 +11,7 @@ import sys
 import django
 django.setup()
 from django.core.mail import EmailMessage
+from django.template.defaultfilters import pluralize
 
 from pdata_app.models import EmailQueue
 
@@ -74,7 +75,7 @@ def main():
                 email.save()
                 num_sent += 1
 
-    logger.debug('{} emails sent'.format(num_sent))
+    logger.debug('{} email{} sent'.format(num_sent, pluralize(num_sent)))
 
 
 if __name__ == '__main__':
