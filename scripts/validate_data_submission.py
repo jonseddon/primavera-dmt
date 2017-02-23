@@ -483,10 +483,10 @@ def main(args):
     logger.debug('%s files identified', len(data_files))
 
     try:
-        data_sub = _get_submission_object(submission_dir)
-
         try:
             if not args.validate_only:
+                data_sub = _get_submission_object(submission_dir)
+
                 if data_sub.status != 'ARRIVED':
                     msg = "The submission's status is not ARRIVED."
                     logger.error(msg)
