@@ -14,7 +14,8 @@ from django.utils.timezone import make_aware
 from pdata_app.utils.dbapi import get_or_create, match_one
 from pdata_app.models import (Project, Institute, ClimateModel, ActivityId,
                               Experiment, VariableRequest, DataRequest,
-                              RetrievalRequest, DataFile, DataSubmission)
+                              RetrievalRequest, DataFile, DataSubmission,
+                              Settings)
 from vocabs.vocabs import (CALENDARS, FREQUENCY_VALUES, STATUS_VALUES,
                            VARIABLE_TYPES)
 
@@ -117,7 +118,8 @@ class TestIntegrationTests(TestCase):
             experiment=experiment, variable_request=var2, rip_code='r1i1p1f1',
             request_start_time=0.0, request_end_time=23400.0,
             time_units='days since 1950-01-01', calendar='360_day')
-        self.user = get_or_create(User, username='fred')
+        self.user = get_or_create(User,
+                                  username=Settings.get_solo().contact_user_id)
         dsub = get_or_create(DataSubmission, status=STATUS_VALUES['VALIDATED'],
             incoming_directory=incoming_directory,
             directory=incoming_directory, user=self.user)

@@ -7,6 +7,7 @@ data submission in the Data Management Tool.
 """
 import argparse
 import logging
+import logging.config
 import os
 import re
 import subprocess
@@ -80,6 +81,11 @@ def parse_args():
                                                  'elastic tape')
     parser.add_argument('directory', help="the submission's top-level "
                                           "initial directory")
+    parser.add_argument('-o', '--overwrite', help='write the submission to '
+                                                  'elastic tape, even if the '
+                                                  'submission has already '
+                                                  'been written to tape',
+                        action='store_true')
     parser.add_argument('-l', '--log-level', help='set logging level to one '
                                                   'of debug, info, warn (the '
                                                   'default), or error')
@@ -92,7 +98,17 @@ def main(args):
     """
     Main entry point
     """
-    data_sub = _get_submission_object(args.directory)
+    try:
+        data_sub = _get_submission_object(args.directory)
+    except ValueError as exc:
+        sys.exit(1)
+
+    if data_sub.get_tape_urls() and not args.overwrite:
+        msg = ('Data submission has already been written to tape. Re-run this '
+               'script with the -o, --overwrite option to force it to be '
+               'written again.')
+        logger.error(msg)
+        sys.exit(1)
 
     # make a file containing the paths of the files to write to tape
     filelist_name = get_temp_filename('filelist.txt')
@@ -134,26 +150,41 @@ def main(args):
 if __name__ == '__main__':
     cmd_args = parse_args()
 
-    # Disable propagation and discard any existing handlers.
-    logger.propagate = False
-    if len(logger.handlers):
-        logger.handlers = []
-
-    # set-up the logger
-    console = logging.StreamHandler(stream=sys.stdout)
-    fmtr = logging.Formatter(fmt=DEFAULT_LOG_FORMAT)
+    # determine the log level
     if cmd_args.log_level:
         try:
-            logger.setLevel(getattr(logging, cmd_args.log_level.upper()))
+            log_level = getattr(logging, cmd_args.log_level.upper())
         except AttributeError:
             logger.setLevel(logging.WARNING)
-            logger.error('log-level must be one of: debug, info, warn or '
-                         'error')
+            logger.error('log-level must be one of: debug, info, warn or error')
             sys.exit(1)
     else:
-        logger.setLevel(DEFAULT_LOG_LEVEL)
-    console.setFormatter(fmtr)
-    logger.addHandler(console)
+        log_level = DEFAULT_LOG_LEVEL
+
+    # configure the logger
+    logging.config.dictConfig({
+        'version': 1,
+        'disable_existing_loggers': False,
+        'formatters': {
+            'standard': {
+                'format': DEFAULT_LOG_FORMAT,
+            },
+        },
+        'handlers': {
+            'default': {
+                'level': log_level,
+                'class': 'logging.StreamHandler',
+                'formatter': 'standard'
+            },
+        },
+        'loggers': {
+            '': {
+                'handlers': ['default'],
+                'level': log_level,
+                'propagate': True
+            }
+        }
+    })
 
     # run the code
     main(cmd_args)

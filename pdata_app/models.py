@@ -645,7 +645,7 @@ class EmailQueue(models.Model):
 
     subject = models.CharField(max_length=400, blank=False)
 
-    message = models.CharField(max_length=10000, blank=False)
+    message = models.TextField(blank=False)
 
     sent = models.BooleanField(default=False, null=False)
 

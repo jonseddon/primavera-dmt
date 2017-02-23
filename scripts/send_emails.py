@@ -4,12 +4,14 @@ email.py - various functions to work with emails in the pdata application
 """
 import argparse
 import logging
+import logging.config
 from smtplib import SMTPException
 import sys
 
 import django
 django.setup()
 from django.core.mail import EmailMessage
+from django.template.defaultfilters import pluralize
 
 from pdata_app.models import EmailQueue
 
@@ -46,6 +48,8 @@ def main():
 
     :return:
     """
+    num_sent = 0
+
     for email in EmailQueue.objects.filter(sent=False):
         if not email.recipient.email:
             msg = 'No email address is available for user {}'.format(
@@ -69,30 +73,49 @@ def main():
             else:
                 email.sent = True
                 email.save()
+                num_sent += 1
+
+    logger.debug('{} email{} sent'.format(num_sent, pluralize(num_sent)))
 
 
 if __name__ == '__main__':
     cmd_args = parse_args()
 
-    # Disable propagation and discard any existing handlers.
-    logger.propagate = False
-    if len(logger.handlers):
-        logger.handlers = []
-
-    # set-up the logger
-    console = logging.StreamHandler(stream=sys.stdout)
-    fmtr = logging.Formatter(fmt=DEFAULT_LOG_FORMAT)
+    # determine the log level
     if cmd_args.log_level:
         try:
-            logger.setLevel(getattr(logging, cmd_args.log_level.upper()))
+            log_level = getattr(logging, cmd_args.log_level.upper())
         except AttributeError:
             logger.setLevel(logging.WARNING)
             logger.error('log-level must be one of: debug, info, warn or error')
             sys.exit(1)
     else:
-        logger.setLevel(DEFAULT_LOG_LEVEL)
-    console.setFormatter(fmtr)
-    logger.addHandler(console)
+        log_level = DEFAULT_LOG_LEVEL
+
+    # configure the logger
+    logging.config.dictConfig({
+        'version': 1,
+        'disable_existing_loggers': False,
+        'formatters': {
+            'standard': {
+                'format': DEFAULT_LOG_FORMAT,
+            },
+        },
+        'handlers': {
+            'default': {
+                'level': log_level,
+                'class': 'logging.StreamHandler',
+                'formatter': 'standard'
+            },
+        },
+        'loggers': {
+            '': {
+                'handlers': ['default'],
+                'level': log_level,
+                'propagate': True
+            }
+        }
+    })
 
     # run the code
     main()
