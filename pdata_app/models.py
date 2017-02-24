@@ -593,7 +593,7 @@ class DataIssue(models.Model):
     def __unicode__(self):
         return "Data Issue (%s): %s (%s)" % (
             self.date_time.strftime('%Y-%m-%d %H:%M:%S'),
-            self.issue, self.reporter
+            self.issue, self.reporter.username
         )
 
     class Meta:

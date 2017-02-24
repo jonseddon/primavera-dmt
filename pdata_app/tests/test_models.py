@@ -275,7 +275,8 @@ class TestDataFileAggregationBaseMethods(TestCase):
         self.assertEqual(issues, [])
 
     def test_get_data_issues_with_single_issue(self):
-        di = models.DataIssue(issue='unit test', reporter='bob',
+        reporter = get_or_create(User, username='fred')
+        di = models.DataIssue(issue='unit test', reporter=reporter,
             date_time=datetime.datetime(1950, 12, 13, 0, 0, 0, 0))
         di.save()
 
@@ -287,7 +288,8 @@ class TestDataFileAggregationBaseMethods(TestCase):
         self.assertEqual(issues, [di])
 
     def test_get_data_issues_with_single_issue_on_all_files(self):
-        di = models.DataIssue(issue='unit test', reporter='bob',
+        reporter = get_or_create(User, username='bob')
+        di = models.DataIssue(issue='unit test', reporter=reporter,
             date_time=datetime.datetime(1950, 12, 13, 0, 0, 0, 0))
         di.save()
 
@@ -299,10 +301,11 @@ class TestDataFileAggregationBaseMethods(TestCase):
         self.assertEqual(issues, [di])
 
     def test_get_data_issues_with_many_issues(self):
-        di1 = models.DataIssue(issue='2nd test', reporter='bill',
+        reporter = get_or_create(User, username='bill')
+        di1 = models.DataIssue(issue='2nd test', reporter=reporter,
             date_time=datetime.datetime(1805, 7, 5, 0, 0, 0))
         di1.save()
-        di2 = models.DataIssue(issue='unit test', reporter='bob',
+        di2 = models.DataIssue(issue='unit test', reporter=reporter,
             date_time=datetime.datetime(1950, 12, 13, 0, 0, 0, 0))
         di2.save()
 
@@ -317,11 +320,12 @@ class TestDataFileAggregationBaseMethods(TestCase):
         self.assertEqual(issues, [di2, di1])
 
     def test_assign_data_issue(self):
-        self.dsub.assign_data_issue('all files', 'Lewis')
+        reporter = get_or_create(User, username='Lewis')
+        self.dsub.assign_data_issue('all files', reporter)
 
         for df in self.dsub.get_data_files():
             di = df.dataissue_set.filter(issue='all files')[0]
-            self.assertEqual(di.reporter, 'Lewis')
+            self.assertEqual(di.reporter.username, 'Lewis')
 
 
 class TestDataSubmission(TestCase):
@@ -445,7 +449,8 @@ class TestDataIssue(TestCase):
     Test DataIssue class
     """
     def setUp(self):
-        _p = get_or_create(models.DataIssue, issue='test', reporter='me',
+        reporter = get_or_create(User, username='me')
+        _p = get_or_create(models.DataIssue, issue='test', reporter=reporter,
             date_time=make_aware(datetime.datetime(2016, 8, 8, 8, 42, 37, 0),
                                  pytz.UTC, None))
 
