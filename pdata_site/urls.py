@@ -1,9 +1,10 @@
 from django.conf.urls import include, url
+from django.contrib.auth import views as auth_views
 from django.contrib.staticfiles.urls import staticfiles_urlpatterns
 
+from pdata_app.forms import SetPasswordBootstrapForm
 import pdata_app.views
 import et_indexer.views
-
 
 from django.contrib import admin
 admin.autodiscover()
@@ -14,6 +15,31 @@ urlpatterns = [
     url(r'^login/$', pdata_app.views.view_login, name='login'),
 
     url(r'^logout/$', pdata_app.views.view_logout, name='logout'),
+
+    url(r'^password_change/$', pdata_app.views.view_change_password,
+        name='password_change'),
+
+    url(r'^password_change/done/$',
+        pdata_app.views.view_change_password_success,
+        name='password_change_done'),
+
+    url(r'^register/$', pdata_app.views.view_register,
+        name='register'),
+
+    url(r'^register/done/$', pdata_app.views.view_register_success,
+        name='register_success'),
+
+    url(r'^register/(?P<uidb64>[0-9A-Za-z_\-]+)/(?P<token>[0-9A-Za-z]{1,13}-'
+        r'[0-9A-Za-z]{1,20})/$',
+        auth_views.password_reset_confirm,
+        {'post_reset_redirect': 'register_complete',
+         'template_name': 'pdata_app/register_user_confirm.html',
+         'set_password_form': SetPasswordBootstrapForm},
+        name='password_reset_confirm'),
+
+    url(r'^register/complete/$', auth_views.password_reset_complete, {
+        'template_name': 'pdata_app/register_user_done.html',
+    }, name='register_complete'),
 
     url(r'^files/$', pdata_app.views.DataFileList.as_view(), name='data_files'),
 
