@@ -581,8 +581,8 @@ class DataIssue(models.Model):
     """
     issue = models.CharField(max_length=500, verbose_name="Issue Reported",
                              null=False, blank=False)
-    reporter = models.CharField(max_length=60, verbose_name="Reporter",
-                                null=False, blank=False)
+    reporter = models.ForeignKey(User, verbose_name="Reporter",
+                                 null=False, blank=False)
     date_time = models.DateTimeField(auto_now_add=True,
                                      verbose_name="Date and Time of Report",
                                      null=False, blank=False)
