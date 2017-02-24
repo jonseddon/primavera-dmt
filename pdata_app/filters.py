@@ -144,7 +144,7 @@ class DataIssueFilter(django_filters.FilterSet):
 
     issue = django_filters.CharFilter(name='issue', lookup_expr='icontains')
 
-    reporter = django_filters.CharFilter(name='reporter',
+    reporter = django_filters.CharFilter(name='reporter__username',
                                          lookup_expr='icontains')
 
     date_time = django_filters.DateFromToRangeFilter(name='date_time')
