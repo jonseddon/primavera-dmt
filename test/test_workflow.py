@@ -179,8 +179,9 @@ class TestWorkflows(PdataBaseTest):
         data_submission = DataSubmission.objects.all()[0]
 
         # Now, create the data issue
+        reporter = get_or_create(User, username='Fred')
         data_issue = get_or_create(DataIssue, issue='test issue',
-            reporter='Jon Seddon',
+            reporter=reporter,
             date_time=make_aware(datetime.datetime(1978, 7, 19, 0, 0, 0, 0),
                                  pytz.UTC, None))
 
