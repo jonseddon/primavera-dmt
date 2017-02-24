@@ -6,11 +6,7 @@
         This is the PRIMAVERA Data Management Tool (DMT).
         </p>
 
-        <p>
-            More to come in the future...
-        </p>
-
-        <p>Try some links:</p>
+        <p>The following views are available:</p>
 
         <ul>
             <li><a href="{% url 'data_submissions' %}">View Data Submissions</a></li>
@@ -30,12 +26,21 @@
             <li><a href="{% url 'outstanding_data' %}">Outstanding Data Query</a></li>
         </ul>
 
-        <p>The following data submission form is also available:</p>
-
+        <p>Indicate that a data submission is complete:</p>
 
         <ul>
             <li><a href="{% url 'create_submission' %}">Data Submission Complete</a></li>
         </ul>
+
+        {% if not user.is_authenticated %}
+
+            <p>Create an account:</p>
+
+            <ul>
+                <li><a href="{% url 'register' %}">Create Account</a></li>
+            </ul>
+
+        {% endif %}
 
 
         <p>Please note that all times in this system are in UTC.</p>

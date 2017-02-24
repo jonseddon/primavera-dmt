@@ -155,7 +155,7 @@ def view_change_password(request):
 
 
 def view_change_password_success(request):
-    return render(request, 'pdata_app/change_password_success.html',
+    return render(request, 'pdata_app/password_change_success.html',
                   {'request': request, 'page_title': 'Change Password'})
 
 
@@ -176,8 +176,8 @@ def view_register(request):
             # Copied from django/contrib/auth/views.py : password_reset
             opts = {
                 'use_https': True,
-                'email_template_name': 'pdata_app/password_reset_message.html',
-                'subject_template_name': 'pdata_app/password_reset_subject.txt',
+                'email_template_name': 'pdata_app/register_user_email_message.html',
+                'subject_template_name': 'pdata_app/register_user_email_subject.txt',
                 'request': request,
                 'from_email': 'no-reply@prima-dm.ceda.ac.uk'
                 # 'html_email_template_name': provide an HTML content template if you desire.
@@ -243,7 +243,7 @@ def confirm_retrieval(request):
                             datafile_set.aggregate(Sum('size'))['size__sum']
                             for req in data_req_ids])
         # generate the confirmation page
-        return render(request, 'pdata_app/confirm_retrieval_request.html',
+        return render(request, 'pdata_app/retrieval_request_confirm.html',
                       {'request': request, 'data_reqs':data_req_strs,
                        'page_title': 'Confirm Retrieval Request',
                        'return_url': request.POST['variables_received_url'],
