@@ -5,14 +5,17 @@ import urllib
 from django.contrib.auth import (authenticate, login, logout,
                                  update_session_auth_hash)
 from django.contrib.auth.decorators import login_required
-from django.db.models import Sum
-from django.shortcuts import render, redirect
-from django.http import HttpResponseRedirect
+from django.contrib.auth.forms import PasswordResetForm
+from django.contrib.auth.models import User
 from django.core.urlresolvers import reverse
+from django.db.models import Sum
+from django.http import HttpResponseRedirect
+from django.shortcuts import render, redirect
 
 from .models import (DataFile, DataSubmission, ESGFDataset, CEDADataset,
                      DataRequest, DataIssue, VariableRequest, RetrievalRequest)
-from .forms import CreateSubmissionForm, PasswordChangeBootstrapForm
+from .forms import (CreateSubmissionForm, PasswordChangeBootstrapForm,
+                    UserBootstrapForm)
 from .tables import (DataRequestTable, DataFileTable, DataSubmissionTable,
                      ESGFDatasetTable, CEDADatasetTable, DataIssueTable,
                      VariableRequestQueryTable, DataReceivedTable,
@@ -147,13 +150,53 @@ def view_change_password(request):
             return redirect('password_change_done')
     else:
         form = PasswordChangeBootstrapForm(request.user)
-    return render(request, 'pdata_app/change_password.html',
+    return render(request, 'pdata_app/generic_form.html',
                   {'form': form, 'page_title': 'Change Password'})
 
 
 def view_change_password_success(request):
     return render(request, 'pdata_app/change_password_success.html',
                   {'request': request, 'page_title': 'Change Password'})
+
+
+def view_register(request):
+    if request.method == 'POST':
+        user_form = UserBootstrapForm(data=request.POST)
+        if user_form.is_valid():
+            # Create a database object from the user's form data
+            user = user_form.save(commit=False)
+
+            # Set a random password so that the email address can be verified
+            user.set_password(User.objects.make_random_password())
+            user.save()
+
+            # This form only requires the "email" field, so will validate.
+            reset_form = PasswordResetForm(request.POST)
+            reset_form.is_valid()  # Must trigger validation
+            # Copied from django/contrib/auth/views.py : password_reset
+            opts = {
+                'use_https': True,
+                'email_template_name': 'pdata_app/password_reset_message.html',
+                'subject_template_name': 'pdata_app/password_reset_subject.txt',
+                'request': request,
+                'from_email': 'no-reply@prima-dm.ceda.ac.uk'
+                # 'html_email_template_name': provide an HTML content template if you desire.
+            }
+            # This form sends the email on save()
+            reset_form.save(**opts)
+
+            return redirect('register_success')
+    else:
+        user_form = UserBootstrapForm()
+
+    # Render the template depending on the context.
+    return render(request, 'pdata_app/generic_form.html',
+            {'form': user_form, 'page_title': 'Create Account'})
+
+
+def view_register_success(request):
+    return render(request, 'pdata_app/register_user_success.html',
+                  {'request': request, 'page_title': 'Create Account'})
 
 
 def view_home(request):

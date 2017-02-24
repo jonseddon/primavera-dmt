@@ -1,4 +1,5 @@
 from django.conf.urls import include, url
+from django.contrib.auth import views as auth_views
 from django.contrib.staticfiles.urls import staticfiles_urlpatterns
 
 import pdata_app.views
@@ -21,6 +22,17 @@ urlpatterns = [
     url(r'^password_change/done/$',
         pdata_app.views.view_change_password_success,
         name='password_change_done'),
+
+    url(r'^register/$', pdata_app.views.view_register,
+        name='register'),
+
+    url(r'^register/done/$', pdata_app.views.view_register_success,
+        name='register_success'),
+
+    url(r'^reset/(?P<uidb64>[0-9A-Za-z_\-]+)/(?P<token>[0-9A-Za-z]{1,13}-'
+        r'[0-9A-Za-z]{1,20})/$',
+        auth_views.password_reset_confirm,
+        {'post_reset_redirect': 'home'}, name='password_reset_confirm'),
 
     url(r'^files/$', pdata_app.views.DataFileList.as_view(), name='data_files'),
 
