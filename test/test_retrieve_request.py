@@ -163,10 +163,11 @@ class TestIntegrationTests(TestCase):
             alternative = None
 
         self.mock_exists.side_effect = [
-            False, # _make_tape_url_dir()
-            True, # if not os.path.exists(extracted_file_path):
-            True, # if not os.path.exists(drs_dir):
-            False # if os.path.exists(dest_file_path):
+            False,  # if os.path.exists(retrieval_dir):
+            False,  # _make_tape_url_dir()
+            True,  # if not os.path.exists(extracted_file_path):
+            True,  # if not os.path.exists(drs_dir):
+            False  # if os.path.exists(dest_file_path):
         ]
 
         ns = ArgparseNamespace()
@@ -202,16 +203,19 @@ class TestIntegrationTests(TestCase):
 
         self.mock_exists.side_effect = [
             # first tape_url
-            False, # _make_tape_url_dir()
-            True, # if not os.path.exists(extracted_file_path):
-            True, # if not os.path.exists(drs_dir):
-            False, # if os.path.exists(dest_file_path):
-            # second tape_url
+            False,  # if os.path.exists(retrieval_dir):
             False,  # _make_tape_url_dir()
             True,  # if not os.path.exists(extracted_file_path):
             True,  # if not os.path.exists(drs_dir):
             False,  # if os.path.exists(dest_file_path):
+            # second tape_url
+            False,   # if os.path.exists(retrieval_dir):
+            False,  # _make_tape_url_dir()
+            True,   # if not os.path.exists(extracted_file_path):
+            True,   # if not os.path.exists(drs_dir):
+            False,  # if os.path.exists(dest_file_path):
             # third tape_url
+            False,  # if os.path.exists(retrieval_dir):
             False,  # _make_tape_url_dir()
             True,  # if not os.path.exists(extracted_file_path):
             True,  # if not os.path.exists(drs_dir):
@@ -225,7 +229,7 @@ class TestIntegrationTests(TestCase):
 
         for data_file in DataFile.objects.all():
             self.assertTrue(data_file.online)
-            self.assertIn(data_file.directory,[
+            self.assertIn(data_file.directory, [
                 u'/group_workspaces/jasmin2/primavera4/stream1/CMIP6/MOHC/'
                 u'MY-MODEL/HighResMIP/experiment/r1i1p1f1/my-table/my-var/gn/'
                 u'v12345678',
@@ -265,7 +269,6 @@ class TestIntegrationTests(TestCase):
             skip_checksums = True
             alternative = None
 
-
         ns = ArgparseNamespace()
         self.assertRaises(SystemExit, main, ns)
         self.mock_logger.error.assert_called_with('Retrieval {} was already '
@@ -284,11 +287,12 @@ class TestIntegrationTests(TestCase):
             alternative = '/group_workspaces/jasmin2/primavera3/spare_dir'
 
         self.mock_exists.side_effect = [
-            False, # _make_tape_url_dir()
-            True, # if not os.path.exists(extracted_file_path):
-            True, # if not os.path.exists(drs_dir):
-            False, # if os.path.exists(dest_file_path):
-            True # if not os.path.exists(primary_path):
+            False,  # if os.path.exists(retrieval_dir):
+            False,  # _make_tape_url_dir()
+            True,  # if not os.path.exists(extracted_file_path):
+            True,  # if not os.path.exists(drs_dir):
+            False,  # if os.path.exists(dest_file_path):
+            True  # if not os.path.exists(primary_path):
         ]
 
         ns = ArgparseNamespace()
@@ -309,4 +313,30 @@ class TestIntegrationTests(TestCase):
             u'/group_workspaces/jasmin2/primavera4/stream1/CMIP6/MOHC/MY-MODEL/'
             u'HighResMIP/experiment/r1i1p1f1/my-table/my-var/gn/v12345678/'
             u'file_one.nc'
+        )
+
+    def test_retrieval_exists(self):
+        ret_req = get_or_create(RetrievalRequest, requester=self.user)
+        ret_req.data_request.add(self.dreq1)
+        ret_req.save()
+
+        class ArgparseNamespace(object):
+            retrieval_id = ret_req.id
+            no_restore = False
+            skip_checksums = True
+            alternative = None
+
+        self.mock_exists.side_effect = [
+            True  # if os.path.exists(retrieval_dir):
+        ]
+
+        ns = ArgparseNamespace()
+
+        self.assertRaises(SystemExit, main, ns)
+        self.mock_logger.error.assert_called_once_with(
+            'Elastic tape retrieval destination directory /group_workspaces/'
+            'jasmin2/primavera4/.et_retrievals/et_1234 already '
+            'exists. Please delete this directory to restore from tape '
+            'again, or run this script with the -n option to extract files '
+            'from this existing directory.'
         )
