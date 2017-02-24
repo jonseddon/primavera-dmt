@@ -81,7 +81,16 @@ def get_et_url(tape_url):
 
     batch_id = tape_url.split(':')[1]
 
-    retrieval_dir = _make_tape_url_dir(tape_url)
+    retrieval_dir = _make_tape_url_dir(tape_url, skip_creation=True)
+    if os.path.exists(retrieval_dir):
+        msg = ('Elastic tape retrieval destination directory {} already '
+               'exists. Please delete this directory to restore from tape '
+               'again, or run this script with the -n option to extract files '
+               'from this existing directory.'.format(retrieval_dir))
+        logger.error(msg)
+        sys.exit(1)
+    else:
+        retrieval_dir = _make_tape_url_dir(tape_url)
 
     logger.debug('Restoring to {}'.format(retrieval_dir))
 
