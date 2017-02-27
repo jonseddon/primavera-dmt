@@ -197,6 +197,9 @@ def create_database_file_object(metadata, data_submission):
         submission
     :returns:
     """
+    # get a fresh DB connection after exiting from parallel operation
+    django.db.connections.close_all()
+
     foreign_key_types = [
         (Project, 'project'),
         (ClimateModel, 'climate_model'),
