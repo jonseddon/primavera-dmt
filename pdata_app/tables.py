@@ -337,6 +337,10 @@ class RetrievalRequestTable(tables.Table):
 
     data_reqs = tables.Column(empty_values=(), orderable=False,
                               verbose_name='Data Requests')
+    req_size = tables.Column(empty_values=(), orderable=False,
+                              verbose_name='Request Size')
+    tape_urls = tables.Column(empty_values=(), orderable=False,
+                              verbose_name='Tape URLs')
 
     def render_date_created(self, value):
         return value.strftime('%Y-%m-%d %H:%M')
@@ -345,11 +349,21 @@ class RetrievalRequestTable(tables.Table):
         if value:
             return value.strftime('%Y-%m-%d %H:%M')
         else:
-            return '--'
+            return DEFAULT_VALUE
 
     def render_data_reqs(self, record):
         reqs_str = ', \n'.join([str(dr) for dr in record.data_request.all()])
         return reqs_str
+
+    def render_req_size(self, record):
+        return filesizeformat(record.data_request.all().aggregate(
+            Sum('datafile__size'))['datafile__size__sum'])
+
+    def render_tape_urls(self, record):
+        tape_urls = list(record.data_request.all().values_list(
+            'datafile__tape_url', flat=True).distinct())
+
+        return ', '.join([tu for tu in tape_urls if tu is not None])
 
 
 def _to_comma_sep(list_values):
