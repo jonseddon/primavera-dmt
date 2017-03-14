@@ -30,7 +30,7 @@ from vocabs.vocabs import FREQUENCY_VALUES, VARIABLE_TYPES
 from pdata_app.utils.dbapi import get_or_create
 
 # The ID of thr Google Speadsheet (taken from the sheet's URL)
-SPREADSHEET_ID = '1bEDNnDTBQ93Nf6t-I675HJI64N96D76aaryrarHgPbI'
+SPREADSHEET_ID = '1UnYjtfQ3s7A-7ZE_qL3efvzfxysSjoFcItBHgwAsGdI'
 
 # If modifying these scopes, delete your previously saved credentials
 # at ~/.credentials/sheets.googleapis.com-python-quickstart.json
@@ -82,12 +82,12 @@ def main():
     service = discovery.build('sheets', 'v4', http=http,
                               discoveryServiceUrl=discovery_url)
 
-    sheet_names = ['Amon', 'LImon', 'Lmon', 'Omon', 'SImon', 'aermonthly',
-        'cfMon', 'emMon', 'emMonZ', 'primMon', 'primOmon', 'Oday', 'cfDay',
-        'day', 'emDay', 'emDayZ', 'emDaypt', 'primDay', 'primOday', 'primSIday',
-        '6hrPlev', '6hrPlevpt', 'primO6hr', 'prim6hr', 'prim6hrpt', '3hr',
-        'em3hr', 'em3hrpt', 'prim3hr', 'prim3hrpt', 'em1hr', 'emSubhr',
-        'prim1hrpt', 'fx']
+    sheet_names = ['Amon', 'LImon', 'Lmon', 'Omon', 'SImon', 'AERmon',
+        'CFmon', 'Emon', 'EmonZ', 'Primmon', 'PrimmonZ', 'PrimOmon', 'Oday', 'CFday',
+        'day', 'Eday', 'EdayZ', 'SIday', 'PrimdayPt', 'Primday', 'PrimOday', 'PrimSIday',
+        '6hrPlev', '6hrPlevPt', 'PrimO6hr', 'Prim6hr', 'Prim6hrPt', '3hr',
+        'E3hr', 'E3hrPt', 'Prim3hr', 'Prim3hrPt', 'E1hr', 'Esubhr',
+        'Prim1hr', 'fx']
 
     for sheet in sheet_names:
         range_name = '{}!A2:AI'.format(sheet)
