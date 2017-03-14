@@ -70,7 +70,8 @@ def main():
         'CNR': 'CNR',
         'MPI-M': 'Max Planck Institute for Meteorology',
         'MOHC': 'Met Office Hadley Centre, Fitzroy Road, Exeter, Devon, '
-                'EX1 3PB, UK.'
+                'EX1 3PB, UK.',
+        'ECMWF': 'European Centre for Medium-Range Weather Forecasts'
     }
     for inst in institutes:
         _inst = get_or_create(Institute, short_name=inst,
@@ -83,7 +84,8 @@ def main():
         'CMCC-ESM': 'CMCC-ESM:',
         'EC-Earth': 'EC-Earth:',
         'MPI-ESM': 'MPI-ESM:',
-        'HadGEM3': 'HadGEM3:'
+        'HadGEM3': 'HadGEM3:',
+        'IFS': 'IFS'
     }
     for model in models:
         _mdl = get_or_create(ClimateModel, short_name=model,
