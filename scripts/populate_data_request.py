@@ -5,9 +5,10 @@ populate_data_request.py
 Populates the PRIMAVERA-DMT DataRequest table with details from the PRIMAVERA
 data request spreadsheet.
 
-Uses the Google Sheets API: https://developers.google.com/sheets/quickstart/python
-To load the spreadsheet at: https://docs.google.com/spreadsheets/d/1bEDNnDTBQ93Nf6t-I675HJI64N96D76aaryrarHgPbI/edit#gid=1672172109
-Which is copied from Matthew Mizielinski's original at: https://docs.google.com/spreadsheets/d/1O48vmAhvOMmAKzjxHxQAKZRoYi3bFP52fkpMPxYdSqk/edit#gid=1495362375
+Uses the Google Sheets API:
+https://developers.google.com/sheets/quickstart/python
+To load the spreadsheet at:
+https://docs.google.com/spreadsheets/d/1UnYjtfQ3s7A-7ZE_qL3efvzfxysSjoFcItBHgwAsGdI/
 """
 from datetime import datetime
 import httplib2
@@ -34,7 +35,7 @@ from pdata_app.models import (DataRequest, Institute, Project, Settings,
 from pdata_app.utils.dbapi import match_one, get_or_create
 
 # The ID of the Google Speadsheet (taken from the sheet's URL)
-SPREADSHEET_ID = '1ei4_OTHXLkCh8LXe_CndrN6b4HHd4FxxKQEeeSu9htM'
+SPREADSHEET_ID = '1UnYjtfQ3s7A-7ZE_qL3efvzfxysSjoFcItBHgwAsGdI'
 
 # If modifying these scopes, delete your previously saved credentials
 # at ~/.credentials/sheets.googleapis.com-python-quickstart.json
@@ -75,6 +76,22 @@ def get_credentials():
             credentials = tools.run(flow, store)
         print 'Storing credentials to ' + credential_path
     return credentials
+
+
+def is_ecmwf(sheet_cell):
+    """Is this variable produced by ECMWF?"""
+    if not sheet_cell:
+        return False
+
+    int_string = re.findall(r'-?\d+', sheet_cell)
+    if int_string:
+        if ( int_string[0] == '1' or
+             int_string[0] == '2'):
+            return True
+        else:
+            return False
+    else:
+        return False
 
 
 def is_awi(sheet_cell):
@@ -188,33 +205,35 @@ def main():
 
     # the names of each of the sheets
     sheet_names = [
-        'Amon', 'LImon', 'Lmon', 'Omon', 'SImon', 'aermonthly',
-        'cfMon', 'emMon', 'emMonZ', 'primMon', 'primOmon', 'Oday', 'cfDay',
-        'day', 'emDay', 'emDayZ', 'emDaypt', 'primDay', 'primOday', 'primSIday',
-        '6hrPlev', '6hrPlevpt', 'primO6hr', 'prim6hr', 'prim6hrpt', '3hr',
-        'em3hr', 'em3hrpt', 'prim3hr', 'prim3hrpt', 'em1hr', 'emSubhr',
-        'prim1hrpt', 'fx'
+        'Amon', 'LImon', 'Lmon', 'Omon', 'SImon', 'AERmon',
+        'CFmon', 'Emon', 'EmonZ', 'Primmon', 'PrimmonZ', 'PrimOmon', 'Oday',
+        'CFday', 'day', 'Eday', 'EdayZ', 'SIday', 'PrimdayPt', 'Primday',
+        'PrimOday', 'PrimSIday', '6hrPlev', '6hrPlevPt', 'PrimO6hr', 'Prim6hr',
+        'Prim6hrPt', '3hr', 'E3hr', 'E3hrPt', 'Prim3hr', 'Prim3hrPt', 'E1hr',
+        'Esubhr', 'Prim1hr', 'fx'
     ]
 
     # details of each of the institutes
     institutes = {
-        24: {'id': 'AWI', 'model_id': 'AWI-CM', 'check_func': is_awi,
+        24: {'id': 'ECMWF', 'model_id': 'IFS', 'check_func': is_ecmwf,
              'calendar': CALENDAR_GREGORIAN},
-        25: {'id': 'CNRM-CERFACS', 'model_id': 'CNRM', 'check_func': is_cnrm,
+        25: {'id': 'AWI', 'model_id': 'AWI-CM', 'check_func': is_awi,
              'calendar': CALENDAR_GREGORIAN},
-        26: {'id': 'CMCC', 'model_id': 'CMCC-ESM', 'check_func': is_cmcc,
+        26: {'id': 'CNRM-CERFACS', 'model_id': 'CNRM', 'check_func': is_cnrm,
              'calendar': CALENDAR_GREGORIAN},
-        27: {'id': 'KNMI', 'model_id': 'EC-Earth', 'check_func': is_knmi,
+        27: {'id': 'CMCC', 'model_id': 'CMCC-ESM', 'check_func': is_cmcc,
              'calendar': CALENDAR_GREGORIAN},
-        28: {'id': 'SHMI', 'model_id': 'EC-Earth', 'check_func': is_shmi,
+        28: {'id': 'KNMI', 'model_id': 'EC-Earth', 'check_func': is_knmi,
              'calendar': CALENDAR_GREGORIAN},
-        29: {'id': 'BSC', 'model_id': 'EC-Earth', 'check_func': is_bsc,
+        29: {'id': 'SHMI', 'model_id': 'EC-Earth', 'check_func': is_shmi,
              'calendar': CALENDAR_GREGORIAN},
-        30: {'id': 'CNR', 'model_id': 'EC-Earth', 'check_func': is_cnr,
+        30: {'id': 'BSC', 'model_id': 'EC-Earth', 'check_func': is_bsc,
              'calendar': CALENDAR_GREGORIAN},
-        31: {'id': 'MPI-M', 'model_id': 'MPI-ESM', 'check_func': is_mpi,
+        31: {'id': 'CNR', 'model_id': 'EC-Earth', 'check_func': is_cnr,
              'calendar': CALENDAR_GREGORIAN},
-        32: {'id': 'MOHC', 'model_id': 'HadGEM3', 'check_func': is_metoffice,
+        32: {'id': 'MPI-M', 'model_id': 'MPI-ESM', 'check_func': is_mpi,
+             'calendar': CALENDAR_GREGORIAN},
+        33: {'id': 'MOHC', 'model_id': 'HadGEM3', 'check_func': is_metoffice,
              'calendar': CALENDAR_360_DAY}
     }
 
