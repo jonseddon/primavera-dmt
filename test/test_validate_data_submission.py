@@ -28,4 +28,4 @@ class TestUpdateDatabaseSubmission(TestCase):
 
     def test_create_db_file_called(self):
         self.mock_create_file.assert_called_once_with(self.metadata[0],
-                                                      self.ds)
+                                                      self.ds, True)
