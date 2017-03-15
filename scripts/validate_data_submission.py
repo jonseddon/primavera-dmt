@@ -134,6 +134,8 @@ def identify_and_validate_file(params, output, error_event):
             metadata.update(identify_contents_metadata(cube, filename))
 
             validate_file_contents(cube, metadata)
+
+            calculate_checksum(metadata)
         except SubmissionError:
             msg = ('A serious file error means the submission cannot continue: '
                   '{}'.format(filename))
@@ -144,6 +146,20 @@ def identify_and_validate_file(params, output, error_event):
             logger.warning(msg)
         else:
             output.append(metadata)
+
+
+def calculate_checksum(metadata):
+    checksum_value = adler32(os.path.join(metadata['directory'],
+                                          metadata['basename']))
+    if checksum_value:
+        metadata['checksum_type'] = CHECKSUM_TYPES['ADLER32']
+        metadata['checksum_value'] = checksum_value
+    else:
+        msg = ('Unable to calculate checksum for file: {}'.
+               format(metadata['basename']))
+        logger.warning(msg)
+        metadata['checksum_type'] = None
+        metadata['checksum_value'] = None
 
 
 def verify_fk_relationships(metadata):
@@ -325,16 +341,10 @@ def create_database_file_object(metadata, data_submission, file_online=True):
         logger.error(msg)
         raise SubmissionError(msg)
 
-    checksum_value = adler32(os.path.join(metadata['directory'],
-                                          metadata['basename']))
-    if checksum_value:
+    if metadata['checksum_value']:
         checksum = get_or_create(Checksum, data_file=data_file,
-                                 checksum_value=checksum_value,
-                                 checksum_type=CHECKSUM_TYPES['ADLER32'])
-    else:
-        msg = ('Unable to calculate checksum for file: {}'.
-               format(metadata['basename']))
-        logger.warning(msg)
+                                 checksum_value=metadata['checksum_value'],
+                                 checksum_type=metadata['checksum_type'])
 
 
 def move_rejected_files(submission_dir):
