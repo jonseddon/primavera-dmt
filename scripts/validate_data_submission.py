@@ -8,6 +8,7 @@ data submission in the Data Management Tool.
 import argparse
 import datetime
 import itertools
+import json
 import logging
 import logging.config
 from multiprocessing import Process, Manager
@@ -15,6 +16,8 @@ import os
 import re
 import shutil
 import sys
+
+import iris
 
 from primavera_val import (identify_filename_metadata, validate_file_contents,
                            identify_contents_metadata, load_cube,
@@ -131,6 +134,8 @@ def identify_and_validate_file(params, output, error_event):
             metadata.update(identify_contents_metadata(cube, filename))
 
             validate_file_contents(cube, metadata)
+
+            calculate_checksum(metadata)
         except SubmissionError:
             msg = ('A serious file error means the submission cannot continue: '
                   '{}'.format(filename))
@@ -143,6 +148,18 @@ def identify_and_validate_file(params, output, error_event):
             output.append(metadata)
 
 
+def calculate_checksum(metadata):
+    checksum_value = adler32(os.path.join(metadata['directory'],
+                                          metadata['basename']))
+    if checksum_value:
+        metadata['checksum_type'] = CHECKSUM_TYPES['ADLER32']
+        metadata['checksum_value'] = checksum_value
+    else:
+        msg = ('Unable to calculate checksum for file: {}'.
+               format(metadata['basename']))
+        logger.warning(msg)
+        metadata['checksum_type'] = None
+        metadata['checksum_value'] = None
 
 
 def verify_fk_relationships(metadata):
@@ -171,7 +188,7 @@ def verify_fk_relationships(metadata):
     return True
 
 
-def update_database_submission(validated_metadata, data_sub):
+def update_database_submission(validated_metadata, data_sub, files_online=True):
     """
     Create entries in the database for the files in this submission.
 
@@ -179,22 +196,56 @@ def update_database_submission(validated_metadata, data_sub):
         the metadata dictionary generated for each file
     :param pdata_app.models.DataSubmission data_sub: The data submission object
         to update.
+    :param bool files_online: True if the files are online.
     :returns:
     """
     for data_file in validated_metadata:
-        create_database_file_object(data_file, data_sub)
+        create_database_file_object(data_file, data_sub, files_online)
 
     data_sub.status = STATUS_VALUES['VALIDATED']
     data_sub.save()
 
 
-def create_database_file_object(metadata, data_submission):
+def read_json_file(filename):
+    """
+    Read a JSON file describing the files in this submission.
+
+    :param str filename: The name of the JSON file to read.
+    :returns: a list of dictionaries containing the validated metadata
+    """
+    with open(filename) as fh:
+        metadata = json.load(fh, object_hook=_dict_to_object)
+
+    logger.debug('Metadata for {} files read from JSON file {}'.format(
+        len(metadata), filename))
+
+    return metadata
+
+
+def write_json_file(validated_metadata, filename):
+    """
+    Write a JSON file describing the files in this submission.
+
+    :param multiprocessing.Manager.list validated_metadata: A list containing
+        the metadata dictionary generated for each file
+    :param str filename: The name of the JSON file to write the validated data
+        to.
+    """
+    with open(filename, 'w') as fh:
+        json.dump(list(validated_metadata), fh, default=_object_to_default,
+                  indent=4)
+
+    logger.debug('Metadata written to JSON file {}'.format(filename))
+
+
+def create_database_file_object(metadata, data_submission, file_online=True):
     """
     Create a database entry for a data file
 
-    :param dict metadata: This file's metadata
+    :param dict metadata: This file's metadata.
     :param pdata_app.models.DataSubmission data_submission: The parent data
-        submission
+        submission.
+    :param bool file_online: True if the file is online.
     :returns:
     """
     # get a fresh DB connection after exiting from parallel operation
@@ -257,6 +308,9 @@ def create_database_file_object(metadata, data_submission):
         today = datetime.datetime.utcnow()
         version_string = today.strftime('v%Y%m%d')
 
+    # if the file isn't online (e.g. loaded from JSON) then directory is blank
+    directory = metadata['directory'] if file_online else None
+
     # create a data file. If the file already exists in the database with
     # identical metadata then nothing happens. If the file exists but with
     # slightly different metadata then django.db.utils.IntegrityError is
@@ -264,7 +318,7 @@ def create_database_file_object(metadata, data_submission):
     try:
         data_file = DataFile.objects.create(name=metadata['basename'],
             incoming_directory=metadata['directory'],
-            directory=metadata['directory'], size=metadata['filesize'],
+            directory=directory, size=metadata['filesize'],
             project=metadata_objs['project'],
             institute=metadata_objs['institute'],
             climate_model=metadata_objs['climate_model'],
@@ -273,12 +327,12 @@ def create_database_file_object(metadata, data_submission):
             variable_request=variable, data_request=data_request,
             frequency=metadata['frequency'], rip_code=metadata['rip_code'],
             start_time=pdt2num(metadata['start_date'], time_units,
-                                metadata['calendar']),
+                               metadata['calendar']),
             end_time=pdt2num(metadata['end_date'], time_units,
-                              metadata['calendar'], start_of_period=False),
+                             metadata['calendar'], start_of_period=False),
             time_units=time_units, calendar=metadata['calendar'],
             version=version_string,
-            data_submission=data_submission, online=True,
+            data_submission=data_submission, online=file_online,
             grid=metadata['grid'] if 'grid' in metadata else None
         )
     except django.db.utils.IntegrityError as exc:
@@ -287,16 +341,10 @@ def create_database_file_object(metadata, data_submission):
         logger.error(msg)
         raise SubmissionError(msg)
 
-    checksum_value = adler32(os.path.join(metadata['directory'],
-                                          metadata['basename']))
-    if checksum_value:
+    if metadata['checksum_value']:
         checksum = get_or_create(Checksum, data_file=data_file,
-                                 checksum_value=checksum_value,
-                                 checksum_type=CHECKSUM_TYPES['ADLER32'])
-    else:
-        msg = ('Unable to calculate checksum for file: {}'.
-               format(metadata['basename']))
-        logger.warning(msg)
+                                 checksum_value=metadata['checksum_value'],
+                                 checksum_type=metadata['checksum_type'])
 
 
 def move_rejected_files(submission_dir):
@@ -409,6 +457,8 @@ def set_status_rejected(data_sub, rejected_dir):
     point to where the data now lives.
 
     :param pdata_app.models.DataSubmission data_sub: The data submission object.
+    :param str rejected_dir: The name of the directory that the rejected files
+        have been moved to.
     """
     data_sub.status = STATUS_VALUES['REJECTED']
     data_sub.directory = rejected_dir
@@ -439,6 +489,34 @@ def _get_submission_object(submission_dir):
     return data_sub
 
 
+def _object_to_default(obj):
+    """
+    Convert known objects to a form that can be serialized by JSON
+    """
+    if isinstance(obj, iris.time.PartialDateTime):
+        obj_dict = {'__class__': obj.__class__.__name__,
+                    '__module__': obj.__module__}
+        kwargs = {}
+        for k, v in re.findall(r'(\w+)=(\d+)', repr(obj)):
+            kwargs[k] = int(v)
+        obj_dict['__kwargs__'] = kwargs
+
+        return obj_dict
+
+
+def _dict_to_object(dict_):
+    """
+    Convert a dictionary to an object
+    """
+    if '__class__' in dict_:
+        module = __import__(dict_['__module__'], fromlist=[dict_['__class__']])
+        klass = getattr(module, dict_['__class__'])
+        inst = klass(**dict_['__kwargs__'])
+    else:
+        inst = dict_
+    return inst
+
+
 def parse_args():
     """
     Parse command-line arguments
@@ -456,6 +534,14 @@ def parse_args():
                                                     'submitted (CMIP5 or CMIP6)'
                                                     ' (default: %(default)s)',
                         default='CMIP6')
+    group = parser.add_mutually_exclusive_group()
+    group.add_argument('-o', '--output', help='write the new entries to the '
+                                              'JSON file specified rather '
+                                              'than to the database', type=str)
+    group.add_argument('-i', '--input', help='read the entries to add to the '
+                                             'database from the JSON file '
+                                             'specified rather than by '
+                                             'validating files', type=str)
     parser.add_argument('-l', '--log-level', help='set logging level to one of '
         'debug, info, warn (the default), or error')
     parser.add_argument('-p', '--processes', help='the number of parallel processes '
@@ -481,13 +567,18 @@ def main(args):
     logger.debug('Project: %s', args.project)
     logger.debug('Processes requested: %s', args.processes)
 
-    data_files = list_files(submission_dir)
-
-    logger.debug('%s files identified', len(data_files))
-
     try:
-        try:
-            if not args.validate_only:
+        if args.input:
+            validated_metadata = read_json_file(args.input)
+            data_sub = _get_submission_object(submission_dir)
+            files_online = False
+        else:
+            files_online = True
+            data_files = list_files(submission_dir)
+
+            logger.debug('%s files identified', len(data_files))
+
+            if not args.validate_only and not args.output:
                 data_sub = _get_submission_object(submission_dir)
 
                 if data_sub.status != 'ARRIVED':
@@ -495,33 +586,40 @@ def main(args):
                     logger.error(msg)
                     raise SubmissionError(msg)
 
-            validated_metadata = identify_and_validate(data_files, args.project,
-                args.processes, args.file_format)
-        except SubmissionError:
-            if not args.validate_only:
-                send_admin_rejection_email(data_sub)
-            raise
+            try:
+                validated_metadata = identify_and_validate(data_files,
+                    args.project, args.processes, args.file_format)
+            except SubmissionError:
+                if not args.validate_only and not args.output:
+                    send_admin_rejection_email(data_sub)
+                raise
 
-        logger.debug('%s files validated successfully', len(validated_metadata))
+            logger.debug('%s files validated successfully',
+                         len(validated_metadata))
 
-        if args.validate_only:
-            logger.debug('Data submission not run (-v option specified)')
-            logger.debug('Processing complete')
-            sys.exit(0)
+            if args.validate_only:
+                logger.debug('Data submission not run (-v option specified)')
+                logger.debug('Processing complete')
+                sys.exit(0)
 
-        if not args.relaxed and len(validated_metadata) != len(data_files):
-            rejected_dir = move_rejected_files(submission_dir)
-            set_status_rejected(data_sub, rejected_dir)
-            send_user_rejection_email(data_sub)
-            msg = ('Not all files passed validation. Please fix these errors '
-                'and then re-run this script.')
-            logger.error(msg)
-            raise SubmissionError(msg)
+            if not args.relaxed and len(validated_metadata) != len(data_files):
+                if not args.output:
+                    rejected_dir = move_rejected_files(submission_dir)
+                    set_status_rejected(data_sub, rejected_dir)
+                    send_user_rejection_email(data_sub)
+                msg = ('Not all files passed validation. Please fix these '
+                       'errors and then re-run this script.')
+                logger.error(msg)
+                raise SubmissionError(msg)
 
-        update_database_submission(validated_metadata, data_sub)
+        if args.output:
+            write_json_file(validated_metadata, args.output)
+        else:
+            update_database_submission(validated_metadata, data_sub,
+                                       files_online)
+            logger.debug('%s files submitted successfully',
+                match_one(DataSubmission, incoming_directory=submission_dir).get_data_files().count())
 
-        logger.debug('%s files submitted successfully',
-            match_one(DataSubmission, incoming_directory=submission_dir).get_data_files().count())
     except SubmissionError:
         sys.exit(1)
 
