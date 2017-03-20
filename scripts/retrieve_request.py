@@ -200,9 +200,9 @@ def construct_drs_path(data_file):
     """
     return os.path.join(
         data_file.project.short_name,
+        data_file.activity_id.short_name,
         data_file.institute.short_name,
         data_file.climate_model.short_name,
-        data_file.activity_id.short_name,
         data_file.experiment.short_name,
         data_file.rip_code,
         data_file.variable_request.table_name,
