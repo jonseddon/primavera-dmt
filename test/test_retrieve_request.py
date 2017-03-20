@@ -179,15 +179,15 @@ class TestIntegrationTests(TestCase):
         self.mock_link.assert_called_once_with(
             '/group_workspaces/jasmin2/primavera4/.et_retrievals/et_1234/gws/'
             'MOHC/MY-MODEL/incoming/v12345678/file_one.nc',
-            u'/group_workspaces/jasmin2/primavera4/stream1/CMIP6/MOHC/MY-MODEL/'
-            u'HighResMIP/experiment/r1i1p1f1/my-table/my-var/gn/v12345678/'
+            u'/group_workspaces/jasmin2/primavera4/stream1/CMIP6/HighResMIP/'
+            u'MOHC/MY-MODEL/experiment/r1i1p1f1/my-table/my-var/gn/v12345678/'
             u'file_one.nc'
         )
 
         self.assertTrue(df.online)
         self.assertEqual(df.directory, u'/group_workspaces/jasmin2/primavera4/'
-                                       u'stream1/CMIP6/MOHC/MY-MODEL/'
-                                       u'HighResMIP/experiment/r1i1p1f1/'
+                                       u'stream1/CMIP6/HighResMIP/MOHC/'
+                                       u'MY-MODEL/experiment/r1i1p1f1/'
                                        u'my-table/my-var/gn/v12345678')
 
     def test_multiple_tapes(self):
@@ -230,11 +230,11 @@ class TestIntegrationTests(TestCase):
         for data_file in DataFile.objects.all():
             self.assertTrue(data_file.online)
             self.assertIn(data_file.directory, [
-                u'/group_workspaces/jasmin2/primavera4/stream1/CMIP6/MOHC/'
-                u'MY-MODEL/HighResMIP/experiment/r1i1p1f1/my-table/my-var/gn/'
-                u'v12345678',
-                u'/group_workspaces/jasmin2/primavera4/stream1/CMIP6/MOHC/'
-                u'MY-MODEL/HighResMIP/experiment/r1i1p1f1/your-table/your-var/'
+                u'/group_workspaces/jasmin2/primavera4/stream1/CMIP6/'
+                u'HighResMIP/MOHC/MY-MODEL/experiment/r1i1p1f1/my-table/'
+                u'my-var/gn/v12345678',
+                u'/group_workspaces/jasmin2/primavera4/stream1/CMIP6/HighResMIP/'
+                u'MOHC/MY-MODEL/experiment/r1i1p1f1/your-table/your-var/'
                 u'gn/v12345678'
             ])
 
@@ -301,17 +301,17 @@ class TestIntegrationTests(TestCase):
         self.mock_copyfile.assert_called_once_with(
             '/group_workspaces/jasmin2/primavera4/.et_retrievals/et_1234/gws/'
             'MOHC/MY-MODEL/incoming/v12345678/file_one.nc',
-            u'/group_workspaces/jasmin2/primavera3/spare_dir/CMIP6/MOHC/'
-            u'MY-MODEL/HighResMIP/experiment/r1i1p1f1/my-table/my-var/gn/'
+            u'/group_workspaces/jasmin2/primavera3/spare_dir/CMIP6/HighResMIP/'
+            u'MOHC/MY-MODEL/experiment/r1i1p1f1/my-table/my-var/gn/'
             u'v12345678/file_one.nc'
         )
 
         self.mock_symlink.assert_called_once_with(
-            u'/group_workspaces/jasmin2/primavera3/spare_dir/CMIP6/MOHC/'
-            u'MY-MODEL/HighResMIP/experiment/r1i1p1f1/my-table/my-var/gn/'
+            u'/group_workspaces/jasmin2/primavera3/spare_dir/CMIP6/HighResMIP/'
+            u'MOHC/MY-MODEL/experiment/r1i1p1f1/my-table/my-var/gn/'
             u'v12345678/file_one.nc',
-            u'/group_workspaces/jasmin2/primavera4/stream1/CMIP6/MOHC/MY-MODEL/'
-            u'HighResMIP/experiment/r1i1p1f1/my-table/my-var/gn/v12345678/'
+            u'/group_workspaces/jasmin2/primavera4/stream1/CMIP6/HighResMIP/'
+            u'MOHC/MY-MODEL/experiment/r1i1p1f1/my-table/my-var/gn/v12345678/'
             u'file_one.nc'
         )
 
