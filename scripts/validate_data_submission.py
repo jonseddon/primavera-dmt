@@ -126,7 +126,11 @@ def identify_and_validate_file(params, output, error_event):
 
         try:
             metadata = identify_filename_metadata(filename, file_format)
-            metadata['project'] = project
+
+            if metadata['table'].startswith('Prim'):
+                metadata['project'] = 'PRIMAVERA'
+            else:
+                metadata['project'] = project
 
             verify_fk_relationships(metadata)
 
@@ -525,7 +529,7 @@ def parse_args():
         'PRIMAVERA data submission')
     parser.add_argument('directory', help="the submission's top-level "
                                           "directory")
-    parser.add_argument('-j', '--project', help='the project that data is '
+    parser.add_argument('-j', '--mip_era', help='the mip_era that data is '
                                                 'ultimately being submitted to '
                                                 '(default: %(default)s)',
                         default='CMIP6')
@@ -564,7 +568,7 @@ def main(args):
     """
     submission_dir = os.path.normpath(args.directory)
     logger.debug('Submission directory: %s', submission_dir)
-    logger.debug('Project: %s', args.project)
+    logger.debug('Project: %s', args.mip_era)
     logger.debug('Processes requested: %s', args.processes)
 
     try:
@@ -588,7 +592,7 @@ def main(args):
 
             try:
                 validated_metadata = identify_and_validate(data_files,
-                    args.project, args.processes, args.file_format)
+                    args.mip_era, args.processes, args.file_format)
             except SubmissionError:
                 if not args.validate_only and not args.output:
                     send_admin_rejection_email(data_sub)
