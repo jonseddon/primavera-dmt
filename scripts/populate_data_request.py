@@ -260,9 +260,6 @@ def main():
     }
 
     # some objects from constants
-    # Project
-    project = match_one(Project, short_name='CMIP6')
-
     # Experiment
     experiment_objs = []
     for expt in experiments:
@@ -317,6 +314,11 @@ def main():
             msg = ('No data found in sheet {}.'.format(sheet))
             print msg
             raise ValueError(msg)
+
+        if sheet.startswith('Prim'):
+            project = match_one(Project, short_name='PRIMAVERA')
+        else:
+            project = match_one(Project, short_name='CMIP6')
 
         for row in values:
             # for each row, make an entry for each institute/model
