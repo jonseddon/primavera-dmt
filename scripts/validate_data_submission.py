@@ -53,8 +53,7 @@ class SubmissionError(Exception):
     pass
 
 
-def identify_and_validate(filenames, project, num_processes, file_format,
-                          tape_url=None):
+def identify_and_validate(filenames, project, num_processes, file_format):
     """
     Loop through a list of file names, identify each file's metadata and then
     validate it. The looping is done in parallel using the multiprocessing
@@ -67,7 +66,6 @@ def identify_and_validate(filenames, project, num_processes, file_format,
     :param int num_processes: The number of parallel processes to use
     :param str file_format: The CMOR version of the netCDF files, one out of-
         CMIP5 or CMIP6
-    :param str tape_url: An optional tape_url value to include with each file
     :returns: A list containing the metadata dictionary generated for each file
     :rtype: multiprocessing.Manager.list
     """
@@ -84,9 +82,8 @@ def identify_and_validate(filenames, project, num_processes, file_format,
 
     func_input_pair = zip(filenames,
                           (project,) * len(filenames),
-                          (file_format,) * len(filenames),
-                          (tape_url,) * len(filenames))
-    blank_pair = (None, None, None, None)
+                          (file_format,) * len(filenames))
+    blank_pair = (None, None, None)
 
     iters = itertools.chain(func_input_pair, (blank_pair,) * num_processes)
     for item in iters:
@@ -108,8 +105,8 @@ def identify_and_validate_file(params, output, error_event):
     is received.
 
     :param multiprocessing.Manager.Queue params: A queue, with each item being a
-        tuple of the filename to load, the name of the project, the netCDF
-        file CMOR version and an optional tape_url
+        tuple of the filename to load, the name of the project and the netCDF
+        file CMOR version
     :param multiprocessing.Manager.list output: A list containing the output
         metadata dictionaries for each file
     :param multiprocessing.Manager.Event error_event: If set then a catastrophic
@@ -122,7 +119,7 @@ def identify_and_validate_file(params, output, error_event):
         if error_event.is_set():
             return
 
-        filename, project, file_format, tape_url = params.get()
+        filename, project, file_format = params.get()
 
         if filename is None:
             return
@@ -134,8 +131,6 @@ def identify_and_validate_file(params, output, error_event):
                 metadata['project'] = 'PRIMAVERA'
             else:
                 metadata['project'] = project
-
-            metadata['tape_url'] = tape_url
 
             verify_fk_relationships(metadata)
 
@@ -342,8 +337,7 @@ def create_database_file_object(metadata, data_submission, file_online=True):
             time_units=time_units, calendar=metadata['calendar'],
             version=version_string,
             data_submission=data_submission, online=file_online,
-            grid=metadata['grid'] if 'grid' in metadata else None,
-            tape_url = metadata['tape_url']
+            grid=metadata['grid'] if 'grid' in metadata else None
         )
     except django.db.utils.IntegrityError as exc:
         msg = ('Unable to submit file {}: {}'.format(metadata['basename'],
@@ -552,8 +546,6 @@ def parse_args():
                                              'database from the JSON file '
                                              'specified rather than by '
                                              'validating files', type=str)
-    parser.add_argument('-t', '--tape-url', help='add the tape url to each '
-                                                 'file', type=str)
     parser.add_argument('-l', '--log-level', help='set logging level to one of '
         'debug, info, warn (the default), or error')
     parser.add_argument('-p', '--processes', help='the number of parallel processes '
@@ -576,6 +568,7 @@ def main(args):
     """
     submission_dir = os.path.normpath(args.directory)
     logger.debug('Submission directory: %s', submission_dir)
+    logger.debug('Project: %s', args.mip_era)
     logger.debug('Processes requested: %s', args.processes)
 
     try:
@@ -599,8 +592,7 @@ def main(args):
 
             try:
                 validated_metadata = identify_and_validate(data_files,
-                    args.mip_era, args.processes, args.file_format,
-                    args.tape_url)
+                    args.mip_era, args.processes, args.file_format)
             except SubmissionError:
                 if not args.validate_only and not args.output:
                     send_admin_rejection_email(data_sub)
