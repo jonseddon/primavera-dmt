@@ -34,6 +34,7 @@ logger = logging.getLogger(__name__)
 # The top-level directory to initially restore files to
 BASE_RETRIEVAL_DIR = '/group_workspaces/jasmin2/primavera4/.et_retrievals'
 # The top-level directory to write output data to
+# BASE_OUTPUT_DIR = '/group_workspaces/jasmin2/primavera4/stream1'
 BASE_OUTPUT_DIR = '/group_workspaces/jasmin2/primavera4/stream1'
 # The name of the directory to store et_get.py log files in
 LOG_FILE_DIR = '/group_workspaces/jasmin2/primavera4/.et_logs/'
@@ -56,17 +57,20 @@ class ChecksumError(Exception):
         self.message = message
 
 
-def get_tape_url(tape_url):
+def get_tape_url(tape_url, retrieval):
     """
     Get all of the data from `tape_url`.
 
     :param str tape_url: The URL of the tape data to fetch.
+    :param pdata_app.models.RetrievalRequest retrieval: The retrieval object
     """
     if tape_url.startswith('et:'):
         get_et_url(tape_url)
+    elif tape_url.startswith('moose:'):
+        get_moose_url(tape_url, retrieval)
     else:
-        msg = ('Only ET is currently supported. Tape url {} is not '
-               'understood.'.format(tape_url))
+        msg = ('Tape url {} is not a currently supported type of tape.'.
+               format(tape_url))
         logger.error(msg)
         raise NotImplementedError(msg)
 
@@ -111,9 +115,50 @@ def get_et_url(tape_url):
     logger.debug('Restored {}'.format(tape_url))
 
 
+def get_moose_url(tape_url, retrieval):
+    """
+    Get all of the data from `tape_url`, which is already known to be a MOOSE
+    url. Data is not cached and is instead copied directly into the destination
+    directory.
+
+    :param str tape_url: The url to fetch
+    :param pdata_app.models.RetrievalRequest retrieval: The retrieval object
+    """
+    logger.debug('Starting restoring {}'.format(tape_url))
+
+    data_files = DataFile.objects.filter(
+        data_request__in=retrieval.data_request.all(), tape_url=tape_url).all()
+
+    moose_urls = ['{}/{}'.format(tape_url, df.name) for df in data_files]
+
+    # because the PRIMAVERA data that has been stored in MASS is in a DRS
+    # directory structure already then all files that have an identical
+    # tape_url will be placed in the same output directory
+    data_file = data_files.first()
+    drs_path = construct_drs_path(data_file)
+    if not cmd_args.alternative:
+        drs_dir = os.path.join(BASE_OUTPUT_DIR, drs_path)
+    else:
+        drs_dir = os.path.join(cmd_args.alternative, drs_path)
+
+    cmd = 'moo get {} {}'.format(' '.join(moose_urls), drs_dir)
+
+    logger.debug('MOOSE command is:\n{}'.format(cmd))
+
+    try:
+        # cmd_out = _run_command(cmd)
+        pass
+    except RuntimeError as exc:
+        logger.error('MOOSE command failed\n{}'.
+                     format(exc.message))
+        sys.exit(1)
+
+    logger.debug('Restored {}'.format(tape_url))
+
+
 def copy_files_into_drs(retrieval, tape_url, args):
     """
-    Copy files from the restored data into the DRS structure.
+    Copy files from the restored data cache into the DRS structure.
 
     :param pdata_app.models.RetrievalRequest retrieval: The retrieval object.
     :param str tape_url: The portion of the data now available on disk.
@@ -128,6 +173,8 @@ def copy_files_into_drs(retrieval, tape_url, args):
         data_request__in=retrieval.data_request.all(), tape_url=tape_url).all()
 
     for data_file in data_files:
+        # TODO check data_file.online
+
         file_submission_dir = data_file.incoming_directory
         extracted_file_path = os.path.join(url_dir,
                                            file_submission_dir.lstrip('/'),
@@ -370,7 +417,9 @@ def parse_args():
         "retrieval directory")
     parser.add_argument('-n', '--no_restore', help="don't restore data from "
         "tape. Assume that it already has been and extract files from the "
-        "restoration directory.", action='store_true')
+        "restoration directory. This will only work for files retrieved from "
+        "Elastic Tape; no files will be restored if this option is used for "
+        "files in MASS.", action='store_true')
     parser.add_argument('-s', '--skip_checksums', help="don't check the "
         "checksums on restored files.", action='store_true')
     parser.add_argument('-l', '--log-level', help='set logging level to one of '
@@ -412,9 +461,10 @@ def main(args):
 
     for tape_url in tape_urls:
         if not args.no_restore:
-            get_tape_url(tape_url)
+            get_tape_url(tape_url, retrieval)
 
-        copy_files_into_drs(retrieval, tape_url, args)
+        if tape_url.startswith('et:'):
+            copy_files_into_drs(retrieval, tape_url, args)
 
     # set date_complete in the db
     retrieval.date_complete = timezone.now()
