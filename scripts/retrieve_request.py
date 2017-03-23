@@ -128,7 +128,18 @@ def get_moose_url(tape_url, retrieval):
     data_files = DataFile.objects.filter(
         data_request__in=retrieval.data_request.all(), tape_url=tape_url).all()
 
-    moose_urls = ['{}/{}'.format(tape_url, df.name) for df in data_files]
+    skipping_files = [df.name for df in data_files if df.online]
+    if skipping_files:
+        logger.debug('Skipping the following {} files, which are marked as '
+            'online in the database:\n{}'.format(len(skipping_files),
+            '\n'.join(skipping_files)))
+
+    moose_urls = ['{}/{}'.format(tape_url, df.name) for df in data_files
+                  if not df.online]
+
+    if not moose_urls:
+        logger.debug('No files to retrieve for URL {}.'.format(tape_url))
+        return
 
     # because the PRIMAVERA data that has been stored in MASS is in a DRS
     # directory structure already then all files that have an identical
@@ -163,7 +174,6 @@ def get_moose_url(tape_url, retrieval):
         data_file.save()
 
 
-
 def copy_files_into_drs(retrieval, tape_url, args):
     """
     Copy files from the restored data cache into the DRS structure.
@@ -181,7 +191,10 @@ def copy_files_into_drs(retrieval, tape_url, args):
         data_request__in=retrieval.data_request.all(), tape_url=tape_url).all()
 
     for data_file in data_files:
-        # TODO check data_file.online
+        if data_file.online:
+            logger.debug('Skipping file marked as online in the database: {}'
+                         .format(data_file.name))
+            continue
 
         file_submission_dir = data_file.incoming_directory
         extracted_file_path = os.path.join(url_dir,
