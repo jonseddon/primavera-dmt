@@ -34,7 +34,6 @@ logger = logging.getLogger(__name__)
 # The top-level directory to initially restore files to
 BASE_RETRIEVAL_DIR = '/group_workspaces/jasmin2/primavera4/.et_retrievals'
 # The top-level directory to write output data to
-# BASE_OUTPUT_DIR = '/group_workspaces/jasmin2/primavera4/stream1'
 BASE_OUTPUT_DIR = '/group_workspaces/jasmin2/primavera4/stream1'
 # The name of the directory to store et_get.py log files in
 LOG_FILE_DIR = '/group_workspaces/jasmin2/primavera4/.et_logs/'
@@ -141,19 +140,28 @@ def get_moose_url(tape_url, retrieval):
     else:
         drs_dir = os.path.join(cmd_args.alternative, drs_path)
 
+    # create the path if it doesn't exist
+    if not os.path.exists(drs_dir):
+        os.makedirs(drs_dir)
+
     cmd = 'moo get {} {}'.format(' '.join(moose_urls), drs_dir)
 
     logger.debug('MOOSE command is:\n{}'.format(cmd))
 
     try:
-        # cmd_out = _run_command(cmd)
-        pass
+        cmd_out = _run_command(cmd)
     except RuntimeError as exc:
         logger.error('MOOSE command failed\n{}'.
                      format(exc.message))
         sys.exit(1)
 
     logger.debug('Restored {}'.format(tape_url))
+
+    for data_file in data_files:
+        data_file.directory = drs_dir
+        data_file.online = True
+        data_file.save()
+
 
 
 def copy_files_into_drs(retrieval, tape_url, args):
