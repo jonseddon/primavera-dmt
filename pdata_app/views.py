@@ -176,11 +176,12 @@ def view_register(request):
             # Copied from django/contrib/auth/views.py : password_reset
             opts = {
                 'use_https': True,
-                'email_template_name': 'pdata_app/register_user_email_message.html',
-                'subject_template_name': 'pdata_app/register_user_email_subject.txt',
+                'email_template_name':
+                    'pdata_app/register_user_email_message.html',
+                'subject_template_name':
+                    'pdata_app/register_user_email_subject.html',
                 'request': request,
                 'from_email': 'no-reply@prima-dm.ceda.ac.uk'
-                # 'html_email_template_name': provide an HTML content template if you desire.
             }
             # This form sends the email on save()
             reset_form.save(**opts)
