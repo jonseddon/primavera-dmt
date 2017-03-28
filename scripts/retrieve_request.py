@@ -6,6 +6,7 @@ This script is run by the admin to perform a retrieval request.
 """
 import argparse
 import datetime
+import glob
 import logging
 import logging.config
 import os
@@ -168,10 +169,20 @@ def get_moose_url(tape_url, retrieval):
 
     logger.debug('Restored {}'.format(tape_url))
 
+    _remove_data_license_files(drs_dir)
+
     for data_file in data_files:
-        data_file.directory = drs_dir
-        data_file.online = True
-        data_file.save()
+        try:
+            _check_file_checksum(data_file, os.path.join(drs_dir,
+                                                         data_file.name))
+        except ChecksumError:
+            # warning message has already been displayed and so take no
+            # further action
+            pass
+        else:
+            data_file.directory = drs_dir
+            data_file.online = True
+            data_file.save()
 
 
 def copy_files_into_drs(retrieval, tape_url, args):
@@ -423,6 +434,21 @@ def _email_user_success(retrieval):
                  format(retrieval.id)),
         message=msg
     )
+
+
+def _remove_data_license_files(dir_path):
+    """
+    Delete any Met Office Data License files from the directory specified.
+
+    :param str dir_path: The directory to remove files from.
+    """
+    license_file_glob = 'MetOffice_data_licence.*'
+
+    for lic_file in glob.iglob(os.path.join(dir_path, license_file_glob)):
+        try:
+            os.remove(lic_file)
+        except OSError:
+            logger.warning('Unable to delete license file {}'.format(lic_file))
 
 
 def parse_args():
