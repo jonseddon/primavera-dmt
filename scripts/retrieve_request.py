@@ -6,6 +6,7 @@ This script is run by the admin to perform a retrieval request.
 """
 import argparse
 import datetime
+import glob
 import logging
 import logging.config
 import os
@@ -56,17 +57,20 @@ class ChecksumError(Exception):
         self.message = message
 
 
-def get_tape_url(tape_url):
+def get_tape_url(tape_url, retrieval):
     """
     Get all of the data from `tape_url`.
 
     :param str tape_url: The URL of the tape data to fetch.
+    :param pdata_app.models.RetrievalRequest retrieval: The retrieval object
     """
     if tape_url.startswith('et:'):
         get_et_url(tape_url)
+    elif tape_url.startswith('moose:'):
+        get_moose_url(tape_url, retrieval)
     else:
-        msg = ('Only ET is currently supported. Tape url {} is not '
-               'understood.'.format(tape_url))
+        msg = ('Tape url {} is not a currently supported type of tape.'.
+               format(tape_url))
         logger.error(msg)
         raise NotImplementedError(msg)
 
@@ -111,9 +115,79 @@ def get_et_url(tape_url):
     logger.debug('Restored {}'.format(tape_url))
 
 
+def get_moose_url(tape_url, retrieval):
+    """
+    Get all of the data from `tape_url`, which is already known to be a MOOSE
+    url. Data is not cached and is instead copied directly into the destination
+    directory.
+
+    :param str tape_url: The url to fetch
+    :param pdata_app.models.RetrievalRequest retrieval: The retrieval object
+    """
+    logger.debug('Starting restoring {}'.format(tape_url))
+
+    data_files = DataFile.objects.filter(
+        data_request__in=retrieval.data_request.all(), tape_url=tape_url).all()
+
+    skipping_files = [df.name for df in data_files if df.online]
+    if skipping_files:
+        logger.debug('Skipping the following {} files, which are marked as '
+            'online in the database:\n{}'.format(len(skipping_files),
+            '\n'.join(skipping_files)))
+
+    moose_urls = ['{}/{}'.format(tape_url, df.name) for df in data_files
+                  if not df.online]
+
+    if not moose_urls:
+        logger.debug('No files to retrieve for URL {}.'.format(tape_url))
+        return
+
+    # because the PRIMAVERA data that has been stored in MASS is in a DRS
+    # directory structure already then all files that have an identical
+    # tape_url will be placed in the same output directory
+    data_file = data_files.first()
+    drs_path = construct_drs_path(data_file)
+    if not cmd_args.alternative:
+        drs_dir = os.path.join(BASE_OUTPUT_DIR, drs_path)
+    else:
+        drs_dir = os.path.join(cmd_args.alternative, drs_path)
+
+    # create the path if it doesn't exist
+    if not os.path.exists(drs_dir):
+        os.makedirs(drs_dir)
+
+    cmd = 'moo get {} {}'.format(' '.join(moose_urls), drs_dir)
+
+    logger.debug('MOOSE command is:\n{}'.format(cmd))
+
+    try:
+        cmd_out = _run_command(cmd)
+    except RuntimeError as exc:
+        logger.error('MOOSE command failed\n{}'.
+                     format(exc.message))
+        sys.exit(1)
+
+    logger.debug('Restored {}'.format(tape_url))
+
+    _remove_data_license_files(drs_dir)
+
+    for data_file in data_files:
+        try:
+            _check_file_checksum(data_file, os.path.join(drs_dir,
+                                                         data_file.name))
+        except ChecksumError:
+            # warning message has already been displayed and so take no
+            # further action
+            pass
+
+        data_file.directory = drs_dir
+        data_file.online = True
+        data_file.save()
+
+
 def copy_files_into_drs(retrieval, tape_url, args):
     """
-    Copy files from the restored data into the DRS structure.
+    Copy files from the restored data cache into the DRS structure.
 
     :param pdata_app.models.RetrievalRequest retrieval: The retrieval object.
     :param str tape_url: The portion of the data now available on disk.
@@ -128,6 +202,11 @@ def copy_files_into_drs(retrieval, tape_url, args):
         data_request__in=retrieval.data_request.all(), tape_url=tape_url).all()
 
     for data_file in data_files:
+        if data_file.online:
+            logger.debug('Skipping file marked as online in the database: {}'
+                         .format(data_file.name))
+            continue
+
         file_submission_dir = data_file.incoming_directory
         extracted_file_path = os.path.join(url_dir,
                                            file_submission_dir.lstrip('/'),
@@ -357,6 +436,21 @@ def _email_user_success(retrieval):
     )
 
 
+def _remove_data_license_files(dir_path):
+    """
+    Delete any Met Office Data License files from the directory specified.
+
+    :param str dir_path: The directory to remove files from.
+    """
+    license_file_glob = 'MetOffice_data_licence.*'
+
+    for lic_file in glob.iglob(os.path.join(dir_path, license_file_glob)):
+        try:
+            os.remove(lic_file)
+        except OSError:
+            logger.warning('Unable to delete license file {}'.format(lic_file))
+
+
 def parse_args():
     """
     Parse command-line arguments
@@ -370,7 +464,9 @@ def parse_args():
         "retrieval directory")
     parser.add_argument('-n', '--no_restore', help="don't restore data from "
         "tape. Assume that it already has been and extract files from the "
-        "restoration directory.", action='store_true')
+        "restoration directory. This will only work for files retrieved from "
+        "Elastic Tape; no files will be restored if this option is used for "
+        "files in MASS.", action='store_true')
     parser.add_argument('-s', '--skip_checksums', help="don't check the "
         "checksums on restored files.", action='store_true')
     parser.add_argument('-l', '--log-level', help='set logging level to one of '
@@ -412,9 +508,10 @@ def main(args):
 
     for tape_url in tape_urls:
         if not args.no_restore:
-            get_tape_url(tape_url)
+            get_tape_url(tape_url, retrieval)
 
-        copy_files_into_drs(retrieval, tape_url, args)
+        if tape_url.startswith('et:'):
+            copy_files_into_drs(retrieval, tape_url, args)
 
     # set date_complete in the db
     retrieval.date_complete = timezone.now()

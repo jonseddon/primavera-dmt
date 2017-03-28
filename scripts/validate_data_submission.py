@@ -126,7 +126,11 @@ def identify_and_validate_file(params, output, error_event):
 
         try:
             metadata = identify_filename_metadata(filename, file_format)
-            metadata['project'] = project
+
+            if metadata['table'].startswith('Prim'):
+                metadata['project'] = 'PRIMAVERA'
+            else:
+                metadata['project'] = project
 
             verify_fk_relationships(metadata)
 
@@ -192,8 +196,8 @@ def update_database_submission(validated_metadata, data_sub, files_online=True):
     """
     Create entries in the database for the files in this submission.
 
-    :param multiprocessing.Manager.list validated_metadata: A list containing
-        the metadata dictionary generated for each file
+    :param list validated_metadata: A list containing the metadata dictionary
+        generated for each file
     :param pdata_app.models.DataSubmission data_sub: The data submission object
         to update.
     :param bool files_online: True if the files are online.
@@ -226,8 +230,8 @@ def write_json_file(validated_metadata, filename):
     """
     Write a JSON file describing the files in this submission.
 
-    :param multiprocessing.Manager.list validated_metadata: A list containing
-        the metadata dictionary generated for each file
+    :param list validated_metadata: A list containing the metadata dictionary
+        generated for each file
     :param str filename: The name of the JSON file to write the validated data
         to.
     """
@@ -333,7 +337,8 @@ def create_database_file_object(metadata, data_submission, file_online=True):
             time_units=time_units, calendar=metadata['calendar'],
             version=version_string,
             data_submission=data_submission, online=file_online,
-            grid=metadata['grid'] if 'grid' in metadata else None
+            grid=metadata.get('grid'),
+            tape_url = metadata.get('tape_url')
         )
     except django.db.utils.IntegrityError as exc:
         msg = ('Unable to submit file {}: {}'.format(metadata['basename'],
@@ -465,6 +470,22 @@ def set_status_rejected(data_sub, rejected_dir):
     data_sub.save()
 
 
+def add_tape_url(metadata, tape_base_url, submission_dir):
+    """
+    Add to each file's metadata its URL in the tape system. The URL is
+    calculated by finding the file's path relative to the submission directory
+    and appending this to the base URL.
+
+    :param list metadata: a list the dictionary object corresponding to
+        each file
+    :param str tape_base_url: the top level url of the data in the tape system
+    :param str submission_dir: the top-level directory of the submission
+    """
+    for data_file in metadata:
+        rel_dir = os.path.relpath(data_file['directory'], submission_dir)
+        data_file['tape_url'] = tape_base_url + '/' + rel_dir
+
+
 def _get_submission_object(submission_dir):
     """
     :param str submission_dir: The path of the submission's top level
@@ -525,7 +546,7 @@ def parse_args():
         'PRIMAVERA data submission')
     parser.add_argument('directory', help="the submission's top-level "
                                           "directory")
-    parser.add_argument('-j', '--project', help='the project that data is '
+    parser.add_argument('-j', '--mip_era', help='the mip_era that data is '
                                                 'ultimately being submitted to '
                                                 '(default: %(default)s)',
                         default='CMIP6')
@@ -542,6 +563,8 @@ def parse_args():
                                              'database from the JSON file '
                                              'specified rather than by '
                                              'validating files', type=str)
+    parser.add_argument('-t', '--tape-base-url', help='add a tape url to each '
+        'file with the base being specified on the command line', type=str)
     parser.add_argument('-l', '--log-level', help='set logging level to one of '
         'debug, info, warn (the default), or error')
     parser.add_argument('-p', '--processes', help='the number of parallel processes '
@@ -564,7 +587,7 @@ def main(args):
     """
     submission_dir = os.path.normpath(args.directory)
     logger.debug('Submission directory: %s', submission_dir)
-    logger.debug('Project: %s', args.project)
+    logger.debug('Project: %s', args.mip_era)
     logger.debug('Processes requested: %s', args.processes)
 
     try:
@@ -587,8 +610,8 @@ def main(args):
                     raise SubmissionError(msg)
 
             try:
-                validated_metadata = identify_and_validate(data_files,
-                    args.project, args.processes, args.file_format)
+                validated_metadata = list(identify_and_validate(data_files,
+                    args.mip_era, args.processes, args.file_format))
             except SubmissionError:
                 if not args.validate_only and not args.output:
                     send_admin_rejection_email(data_sub)
@@ -611,6 +634,9 @@ def main(args):
                        'errors and then re-run this script.')
                 logger.error(msg)
                 raise SubmissionError(msg)
+
+        if args.tape_base_url:
+            add_tape_url(validated_metadata, args.tape_base_url, submission_dir)
 
         if args.output:
             write_json_file(validated_metadata, args.output)

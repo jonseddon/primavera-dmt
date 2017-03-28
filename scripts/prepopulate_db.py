@@ -20,6 +20,8 @@ def main():
     # Projects
     proj = get_or_create(Project, short_name='CMIP6',
         full_name='Coupled Model Intercomparison Project Phase 6')
+    proj = get_or_create(Project, short_name='PRIMAVERA',
+        full_name='PRIMAVERA High Resolution Modelling Project')
 
     # Activty ID
     act_id = get_or_create(ActivityId, short_name='HighResMIP',
@@ -85,6 +87,8 @@ def main():
         'EC-Earth': 'EC-Earth:',
         'MPI-ESM': 'MPI-ESM:',
         'HadGEM3': 'HadGEM3:',
+        'HadGEM3-GC31-HM': 'HadGEM3-GC31-HM',
+        'HadGEM3-GC31-HH': 'HadGEM3-GC31-HH',
         'IFS': 'IFS'
     }
     for model in models:
