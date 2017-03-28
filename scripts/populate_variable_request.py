@@ -104,12 +104,13 @@ def main():
             print('No data found.')
         else:
             for row in values:
+                cmor_name = row[11] if row[11] else row[5]
                 try:
                     _vr = get_or_create(VariableRequest, table_name=sheet,
                         long_name=row[1], units=row[2], var_name=row[5],
                         standard_name=row[6], cell_methods=row[7],
                         positive=row[8], variable_type=VARIABLE_TYPES[row[9]],
-                        dimensions=row[10], cmor_name=row[11],
+                        dimensions=row[10], cmor_name=cmor_name,
                         modeling_realm=row[12],
                         frequency=FREQUENCY_VALUES[row[13]],
                         cell_measures=row[14], uid=row[18])
