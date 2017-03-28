@@ -147,7 +147,9 @@ class DataSubmissionTable(tables.Table):
             return DEFAULT_VALUE
         else:
             tape_urls = record.get_tape_urls()
-            return _to_comma_sep(tape_urls)
+            return format_html('<div class="truncate-ellipsis"><span>{}'
+                               '</span></div>'.
+                               format(_to_comma_sep(tape_urls)))
 
     def render_file_versions(self, record):
         if record.status in ['PENDING_PROCESSING', 'ARRIVED']:
