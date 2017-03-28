@@ -179,10 +179,10 @@ def get_moose_url(tape_url, retrieval):
             # warning message has already been displayed and so take no
             # further action
             pass
-        else:
-            data_file.directory = drs_dir
-            data_file.online = True
-            data_file.save()
+
+        data_file.directory = drs_dir
+        data_file.online = True
+        data_file.save()
 
 
 def copy_files_into_drs(retrieval, tape_url, args):
