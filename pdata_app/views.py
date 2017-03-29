@@ -163,6 +163,14 @@ def view_register(request):
     if request.method == 'POST':
         user_form = UserBootstrapForm(data=request.POST)
         if user_form.is_valid():
+            # check to see if this email address is unique
+            if User.objects.filter(email=request.POST['email']):
+                user_form.add_error('email', 'A user with that email address '
+                                             'already exists.')
+                return render(request, 'pdata_app/generic_form.html',
+                              {'form': user_form,
+                               'page_title': 'Create Account'})
+
             # Create a database object from the user's form data
             user = user_form.save(commit=False)
 
