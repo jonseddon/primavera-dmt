@@ -163,6 +163,14 @@ def view_register(request):
     if request.method == 'POST':
         user_form = UserBootstrapForm(data=request.POST)
         if user_form.is_valid():
+            # check to see if this email address is unique
+            if User.objects.filter(email=request.POST['email']):
+                user_form.add_error('email', 'A user with that email address '
+                                             'already exists.')
+                return render(request, 'pdata_app/generic_form.html',
+                              {'form': user_form,
+                               'page_title': 'Create Account'})
+
             # Create a database object from the user's form data
             user = user_form.save(commit=False)
 
@@ -176,11 +184,12 @@ def view_register(request):
             # Copied from django/contrib/auth/views.py : password_reset
             opts = {
                 'use_https': True,
-                'email_template_name': 'pdata_app/register_user_email_message.html',
-                'subject_template_name': 'pdata_app/register_user_email_subject.txt',
+                'email_template_name':
+                    'pdata_app/register_user_email_message.html',
+                'subject_template_name':
+                    'pdata_app/register_user_email_subject.html',
                 'request': request,
                 'from_email': 'no-reply@prima-dm.ceda.ac.uk'
-                # 'html_email_template_name': provide an HTML content template if you desire.
             }
             # This form sends the email on save()
             reset_form.save(**opts)
