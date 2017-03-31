@@ -5,9 +5,7 @@ validate_data_submission.py
 This script is run by users to validate submitted data files and to create a
 data submission in the Data Management Tool.
 """
-import argparse
 import logging
-import logging.config
 import os
 import re
 import subprocess
@@ -20,9 +18,6 @@ from django.template.defaultfilters import pluralize
 
 from pdata_app.models import DataSubmission
 from pdata_app.utils.common import get_temp_filename
-
-DEFAULT_LOG_LEVEL = logging.WARNING
-DEFAULT_LOG_FORMAT = '%(levelname)s: %(message)s'
 
 logger = logging.getLogger(__name__)
 
@@ -73,37 +68,18 @@ def _run_command(command):
     return cmd_out.rstrip().split('\n')
 
 
-def parse_args():
-    """
-    Parse command-line arguments
-    """
-    parser = argparse.ArgumentParser(description='Move a data submission to '
-                                                 'elastic tape')
-    parser.add_argument('directory', help="the submission's top-level "
-                                          "initial directory")
-    parser.add_argument('-o', '--overwrite', help='write the submission to '
-                                                  'elastic tape, even if the '
-                                                  'submission has already '
-                                                  'been written to tape',
-                        action='store_true')
-    parser.add_argument('-l', '--log-level', help='set logging level to one '
-                                                  'of debug, info, warn (the '
-                                                  'default), or error')
-    args = parser.parse_args()
-
-    return args
-
-
-def main(args):
+def submission_to_tape(directory, overwrite=False):
     """
     Main entry point
     """
+    logger.debug('Starting submission: {}'.format(directory))
+
     try:
-        data_sub = _get_submission_object(args.directory)
+        data_sub = _get_submission_object(directory)
     except ValueError as exc:
         sys.exit(1)
 
-    if data_sub.get_tape_urls() and not args.overwrite:
+    if data_sub.get_tape_urls() and not overwrite:
         msg = ('Data submission has already been written to tape. Re-run this '
                'script with the -o, --overwrite option to force it to be '
                'written again.')
@@ -145,46 +121,3 @@ def main(args):
                'et_put.py:\n{}'.format('\n'.join(cmd_output)))
         logger.error(msg)
         raise RuntimeError(msg)
-
-
-if __name__ == '__main__':
-    cmd_args = parse_args()
-
-    # determine the log level
-    if cmd_args.log_level:
-        try:
-            log_level = getattr(logging, cmd_args.log_level.upper())
-        except AttributeError:
-            logger.setLevel(logging.WARNING)
-            logger.error('log-level must be one of: debug, info, warn or error')
-            sys.exit(1)
-    else:
-        log_level = DEFAULT_LOG_LEVEL
-
-    # configure the logger
-    logging.config.dictConfig({
-        'version': 1,
-        'disable_existing_loggers': False,
-        'formatters': {
-            'standard': {
-                'format': DEFAULT_LOG_FORMAT,
-            },
-        },
-        'handlers': {
-            'default': {
-                'level': log_level,
-                'class': 'logging.StreamHandler',
-                'formatter': 'standard'
-            },
-        },
-        'loggers': {
-            '': {
-                'handlers': ['default'],
-                'level': log_level,
-                'propagate': True
-            }
-        }
-    })
-
-    # run the code
-    main(cmd_args)
