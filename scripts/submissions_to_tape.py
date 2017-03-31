@@ -1,11 +1,16 @@
 #!/usr/bin/env python2.7
 """
-validate_data_submission.py
+submissions_to_tape.py
 
-This script is run by users to validate submitted data files and to create a
-data submission in the Data Management Tool.
+This script is designed to be run by a cron job, on the cron server at JASMIN.
+It identifies all data submissions that don't contain any files that have a
+tape url. For each submission identified, the files in the submission are
+listed and the `et_put.py` command is called to write these files to elastic
+tape. Each file in the submission is updated to include the tape URL in the
+elastic tape system.
 """
-import logging
+import argparse
+import logging.config
 import os
 import re
 import subprocess
@@ -14,10 +19,16 @@ import sys
 import django
 django.setup()
 import django.core.exceptions
+from django.db.models import Count
 from django.template.defaultfilters import pluralize
 
 from pdata_app.models import DataSubmission
 from pdata_app.utils.common import get_temp_filename
+
+from vocabs.vocabs import STATUS_VALUES
+
+DEFAULT_LOG_LEVEL = logging.WARNING
+DEFAULT_LOG_FORMAT = '%(levelname)s: %(message)s'
 
 logger = logging.getLogger(__name__)
 
@@ -76,7 +87,7 @@ def submission_to_tape(directory, overwrite=False):
 
     try:
         data_sub = _get_submission_object(directory)
-    except ValueError as exc:
+    except ValueError:
         sys.exit(1)
 
     if data_sub.get_tape_urls() and not overwrite:
@@ -121,3 +132,81 @@ def submission_to_tape(directory, overwrite=False):
                'et_put.py:\n{}'.format('\n'.join(cmd_output)))
         logger.error(msg)
         raise RuntimeError(msg)
+
+
+def parse_args():
+    """
+    Parse command-line arguments
+    """
+    parser = argparse.ArgumentParser(description="Move any data submissions "
+                                                 "that haven't already been, "
+                                                 "to elastic tape")
+    parser.add_argument('-o', '--overwrite', help='write the submission to '
+                                                  'elastic tape, even if the '
+                                                  'submission has already '
+                                                  'been written to tape',
+                        action='store_true')
+    parser.add_argument('-l', '--log-level', help='set logging level to one '
+                                                  'of debug, info, warn (the '
+                                                  'default), or error')
+    args = parser.parse_args()
+
+    return args
+
+
+def main(args):
+    """
+    Main entry point
+    """
+    status_to_process = STATUS_VALUES['VALIDATED']
+
+    # find all data submissions that have been validated and contain no
+    # datafiles that have a tape_url
+    submissions = (DataSubmission.objects.annotate(Count('datafile__tape_url')).
+        filter(status=status_to_process, datafile__tape_url__count=0))
+
+    for submission in submissions:
+        submission_to_tape(submission.incoming_directory, args.overwrite)
+
+
+if __name__ == '__main__':
+    cmd_args = parse_args()
+
+    # determine the log level
+    if cmd_args.log_level:
+        try:
+            log_level = getattr(logging, cmd_args.log_level.upper())
+        except AttributeError:
+            logger.setLevel(logging.WARNING)
+            logger.error('log-level must be one of: debug, info, warn or error')
+            sys.exit(1)
+    else:
+        log_level = DEFAULT_LOG_LEVEL
+
+    # configure the logger
+    logging.config.dictConfig({
+        'version': 1,
+        'disable_existing_loggers': False,
+        'formatters': {
+            'standard': {
+                'format': DEFAULT_LOG_FORMAT,
+            },
+        },
+        'handlers': {
+            'default': {
+                'level': log_level,
+                'class': 'logging.StreamHandler',
+                'formatter': 'standard'
+            },
+        },
+        'loggers': {
+            '': {
+                'handlers': ['default'],
+                'level': log_level,
+                'propagate': True
+            }
+        }
+    })
+
+    # run the code
+    main(cmd_args)
