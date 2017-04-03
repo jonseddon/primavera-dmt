@@ -105,7 +105,7 @@ def get_et_url(tape_url):
     logger.debug('et_get.py command is:\n{}'.format(cmd))
 
     try:
-        # cmd_out = _run_command(cmd)
+        cmd_out = _run_command(cmd)
         pass
     except RuntimeError as exc:
         logger.error('et_get.py command for batch id {} failed\n{}'.
