@@ -215,26 +215,26 @@ def main():
 
     # details of each of the institutes
     institutes = {
-        24: {'id': 'ECMWF', 'model_id': 'IFS', 'check_func': is_ecmwf,
+        24: {'id': 'ECMWF', 'model_ids': ['IFS'], 'check_func': is_ecmwf,
              'calendar': CALENDAR_GREGORIAN},
-        25: {'id': 'AWI', 'model_id': 'AWI-CM', 'check_func': is_awi,
+        25: {'id': 'AWI', 'model_ids': ['AWI-CM'], 'check_func': is_awi,
              'calendar': CALENDAR_GREGORIAN},
-        26: {'id': 'CNRM-CERFACS', 'model_id': 'CNRM', 'check_func': is_cnrm,
+        26: {'id': 'CNRM-CERFACS', 'model_ids': ['CNRM'], 'check_func': is_cnrm,
              'calendar': CALENDAR_GREGORIAN},
-        27: {'id': 'CMCC', 'model_id': 'CMCC-ESM', 'check_func': is_cmcc,
+        27: {'id': 'CMCC', 'model_ids': ['CMCC-ESM'], 'check_func': is_cmcc,
              'calendar': CALENDAR_GREGORIAN},
-        28: {'id': 'KNMI', 'model_id': 'EC-Earth', 'check_func': is_knmi,
+        28: {'id': 'KNMI', 'model_ids': ['EC-Earth'], 'check_func': is_knmi,
              'calendar': CALENDAR_GREGORIAN},
-        29: {'id': 'SHMI', 'model_id': 'EC-Earth', 'check_func': is_shmi,
+        29: {'id': 'SHMI', 'model_ids': ['EC-Earth'], 'check_func': is_shmi,
              'calendar': CALENDAR_GREGORIAN},
-        30: {'id': 'BSC', 'model_id': 'EC-Earth', 'check_func': is_bsc,
+        30: {'id': 'BSC', 'model_ids': ['EC-Earth'], 'check_func': is_bsc,
              'calendar': CALENDAR_GREGORIAN},
-        31: {'id': 'CNR', 'model_id': 'EC-Earth', 'check_func': is_cnr,
+        31: {'id': 'CNR', 'model_ids': ['EC-Earth'], 'check_func': is_cnr,
              'calendar': CALENDAR_GREGORIAN},
-        32: {'id': 'MPI-M', 'model_id': 'MPI-ESM', 'check_func': is_mpi,
+        32: {'id': 'MPI-M', 'model_ids': ['MPI-ESM'], 'check_func': is_mpi,
              'calendar': CALENDAR_GREGORIAN},
-        33: {'id': 'MOHC', 'model_id': 'HadGEM3', 'check_func': is_metoffice,
-             'calendar': CALENDAR_360_DAY}
+        33: {'id': 'MOHC', 'model_ids': ['HadGEM3-GC31-HM', 'HadGEM3-GC31-LM'],
+             'check_func': is_metoffice, 'calendar': CALENDAR_360_DAY}
     }
 
     # The HighResMIP experiments
@@ -289,16 +289,16 @@ def main():
     # results to a dictionary for quick look up later
     model_objs = {}
     for col_num in institutes:
-        result = match_one(ClimateModel,
-                           short_name=institutes[col_num]['model_id'])
-        if result:
-            model_objs[col_num] = result
-        else:
-            msg = 'climate_model {} not found in the database.'.format(
-                institutes[col_num]['model_id']
-            )
-            print msg
-            raise ValueError(msg)
+        model_objs[col_num] = []
+        for clim_model in institutes[col_num]['model_ids']:
+            result = match_one(ClimateModel, short_name=clim_model)
+            if result:
+                model_objs[col_num].append(result)
+            else:
+                msg = ('climate_model {} not found in the database.'.
+                       format(clim_model))
+                print msg
+                raise ValueError(msg)
 
     # The standard reference time
     std_units = Settings.get_solo().standard_time_units
@@ -341,25 +341,27 @@ def main():
                                                         long_name=row[1],
                                                         table_name=sheet)
                             if var_req_obj:
-                                # create a DataRequest for this combination
-                                _dr = get_or_create(
-                                    DataRequest,
-                                    project=project,
-                                    institute=institute_objs[col_num],
-                                    climate_model=model_objs[col_num],
-                                    experiment=expt,
-                                    variable_request=var_req_obj,
-                                    request_start_time=date2num(
-                                        experiments[expt.short_name]['start_date'],
-                                        std_units, institutes[col_num]['calendar']
-                                    ),
-                                    request_end_time=date2num(
-                                        experiments[expt.short_name]['end_date'],
-                                        std_units, institutes[col_num]['calendar']
-                                    ),
-                                    time_units=std_units,
-                                    calendar=institutes[col_num]['calendar']
-                                )
+                                # create a DataRequest for each model in this
+                                # combination
+                                for clim_model in model_objs[col_num]:
+                                    _dr = get_or_create(
+                                        DataRequest,
+                                        project=project,
+                                        institute=institute_objs[col_num],
+                                        climate_model=clim_model,
+                                        experiment=expt,
+                                        variable_request=var_req_obj,
+                                        request_start_time=date2num(
+                                            experiments[expt.short_name]['start_date'],
+                                            std_units, institutes[col_num]['calendar']
+                                        ),
+                                        request_end_time=date2num(
+                                            experiments[expt.short_name]['end_date'],
+                                            std_units, institutes[col_num]['calendar']
+                                        ),
+                                        time_units=std_units,
+                                        calendar=institutes[col_num]['calendar']
+                                    )
                             else:
                                 msg = ('Unable to find variable request matching '
                                        'cmor_name {} and table_name {} in the '

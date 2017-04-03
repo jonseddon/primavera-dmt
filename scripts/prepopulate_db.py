@@ -86,20 +86,13 @@ def main():
         'CMCC-ESM': 'CMCC-ESM:',
         'EC-Earth': 'EC-Earth:',
         'MPI-ESM': 'MPI-ESM:',
-        'HadGEM3': 'HadGEM3:',
         'HadGEM3-GC31-HM': 'HadGEM3-GC31-HM',
-        'HadGEM3-GC31-HH': 'HadGEM3-GC31-HH',
+        'HadGEM3-GC31-LM': 'HadGEM3-GC31-LM',
         'IFS': 'IFS'
     }
     for model in models:
         _mdl = get_or_create(ClimateModel, short_name=model,
             full_name=models[model])
-
-    # TODO update this for CMIP6, current value is for testing with CMIP5 data
-    clim_model = get_or_create(ClimateModel, short_name='HadGEM2-ES',
-        full_name='HadGEM2 Earth System')
-    clim_model = get_or_create(ClimateModel, short_name='HadGEM3-GC2',
-        full_name='HadGEM3 GC2')
 
 
 if __name__ == '__main__':
