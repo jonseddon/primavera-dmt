@@ -30,6 +30,11 @@ class Settings(SingletonModel):
     contact_user_id = models.CharField(max_length=20,
                                        verbose_name='Contact User ID',
                                        default='jseddon')
+    base_output_dir = models.CharField(max_length=300,
+                                       verbose_name='Base directory for '
+                                                    'retrieved files',
+                                       default='/group_workspaces/jasmin2/'
+                                               'primavera4/stream1')
 
     class Meta:
         verbose_name = "Settings"
