@@ -41,7 +41,7 @@ def scan_database():
     for data_file in DataFile.objects.filter(online=True).iterator():
         full_path = os.path.join(data_file.directory, data_file.name)
         if not os.path.exists(full_path):
-            logger.warning('File cannot be found on disk, marking it is as '
+            logger.warning('File cannot be found on disk, status changed to '
                            'offline: {}'.format(full_path))
             data_file.online = False
             data_file.directory = None
@@ -56,10 +56,35 @@ def scan_file_structure(directory):
 
     :param str directory: the top level directory to scan
     """
+    logger.debug('Starting file structure scan.')
 
     for nc_file in ilist_files(directory):
-        pass
+        nc_file_name = os.path.basename(nc_file)
+        db_files = DataFile.objects.filter(name=nc_file_name)
 
+        if db_files.count() == 0:
+            logger.error('File not found in database: {}'.format(nc_file))
+        elif db_files.count() > 1:
+            logger.error('{} entries found in database for file: {}'.
+                         format(db_files.count(), nc_file))
+        else:
+            db_file = db_files.first()
+
+            if not db_file.online:
+                logger.warning('File status changed to online: {}'.
+                               format(nc_file))
+                db_file.online = True
+                db_file.save()
+
+            if db_file.directory != os.path.dirname(nc_file):
+                nc_dir_name = os.path.dirname(nc_file)
+                logger.warning('Directory for file {} changed from {} to {}'.
+                               format(nc_file_name, db_file.directory,
+                                      nc_dir_name))
+                db_file.directory = nc_dir_name
+                db_file.save()
+
+    logger.debug('Completed file structure scan.')
 
 
 def _get_submission_object(submission_dir):
