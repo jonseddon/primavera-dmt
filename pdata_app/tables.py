@@ -343,6 +343,17 @@ class RetrievalRequestTable(tables.Table):
                               verbose_name='Request Size')
     tape_urls = tables.Column(empty_values=(), orderable=False,
                               verbose_name='Tape URLs')
+    mark_data_finished = tables.TemplateColumn('''
+        {% if user.is_authenticated %}
+           {% if user.get_username == record.requester.username and not record.data_finished %}
+              <div class="checkbox" style="text-align:center;vertical-align:middle">
+              <label><input type="checkbox" name="finished_ret_req_{{ record.id }}">
+              </label></div>
+           {% endif %}
+        {% else %}
+           &nbsp;
+        {% endif %}
+        ''', orderable=False, verbose_name='Mark Data Finished')
 
     def render_date_created(self, value):
         return value.strftime('%Y-%m-%d %H:%M')

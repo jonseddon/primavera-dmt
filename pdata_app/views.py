@@ -248,7 +248,7 @@ def confirm_retrieval(request):
         data_req_strs = [str(DataRequest.objects.filter(id=req).first())
                          for req in data_req_ids]
         # get the total size of the retrieval request
-        request_size = sum([DataRequest.objects.filter(id=req).first().
+        request_size = sum([DataRequest.objects.get(id=req).
                             datafile_set.aggregate(Sum('size'))['size__sum']
                             for req in data_req_ids])
         # generate the confirmation page
@@ -281,6 +281,65 @@ def create_retrieval(request):
         return _custom_redirect('retrieval_requests')
     else:
         return render(request, 'pdata_app/retrieval_request_error.html',
+                      {'request': request,
+                       'page_title': 'Retrieval Request'})
+
+
+@login_required(login_url='/login/')
+def confirm_mark_finished(request):
+    if request.method == 'POST':
+        ret_req_ids = []
+        # loop through the items in the POST from the form and identify any
+        # RetrievalRequest object ids that have been specified
+        for key in request.POST:
+            components = re.match(r'^finished_ret_req_(\d+)$', key)
+            if components:
+                ret_req_ids.append(int(components.group(1)))
+
+        # get a summary of each return request
+        # TODO what if id doesn't exist?
+        ret_req_summaries = []
+        for req in ret_req_ids:
+            summary = {}
+            summary['id'] = req
+            ret_req = RetrievalRequest.objects.get(id=req)
+            summary['data_reqs'] = [str(data_req) for data_req in
+                                    ret_req.data_request.all()]
+            summary['size'] = (ret_req.data_request.all().
+                               aggregate(Sum('datafile__size'))
+                               ['datafile__size__sum'])
+            ret_req_summaries.append(summary)
+
+
+        # generate the confirmation page
+        return render(request, 'pdata_app/mark_finished_confirm.html',
+                      {'request': request,
+                       'ret_req_summaries': ret_req_summaries,
+                       'page_title': 'Confirm Mark Retrievals Finished',
+                       'return_url': request.POST['retrieval_requests_url'],
+                       'ret_request_ids': ','.join(map(str, ret_req_ids)),
+                       'total_size':sum([summary['size']
+                                         for summary in ret_req_summaries])})
+    else:
+        # TODO do something intelligent
+        return render(request, 'pdata_app/mark_finished_error.html',
+                      {'request': request,
+                       'page_title': 'Retrieval Request'})
+
+
+@login_required(login_url='/login/')
+def mark_finished(request):
+    if request.method == 'POST':
+        # mark the return requests asked for
+        ret_req_ids = [int(req_id) for req_id in
+                        request.POST['ret_request_ids'].split(',')]
+        for ret_req_id in ret_req_ids:
+            ret_req = RetrievalRequest.objects.get(id=ret_req_id)
+            ret_req.data_finished = True
+            ret_req.save()
+        return _custom_redirect('retrieval_requests')
+    else:
+        return render(request, 'pdata_app/mark_finished_error.html',
                       {'request': request,
                        'page_title': 'Retrieval Request'})
 

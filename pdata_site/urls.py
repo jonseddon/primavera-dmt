@@ -83,6 +83,12 @@ urlpatterns = [
     url(r'^create_retrieval/$', pdata_app.views.create_retrieval,
         name='create_retrieval'),
 
+    url(r'confirm_mark_finished', pdata_app.views.confirm_mark_finished,
+        name='confirm_mark_finished'),
+
+    url(r'^mark_finished/$', pdata_app.views.mark_finished,
+        name='mark_finished'),
+
     url(r'^et_indexer/$', et_indexer.views.view_home, name='et_indexer'),
 
     url(r'^et_indexer/datafiles/$', et_indexer.views.DatafileList.as_view(),

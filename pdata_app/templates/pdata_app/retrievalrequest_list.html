@@ -39,6 +39,20 @@
 
         </p>
 
-        {% render_table table %}
+        <form action="{% url 'confirm_mark_finished' %}" method="post">
+            {% csrf_token %}
+            <input type="hidden" name="retrieval_requests_url" value="{{ request.get_full_path }}">
+
+            {% render_table table %}
+
+            <p>
+            {% if user.is_authenticated %}
+                <input type="submit" class="btn btn-default" value="Mark Data Finished" />
+            {% else %}
+                <a class="btn btn-default" href="{% url 'login' %}?next={% url 'retrieval_requests' %}">Login to mark data finished</a>
+            {% endif %}
+            </p>
+        </form>
+
 
     {% endblock %}

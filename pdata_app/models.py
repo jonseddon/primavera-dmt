@@ -644,6 +644,10 @@ class RetrievalRequest(models.Model):
     requester = models.ForeignKey(User, verbose_name='Request Creator',
                                  null=False, blank=False)
 
+    data_finished = models.BooleanField(default=False,
+                                        verbose_name="Data Finished?",
+                                        null=False, blank=False)
+
     def __unicode__(self):
         return '{}'.format(self.id)
 
