@@ -353,6 +353,12 @@ class RetrievalRequestTable(tables.Table):
         else:
             return DEFAULT_VALUE
 
+    def render_date_deleted(self, value):
+        if value:
+            return value.strftime('%Y-%m-%d %H:%M')
+        else:
+            return DEFAULT_VALUE
+
     def render_data_reqs(self, record):
         reqs_str = ', \n'.join([str(dr) for dr in record.data_request.all()])
         return reqs_str

@@ -636,7 +636,9 @@ class RetrievalRequest(models.Model):
     date_created = models.DateTimeField(auto_now_add=True,
                                         verbose_name='Request Created At',
                                         null=False, blank=False)
-    date_complete = models.DateTimeField(verbose_name='Request Completed At',
+    date_complete = models.DateTimeField(verbose_name='Data Restored At',
+                                         null=True, blank=True)
+    date_deleted = models.DateTimeField(verbose_name='Data Deleted At',
                                          null=True, blank=True)
 
     requester = models.ForeignKey(User, verbose_name='Request Creator',
