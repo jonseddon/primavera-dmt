@@ -102,9 +102,9 @@ def main(args):
     data_sub = _get_submission_object(os.path.normpath(args.directory))
 
     if not args.alternative:
-        drs_dir = BASE_OUTPUT_DIR
+        drs_base_dir = BASE_OUTPUT_DIR
     else:
-        drs_dir = args.alternative
+        drs_base_dir = args.alternative
 
     errors_encountered = False
 
@@ -114,7 +114,12 @@ def main(args):
 
         # make full path of where it will live
         drs_sub_path = construct_drs_path(data_file)
-        drs_path = os.path.join(drs_dir, drs_sub_path, data_file.name)
+        drs_dir = os.path.join(drs_base_dir, drs_sub_path)
+        drs_path = os.path.join(drs_dir, data_file.name)
+
+        # check the destination directory exists
+        if not os.path.exists(drs_dir):
+            os.makedirs(drs_dir)
 
         # link if on same GWS, or else copy
         this_file_error = False
@@ -137,7 +142,9 @@ def main(args):
 
         # update the file's location in the database
         if not this_file_error:
-            data_file.directory = os.path.join(drs_dir, drs_sub_path)
+            data_file.directory = os.path.join(drs_base_dir, drs_sub_path)
+            if not data_file.online:
+                data_file.online = True
             data_file.save()
 
         # if storing the files in an alternative location, create a sym link
@@ -158,7 +165,7 @@ def main(args):
 
     # summarise what happened and keep the DB updated
     if not errors_encountered:
-        data_sub.directory = drs_dir
+        data_sub.directory = drs_base_dir
         data_sub.save()
         logger.debug('All files copied with no errors. Data submission '
                      'incoming directory can be deleted.')
