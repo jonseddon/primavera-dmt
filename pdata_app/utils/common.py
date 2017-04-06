@@ -3,6 +3,7 @@ common.py - several functions that are used throughout the pdata_app
 """
 import os
 import random
+import re
 from subprocess import check_output, CalledProcessError
 from tempfile import gettempdir
 
@@ -258,3 +259,25 @@ def standardise_time_unit(time_float, time_unit, standard_unit, calendar):
     corrected_time = cf_units.date2num(date_time, standard_unit, calendar)
 
     return corrected_time
+
+
+def check_same_gws(path1, path2):
+    """
+    Check that two paths both start with the same group workspace name.
+
+    :param str path1: The first path
+    :param str path2: The second path
+    :returns: True if both paths are in the same group workspace
+    """
+    gws_pattern = r'^/group_workspaces/jasmin2/primavera\d'
+    gws1 = re.match(gws_pattern, path1)
+    gws2 = re.match(gws_pattern, path2)
+
+    if not gws1:
+        msg = 'Cannot determine group workspace name from {}'.format(path1)
+        raise RuntimeError(msg)
+    if not gws2:
+        msg = 'Cannot determine group workspace name from {}'.format(path2)
+        raise RuntimeError(msg)
+
+    return True if gws1.group(0) == gws2.group(0) else False
