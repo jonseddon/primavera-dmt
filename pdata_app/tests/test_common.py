@@ -8,7 +8,8 @@ from django.test import TestCase
 
 from pdata_app.utils.common import (make_partial_date_time,
                                     standardise_time_unit,
-                                    calc_last_day_in_month, pdt2num)
+                                    calc_last_day_in_month, pdt2num,
+                                    check_same_gws)
 
 class TestMakePartialDateTime(TestCase):
     def test_yyyymm(self):
@@ -135,3 +136,33 @@ class TestStandardiseTimeUnit(TestCase):
         time_unit = 'days since 2000-01-01'
         self.assertIsNone(standardise_time_unit(None, time_unit,
                                                 time_unit, '360_day'))
+
+
+class TestCheckSameGws(TestCase):
+    def test_same(self):
+        path1 = '/group_workspaces/jasmin2/primavera1/some/dir'
+        path2 = '/group_workspaces/jasmin2/primavera1/another/dir'
+
+        self.assertTrue(check_same_gws(path1, path2))
+
+    def test_diff(self):
+        path1 = '/group_workspaces/jasmin2/primavera1/some/dir'
+        path2 = '/group_workspaces/jasmin2/primavera2/some/dir'
+
+        self.assertFalse(check_same_gws(path1, path2))
+
+    def test_bad_path(self):
+        path1 = 'primavera1/some/dir'
+        path2 = '/group_workspaces/jasmin2/primavera2/some/dir'
+
+        self.assertRaisesRegexp(RuntimeError, 'Cannot determine group '
+            'workspace name from primavera1/some/dir', check_same_gws,
+                                path1, path2)
+
+    def test_slightly_bad_path(self):
+        path1 = '/group_workspaces/jasmin2/primavera2/some/dir'
+        path2 = '/group_workspaces/jasmin1/primavera1/some/dir'
+
+        self.assertRaisesRegexp(RuntimeError, 'Cannot determine group '
+            'workspace name from /group_workspaces/jasmin1/primavera1/some/dir',
+                                check_same_gws, path1, path2)

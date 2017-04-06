@@ -2,7 +2,7 @@ db
 etc
 static
 test_data
-pdata_site/settings_local.py
+pdata_site/settings_local.py*
 setup*.sh
 *.pyc
 .idea

@@ -230,7 +230,15 @@ class RetrievalRequestFilter(django_filters.FilterSet):
 
     incomplete = django_filters.MethodFilter()
 
+    on_gws = django_filters.MethodFilter()
+
     def filter_incomplete(self, queryset, value):
         if value:
             return queryset.filter(date_complete__isnull=True)
+        return queryset
+
+    def filter_on_gws(self, queryset, value):
+        if value:
+            return queryset.filter(date_complete__isnull=False,
+                                   date_deleted__isnull=True)
         return queryset

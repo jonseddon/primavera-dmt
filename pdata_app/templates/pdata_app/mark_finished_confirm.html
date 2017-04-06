@@ -1,0 +1,58 @@
+{% extends "pdata_app/base.html" %}
+
+    {% block contents %}
+
+        <p>
+        The retrievals set to be marked as finished are:
+        </p>
+
+        <p>
+            <table class="table table-bordered">
+                <tr>
+                    <th>Retrieval Request ID</th><th>Data Requests</th>
+                    <th>Size</th>
+                </tr>
+
+                {% for ret_req in ret_req_summaries %}
+                    {% for data_req in ret_req.data_reqs %}
+                        <tr>
+                            {% if forloop.first %}
+                                <td rowspan="{{ ret_req.data_reqs|length }}">
+                                    {{ ret_req.id }}
+                                </td>
+                            {% endif %}
+                            <td>
+                                {{ data_req }}
+                            </td>
+                            {% if forloop.first %}
+                                <td rowspan="{{ ret_req.data_reqs|length }}">
+                                    {{ ret_req.size|filesizeformat }}
+                                </td>
+                            {% endif %}
+                        </tr>
+                    {% endfor %}
+                {% endfor %}
+
+            </table>
+        </p>
+
+        <p>
+            Total data size is {{ total_size|filesizeformat }}.
+        </p>
+
+        <p>
+        Are you sure that you want to mark these retrievals as finished?
+        </p>
+
+        <p>
+            <form method="POST" action="{% url 'mark_finished' %}" method="post">
+                {% csrf_token %}
+
+                <input type="hidden" name="ret_request_ids" value="{{ ret_request_ids }}">
+
+                <button type="submit" class="save btn btn-default">Confirm Mark Finished</button>
+
+                <a class="btn btn-default" href="{{ return_url }}" autofocus>Cancel</a>
+            </form>
+        </p>
+    {% endblock %}

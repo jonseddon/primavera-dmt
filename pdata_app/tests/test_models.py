@@ -164,7 +164,7 @@ class TestDataFileAggregationBaseMethods(TestCase):
 
         expected = [unicode(fn) for fn in self.example_files.files]
 
-        self.assertEqual(filenames, expected)
+        self.assertEqual(filenames.sort(), expected.sort())
 
     def test_project(self):
         self.assertEqual(self.dsub.project(), [self.proj])

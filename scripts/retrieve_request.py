@@ -7,10 +7,8 @@ This script is run by the admin to perform a retrieval request.
 import argparse
 import datetime
 import glob
-import logging
 import logging.config
 import os
-import re
 import shutil
 import subprocess
 import sys
@@ -21,7 +19,7 @@ from django.contrib.auth.models import User
 from django.utils import timezone
 
 from pdata_app.models import Settings, RetrievalRequest, DataFile, EmailQueue
-from pdata_app.utils.common import md5, sha256, adler32
+from pdata_app.utils.common import md5, sha256, adler32, check_same_gws
 from pdata_app.utils.dbapi import match_one
 
 
@@ -35,7 +33,7 @@ logger = logging.getLogger(__name__)
 # The top-level directory to initially restore files to
 BASE_RETRIEVAL_DIR = '/group_workspaces/jasmin2/primavera4/.et_retrievals'
 # The top-level directory to write output data to
-BASE_OUTPUT_DIR = '/group_workspaces/jasmin2/primavera4/stream1'
+BASE_OUTPUT_DIR = Settings.get_solo().base_output_dir
 # The name of the directory to store et_get.py log files in
 LOG_FILE_DIR = '/group_workspaces/jasmin2/primavera4/.et_logs/'
 # The prefix to use on et_get.py log files
@@ -233,7 +231,7 @@ def copy_files_into_drs(retrieval, tape_url, args):
             msg = 'File already exists on disk: {}'.format(dest_file_path)
             logger.warning(msg)
         else:
-            if _check_same_gws(extracted_file_path, drs_dir):
+            if check_same_gws(extracted_file_path, drs_dir):
                 # if src and destination are on the same GWS then create a hard
                 # link, which will be faster and use less disk space
                 os.link(extracted_file_path, dest_file_path)
@@ -321,28 +319,6 @@ def _check_file_checksum(data_file, file_path):
                checksum_obj.checksum_type, checksum_obj.checksum_value))
         logger.warning(msg)
         raise ChecksumError(msg)
-
-
-def _check_same_gws(path1, path2):
-    """
-    Check that two paths both start with the same group workspace name.
-
-    :param str path1: The first path
-    :param str path2: The second path
-    :returns: True if both paths are in the same group workspace
-    """
-    gws_pattern = r'^/group_workspaces/jasmin2/primavera\d'
-    gws1 = re.match(gws_pattern, path1)
-    gws2 = re.match(gws_pattern, path2)
-
-    if not gws1:
-        msg = 'Cannot determine group workspace name from {}'.format(path1)
-        raise RuntimeError(msg)
-    if not gws2:
-        msg = 'Cannot determine group workspace name from {}'.format(path2)
-        raise RuntimeError(msg)
-
-    return True if gws1.group(0) == gws2.group(0) else False
 
 
 def _make_logfile_name(directory=None):

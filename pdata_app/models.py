@@ -30,6 +30,11 @@ class Settings(SingletonModel):
     contact_user_id = models.CharField(max_length=20,
                                        verbose_name='Contact User ID',
                                        default='jseddon')
+    base_output_dir = models.CharField(max_length=300,
+                                       verbose_name='Base directory for '
+                                                    'retrieved files',
+                                       default='/group_workspaces/jasmin2/'
+                                               'primavera4/stream1')
 
     class Meta:
         verbose_name = "Settings"
@@ -631,11 +636,17 @@ class RetrievalRequest(models.Model):
     date_created = models.DateTimeField(auto_now_add=True,
                                         verbose_name='Request Created At',
                                         null=False, blank=False)
-    date_complete = models.DateTimeField(verbose_name='Request Completed At',
+    date_complete = models.DateTimeField(verbose_name='Data Restored At',
+                                         null=True, blank=True)
+    date_deleted = models.DateTimeField(verbose_name='Data Deleted At',
                                          null=True, blank=True)
 
     requester = models.ForeignKey(User, verbose_name='Request Creator',
                                  null=False, blank=False)
+
+    data_finished = models.BooleanField(default=False,
+                                        verbose_name="Data Finished?",
+                                        null=False, blank=False)
 
     def __unicode__(self):
         return '{}'.format(self.id)
