@@ -127,7 +127,7 @@ def main(args):
             try:
                 os.link(existing_path, drs_path)
             except OSError as exc:
-                logger.error('Unable to copy from {} to {}. {}'.
+                logger.error('Unable to link from {} to {}. {}'.
                              format(existing_path, drs_path, str(exc)))
                 errors_encountered = True
                 this_file_error = True
@@ -135,7 +135,7 @@ def main(args):
             try:
                 shutil.copyfile(existing_path, drs_path)
             except IOError as exc:
-                logger.error('Unable to link from {} to {}. {}'.
+                logger.error('Unable to copy from {} to {}. {}'.
                              format(existing_path, drs_path, str(exc)))
                 errors_encountered = True
                 this_file_error = True
