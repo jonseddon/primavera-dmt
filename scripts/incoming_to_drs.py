@@ -135,6 +135,11 @@ def main(args):
                 errors_encountered = True
                 this_file_error = True
 
+        # update the file's location in the database
+        if not this_file_error:
+            data_file.directory = os.path.join(drs_dir, drs_sub_path)
+            data_file.save()
+
         # if storing the files in an alternative location, create a sym link
         # from the primary DRS structure to the file
         if args.alternative and not this_file_error:
@@ -151,7 +156,10 @@ def main(args):
                                     str(exc)))
                 errors_encountered = True
 
+    # summarise what happened and keep the DB updated
     if not errors_encountered:
+        data_sub.directory = drs_dir
+        data_sub.save()
         logger.debug('All files copied with no errors. Data submission '
                      'incoming directory can be deleted.')
     else:
