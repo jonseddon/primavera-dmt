@@ -67,7 +67,7 @@ class Institute(models.Model):
 
     short_name = models.CharField(max_length=100, null=False,
         blank=False, unique=True)
-    full_name = models.CharField(max_length=300, null=False, blank=False)
+    full_name = models.CharField(max_length=1000, null=False, blank=False)
 
     def __unicode__(self):
         return self.short_name

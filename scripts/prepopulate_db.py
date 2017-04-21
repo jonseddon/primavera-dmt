@@ -28,14 +28,6 @@ def main():
                            full_name='High Resolution Model Intercomparison '
                                      'Project')
 
-    # Experiments General
-    expt = get_or_create(Experiment, short_name='historical',
-        full_name='historical')
-    expt = get_or_create(Experiment, short_name='present_day',
-        full_name='present_day')
-    expt = get_or_create(Experiment, short_name='rcp26',
-        full_name='Representative Concentration Pathway 2.6 Wm - 2')
-
     # Experiments HighResMIP
     experiments = {
         'control-1950': "coupled control with fixed 1950's forcing (HighResMIP "
@@ -60,20 +52,32 @@ def main():
 
     # Institutes
     institutes = {
-        'AWI': 'AWI',
+        'AWI': 'Alfred Wegener Institute, Helmholtz Centre for Polar and Marine '
+            'Research, Am Handelshafen 12, 27570 Bremerhaven, Germany',
         'CNRM-CERFACS': 'Centre National de Recherches Meteorologiques, Meteo-France, '
-                'Toulouse, France) and CERFACS (Centre Europeen de Recherches '
-                'et de Formation Avancee en Calcul Scientifique, Toulouse, '
-                'France',
-        'CMCC': 'CMCC',
-        'KNMI': 'KNMI',
-        'SHMI': 'SHMI',
-        'BSC': 'BSC',
-        'CNR': 'CNR',
-        'MPI-M': 'Max Planck Institute for Meteorology',
+            'Toulouse, France) and CERFACS (Centre Europeen de Recherches '
+            'et de Formation Avancee en Calcul Scientifique, Toulouse, '
+            'France',
+        'CMCC': 'Centro Euro-Mediterraneo per i Cambiamenti Climatici, Bologna 40127, '
+            'Italy',
+        'EC-Earth-Consortium': 'KNMI, The Netherlands; SMHI, Sweden; DMI, Denmark; '
+            'AEMET, Spain; Met Eireann, Ireland; CNR-ISAC, Italy; Instituto de '
+            'Meteorologia, Portugal; FMI, Finland; BSC, Spain; Centro de Geofisica, '
+            'University of Lisbon, Portugal; ENEA, Italy; Geomar, Germany; Geophysical '
+            'Institute, University of Bergen, Norway; ICHEC, Ireland; ICTP, Italy; '
+            'IMAU, The Netherlands; IRV, Sweden;  Lund University, Sweden; '
+            'Meteorologiska Institutionen, Stockholms University, Sweden; Niels '
+            'Bohr Institute, University of Copenhagen, Denmark; NTNU, Norway; SARA, '
+            'The Netherlands; Unite ASTR, Belgium; Universiteit Utrecht, The Netherlands; '
+            'Universiteit Wageningen, The Netherlands; University College Dublin, Ireland; '
+            'Vrije Universiteit Amsterdam, the Netherlands; University of Helsinki, Finland; '
+            'KIT, Karlsruhe, Germany; USC, University of Santiago de Compostela, Spain; '
+            'Uppsala Universitet, Sweden; NLeSC, Netherlands eScience Center, The Netherlands',
+        'MPI-M': 'Max Planck Institute for Meteorology, Hamburg 20146, Germany',
         'MOHC': 'Met Office Hadley Centre, Fitzroy Road, Exeter, Devon, '
-                'EX1 3PB, UK.',
-        'ECMWF': 'European Centre for Medium-Range Weather Forecasts'
+            'EX1 3PB, UK',
+        'ECMWF': 'ECMWF (European Centre for Medium-Range Weather Forecasts, Reading '
+            'RG2 9AX, United Kingdom)'
     }
     for inst in institutes:
         _inst = get_or_create(Institute, short_name=inst,
@@ -81,14 +85,20 @@ def main():
 
     # Models
     models = {
-        'AWI-CM': 'AWI-CM:',
-        'CNRM': 'CNRM:',
-        'CMCC-ESM': 'CMCC-ESM:',
-        'EC-Earth': 'EC-Earth:',
-        'MPI-ESM': 'MPI-ESM:',
+        'AWI-CM-LR': 'AWI-CM-LR',
+        'AWI-CM-HR': 'AWI-CM-HR',
+        'CNRM-CM6-1-HR': 'CNRM-CM6-1-HR',
+        'CNRM-CM6-1': 'CNRM-CM6-1',
+        'CMCC-ESM-LR': 'CMCC-ESM-LR',
+        'CMCC-ESM-HR': 'CMCC-ESM-HR',
+        'MPIESM-1-2-HR': 'MPIESM-1-2-HR',
+        'MPIESM-1-2-XR': 'MPIESM-1-2-XR',
         'HadGEM3-GC31-HM': 'HadGEM3-GC31-HM',
         'HadGEM3-GC31-LM': 'HadGEM3-GC31-LM',
-        'IFS': 'IFS'
+        'ECMWF-IFS-LR': 'ECMWF-IFS-LR',
+        'ECMWF-IFS-HR': 'ECMWF-IFS-HR',
+        'EC-Earth-3-HR' :'EC-Earth-3-HR',
+        'EC-Earth-3-LR': 'EC-Earth-3-LR'
     }
     for model in models:
         _mdl = get_or_create(ClimateModel, short_name=model,
