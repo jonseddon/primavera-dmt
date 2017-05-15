@@ -4,11 +4,11 @@
 
     {% block contents %}
         <p>The original CMIP6 data request is available at:
-            <a href="http://clipc-services.ceda.ac.uk/dreq/mipVars.html">
-                http://clipc-services.ceda.ac.uk/dreq/mipVars.html</a>
+            <a href="http://clipc-services.ceda.ac.uk/dreq/index.html">
+                http://clipc-services.ceda.ac.uk/dreq/</a>
         </p>
 
-        <p>These are the variable requests identified in version 01.00.03 of the CMIP6 data request with some modifications for known issues ...</p>
+        <p>These are the variable requests identified in version 01.00.07 of the CMIP6 data request with some modifications for known issues ...</p>
 
         <p>
             <form class="form-inline" action="{% url 'variable_requests' %}" method="get">
@@ -68,11 +68,6 @@
                     <label class="sr-only" for="modeling_realm">Modeling Realm</label>
                     <input type="text" class="form-control" name="modeling_realm" id="modeling_realm" placeholder="Modeling Realm" {% if request.GET.modeling_realm %} value="{{ request.GET.modeling_realm }}" {% endif %}>
                 </div>
-                <div class="checkbox">
-                    <label>
-                        <input id="nameless" type="checkbox" name="nameless" value="1" {% if request.GET.nameless %}checked{% endif %} onchange="updateCmorName()"> Blank CMOR name only<sup><a href="#fn1">1</a></sup>
-                    </label>
-                </div>
                 <a class="btn btn-default" href="{% url 'variable_requests' %}">Clear</a>
                 <input type="submit" class="btn btn-default" value="Filter" />
             </form>
@@ -80,27 +75,5 @@
         </p>
 
         {% render_table table %}
-
-        <p>
-            <br/>
-            <p id="fn1"><sup>1.</sup> Variables outside of HighResMIP may not have a CMOR name.</p>
-        </p>
-
-        <script>
-            $(function () {
-                updateCmorName(); //call on page load
-            });
-
-            function updateCmorName(){
-                if ($('#nameless').is(':checked') == true)
-                {
-                    $('#cmor_name').prop('placeholder', 'Blank CMOR name').val('').prop('disabled', true);
-                }
-                else
-                {
-                    $('#cmor_name').prop('placeholder', 'CMOR Name').prop('disabled', false);
-                }
-            }
-        </script>
 
     {% endblock %}
