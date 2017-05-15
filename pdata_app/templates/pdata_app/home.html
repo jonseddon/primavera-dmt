@@ -3,28 +3,41 @@
 
     {% block contents %}
         <p>
-        This is the PRIMAVERA Data Management Tool (DMT).
+            This is the <a href="https://www.primavera-h2020.eu/">PRIMAVERA</a>
+            Data Management Tool (DMT).
         </p>
 
-        <p>The following views are available:</p>
+        <p>The following query shows the data that is available to users at JASMIN:</p>
+
+        <ul>
+            <li><a href="{% url 'received_data' %}">Variables Received Query</a></li>
+        </ul>
+
+        <p>The PRIMAVERA data request is available:</p>
+
+        <ul>
+            <li><a href="{% url 'variable_requests' %}">View Variable Requests</a></li>
+            <li><a href="{% url 'data_requests' %}">View Data Requests</a></li>
+        </ul>
+
+        <p>Requests to restore data from tape to group workspace can be viewed:</p>
+
+        <ul>
+            <li><a href="{% url 'retrieval_requests' %}">View Retrieval Requests</a></li>
+        </ul>
+
+
+        <p>The following views are also available:</p>
 
         <ul>
             <li><a href="{% url 'data_submissions' %}">View Data Submissions</a></li>
             <li><a href="{% url 'data_files' %}">View Data Files</a></li>
-            <li><a href="{% url 'esgf_datasets' %}">View ESGF Datasets</a></li>
-            <li><a href="{% url 'ceda_datasets' %}">View CEDA Datasets</a></li>
-            <li><a href="{% url 'data_issues' %}">View Data Issues</a></li>
-            <li><a href="{% url 'variable_requests' %}">View Variable Requests</a></li>
-            <li><a href="{% url 'data_requests' %}">View Data Requests</a></li>
-            <li><a href="{% url 'retrieval_requests' %}">View Retrieval Requests</a></li>
-        </ul>
-
-        <p>The following queries are available:</p>
-
-        <ul>
-            <li><a href="{% url 'received_data' %}">Variables Received Query</a></li>
             <li><a href="{% url 'outstanding_data' %}">Outstanding Data Query</a></li>
+            <li><a href="{% url 'ceda_datasets' %}">View CEDA Datasets</a></li>
+            <li><a href="{% url 'esgf_datasets' %}">View ESGF Datasets</a></li>
+            <li><a href="{% url 'data_issues' %}">View Data Issues</a></li>
         </ul>
+
 
         <p>Indicate that a data submission is complete:</p>
 
