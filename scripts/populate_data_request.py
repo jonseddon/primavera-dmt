@@ -87,8 +87,8 @@ def is_ecmwf(sheet_cell):
 
     int_string = re.findall(r'-?\d+', sheet_cell)
     if int_string:
-        if ( int_string[0] == '1' or
-             int_string[0] == '2'):
+        if (int_string[0] == '1' or
+            int_string[0] == '2'):
             return True
         else:
             return False
@@ -119,9 +119,9 @@ def is_cnrm(sheet_cell):
 
     int_string = re.findall(r'-?\d+', sheet_cell)
     if int_string:
-        if ( int_string[0] == '1' or
-             int_string[0] == '2' or
-             int_string[0] == '3'):
+        if (int_string[0] == '1' or
+            int_string[0] == '2' or
+            int_string[0] == '3'):
             return True
         elif (int_string[0] == '-1' or
               int_string[0] == '-2' or
@@ -144,24 +144,18 @@ def is_cmcc(sheet_cell):
         return True
 
 
-def is_knmi(sheet_cell):
-    """Is this variable produced by KNMI (ECEarth)?"""
-    return _is_ecearth(sheet_cell, 'KNMI')
+def is_ec_earth(sheet_cell):
+    """Is this variable produced by `institute` using ECEarth?"""
+    if not sheet_cell:
+        return False
 
-
-def is_shmi(sheet_cell):
-    """Is this variable produced by SHMI (ECEarth)?"""
-    return _is_ecearth(sheet_cell, 'SHMI')
-
-
-def is_bsc(sheet_cell):
-    """Is this variable produced by BSC (ECEarth)?"""
-    return _is_ecearth(sheet_cell, 'BSC')
-
-
-def is_cnr(sheet_cell):
-    """Is this variable produced by CNR (ECEarth)?"""
-    return _is_ecearth(sheet_cell, 'CNR')
+    if sheet_cell.upper() == 'X' or sheet_cell.upper() == 'LIMITED':
+        return True
+    elif sheet_cell.upper() == 'FALSE' or sheet_cell.upper() == 'NO':
+        return False
+    else:
+        print 'Unknown EC-Earth status: {}. Ignoring.'.format(sheet_cell)
+        return False
 
 
 def is_mpi(sheet_cell):
@@ -227,7 +221,7 @@ def main():
         27: {'id': 'CMCC', 'model_ids': ['CMCC-CM2-HR4', 'CMCC-CM2-VHR4'],
              'check_func': is_cmcc, 'calendar': CALENDAR_STANDARD},
         28: {'id': 'EC-Earth-Consortium', 'model_ids': ['EC-Earth3-LR',
-             'EC-Earth3-HR'], 'check_func': is_knmi,
+             'EC-Earth3-HR'], 'check_func': is_ec_earth,
              'calendar': CALENDAR_GREGORIAN},
         32: {'id': 'MPI-M', 'model_ids': ['MPIESM-1-2-HR', 'MPIESM-1-2-XR'],
              'check_func': is_mpi, 'calendar': CALENDAR_PROLEPTIC_GREGORIAN},
@@ -372,20 +366,6 @@ def main():
                        format(sheet, row[11]))
                 print msg
                 raise
-
-
-def _is_ecearth(sheet_cell, institute):
-    """Is this variable produced by `institute` using ECEarth?"""
-    if not sheet_cell:
-        return False
-
-    if sheet_cell.upper() == 'X' or sheet_cell.upper() == 'LIMITED':
-        return True
-    elif sheet_cell.upper() == 'FALSE' or sheet_cell.upper() == 'NO':
-        return False
-    else:
-        print 'Unknown {} status: {}. Ignoring.'.format(institute, sheet_cell)
-        return False
 
 
 if __name__ == '__main__':
