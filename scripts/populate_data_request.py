@@ -8,7 +8,7 @@ data request spreadsheet.
 Uses the Google Sheets API:
 https://developers.google.com/sheets/quickstart/python
 To load the spreadsheet at:
-https://docs.google.com/spreadsheets/d/1UnYjtfQ3s7A-7ZE_qL3efvzfxysSjoFcItBHgwAsGdI/
+https://docs.google.com/spreadsheets/d/1ewKkyuaUq99HUefWIdb3JzqUwwnPLNUGJxbQyqa-10U/
 """
 from datetime import datetime
 import httplib2
@@ -20,7 +20,9 @@ import oauth2client
 from oauth2client import client
 from oauth2client import tools
 
-from cf_units import CALENDAR_360_DAY, CALENDAR_GREGORIAN, date2num
+from cf_units import (CALENDAR_360_DAY, CALENDAR_GREGORIAN,
+                      CALENDAR_PROLEPTIC_GREGORIAN, CALENDAR_STANDARD,
+                      date2num)
 
 try:
     import argparse
@@ -35,7 +37,7 @@ from pdata_app.models import (DataRequest, Institute, Project, Settings,
 from pdata_app.utils.dbapi import match_one, get_or_create
 
 # The ID of the Google Speadsheet (taken from the sheet's URL)
-SPREADSHEET_ID = '1UnYjtfQ3s7A-7ZE_qL3efvzfxysSjoFcItBHgwAsGdI'
+SPREADSHEET_ID = '1ewKkyuaUq99HUefWIdb3JzqUwwnPLNUGJxbQyqa-10U'
 
 # If modifying these scopes, delete your previously saved credentials
 # at ~/.credentials/sheets.googleapis.com-python-quickstart.json
@@ -85,8 +87,8 @@ def is_ecmwf(sheet_cell):
 
     int_string = re.findall(r'-?\d+', sheet_cell)
     if int_string:
-        if ( int_string[0] == '1' or
-             int_string[0] == '2'):
+        if (int_string[0] == '1' or
+            int_string[0] == '2'):
             return True
         else:
             return False
@@ -117,9 +119,9 @@ def is_cnrm(sheet_cell):
 
     int_string = re.findall(r'-?\d+', sheet_cell)
     if int_string:
-        if ( int_string[0] == '1' or
-             int_string[0] == '2' or
-             int_string[0] == '3'):
+        if (int_string[0] == '1' or
+            int_string[0] == '2' or
+            int_string[0] == '3'):
             return True
         elif (int_string[0] == '-1' or
               int_string[0] == '-2' or
@@ -142,24 +144,18 @@ def is_cmcc(sheet_cell):
         return True
 
 
-def is_knmi(sheet_cell):
-    """Is this variable produced by KNMI (ECEarth)?"""
-    return _is_ecearth(sheet_cell, 'KNMI')
+def is_ec_earth(sheet_cell):
+    """Is this variable produced by `institute` using ECEarth?"""
+    if not sheet_cell:
+        return False
 
-
-def is_shmi(sheet_cell):
-    """Is this variable produced by SHMI (ECEarth)?"""
-    return _is_ecearth(sheet_cell, 'SHMI')
-
-
-def is_bsc(sheet_cell):
-    """Is this variable produced by BSC (ECEarth)?"""
-    return _is_ecearth(sheet_cell, 'BSC')
-
-
-def is_cnr(sheet_cell):
-    """Is this variable produced by CNR (ECEarth)?"""
-    return _is_ecearth(sheet_cell, 'CNR')
+    if sheet_cell.upper() == 'X' or sheet_cell.upper() == 'LIMITED':
+        return True
+    elif sheet_cell.upper() == 'FALSE' or sheet_cell.upper() == 'NO':
+        return False
+    else:
+        print 'Unknown EC-Earth status: {}. Ignoring.'.format(sheet_cell)
+        return False
 
 
 def is_mpi(sheet_cell):
@@ -214,27 +210,24 @@ def main():
     ]
 
     # details of each of the institutes
+    # key is the column number in the spreadsheet
     institutes = {
-        24: {'id': 'ECMWF', 'model_ids': ['IFS'], 'check_func': is_ecmwf,
+        24: {'id': 'ECMWF', 'model_ids': ['ECMWF-IFS-LR', 'ECMWF-IFS-HR'], 
+             'check_func': is_ecmwf, 'calendar': CALENDAR_GREGORIAN},
+        25: {'id': 'AWI', 'model_ids': ['AWI-CM-1-0-LR', 'AWI-CM-1-0-HR'],
+             'check_func': is_awi, 'calendar': CALENDAR_STANDARD},
+        26: {'id': 'CNRM-CERFACS', 'model_ids': ['CNRM-CM6-1-HR', 'CNRM-CM6-1'], 
+             'check_func': is_cnrm, 'calendar': CALENDAR_GREGORIAN},
+        27: {'id': 'CMCC', 'model_ids': ['CMCC-CM2-HR4', 'CMCC-CM2-VHR4'],
+             'check_func': is_cmcc, 'calendar': CALENDAR_STANDARD},
+        28: {'id': 'EC-Earth-Consortium', 'model_ids': ['EC-Earth3-LR',
+             'EC-Earth3-HR'], 'check_func': is_ec_earth,
              'calendar': CALENDAR_GREGORIAN},
-        25: {'id': 'AWI', 'model_ids': ['AWI-CM'], 'check_func': is_awi,
-             'calendar': CALENDAR_GREGORIAN},
-        26: {'id': 'CNRM-CERFACS', 'model_ids': ['CNRM'], 'check_func': is_cnrm,
-             'calendar': CALENDAR_GREGORIAN},
-        27: {'id': 'CMCC', 'model_ids': ['CMCC-ESM'], 'check_func': is_cmcc,
-             'calendar': CALENDAR_GREGORIAN},
-        28: {'id': 'KNMI', 'model_ids': ['EC-Earth'], 'check_func': is_knmi,
-             'calendar': CALENDAR_GREGORIAN},
-        29: {'id': 'SHMI', 'model_ids': ['EC-Earth'], 'check_func': is_shmi,
-             'calendar': CALENDAR_GREGORIAN},
-        30: {'id': 'BSC', 'model_ids': ['EC-Earth'], 'check_func': is_bsc,
-             'calendar': CALENDAR_GREGORIAN},
-        31: {'id': 'CNR', 'model_ids': ['EC-Earth'], 'check_func': is_cnr,
-             'calendar': CALENDAR_GREGORIAN},
-        32: {'id': 'MPI-M', 'model_ids': ['MPI-ESM'], 'check_func': is_mpi,
-             'calendar': CALENDAR_GREGORIAN},
-        33: {'id': 'MOHC', 'model_ids': ['HadGEM3-GC31-HM', 'HadGEM3-GC31-LM'],
-             'check_func': is_metoffice, 'calendar': CALENDAR_360_DAY}
+        32: {'id': 'MPI-M', 'model_ids': ['MPIESM-1-2-HR', 'MPIESM-1-2-XR'],
+             'check_func': is_mpi, 'calendar': CALENDAR_PROLEPTIC_GREGORIAN},
+        33: {'id': 'MOHC', 'model_ids': ['HadGEM3-GC31-HM', 'HadGEM3-GC31-MM',
+             'HadGEM3-GC31-LM'], 'check_func': is_metoffice,
+             'calendar': CALENDAR_360_DAY}
     }
 
     # The HighResMIP experiments
@@ -373,20 +366,6 @@ def main():
                        format(sheet, row[11]))
                 print msg
                 raise
-
-
-def _is_ecearth(sheet_cell, institute):
-    """Is this variable produced by `institute` using ECEarth?"""
-    if not sheet_cell:
-        return False
-
-    if sheet_cell.upper() == 'X' or sheet_cell.upper() == 'LIMITED':
-        return True
-    elif sheet_cell.upper() == 'FALSE' or sheet_cell.upper() == 'NO':
-        return False
-    else:
-        print 'Unknown {} status: {}. Ignoring.'.format(institute, sheet_cell)
-        return False
 
 
 if __name__ == '__main__':

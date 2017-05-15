@@ -8,7 +8,7 @@ PRIMAVERA data request spreadsheet.
 Uses the Google Sheets API:
 https://developers.google.com/sheets/quickstart/python
 To load the spreadsheet at:
-https://docs.google.com/spreadsheets/d/1UnYjtfQ3s7A-7ZE_qL3efvzfxysSjoFcItBHgwAsGdI/
+https://docs.google.com/spreadsheets/d/1ewKkyuaUq99HUefWIdb3JzqUwwnPLNUGJxbQyqa-10U/
 """
 import httplib2
 import os
@@ -31,7 +31,7 @@ from vocabs.vocabs import FREQUENCY_VALUES, VARIABLE_TYPES
 from pdata_app.utils.dbapi import get_or_create
 
 # The ID of thr Google Speadsheet (taken from the sheet's URL)
-SPREADSHEET_ID = '1UnYjtfQ3s7A-7ZE_qL3efvzfxysSjoFcItBHgwAsGdI'
+SPREADSHEET_ID = '1ewKkyuaUq99HUefWIdb3JzqUwwnPLNUGJxbQyqa-10U'
 
 # If modifying these scopes, delete your previously saved credentials
 # at ~/.credentials/sheets.googleapis.com-python-quickstart.json
