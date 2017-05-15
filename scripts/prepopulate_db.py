@@ -85,20 +85,21 @@ def main():
 
     # Models
     models = {
-        'AWI-CM-LR': 'AWI-CM-LR',
-        'AWI-CM-HR': 'AWI-CM-HR',
+        'AWI-CM-1-0-LR': 'AWI-CM-1-0-LR',
+        'AWI-CM-1-0-HR': 'AWI-CM-1-0-HR',
         'CNRM-CM6-1-HR': 'CNRM-CM6-1-HR',
         'CNRM-CM6-1': 'CNRM-CM6-1',
-        'CMCC-ESM-LR': 'CMCC-ESM-LR',
-        'CMCC-ESM-HR': 'CMCC-ESM-HR',
+        'CMCC-CM2-HR4': 'CMCC-CM2-HR4',
+        'CMCC-CM2-VHR4': 'CMCC-CM2-VHR4',
         'MPIESM-1-2-HR': 'MPIESM-1-2-HR',
         'MPIESM-1-2-XR': 'MPIESM-1-2-XR',
         'HadGEM3-GC31-HM': 'HadGEM3-GC31-HM',
+        'HadGEM3-GC31-MM': 'HadGEM3-GC31-MM',
         'HadGEM3-GC31-LM': 'HadGEM3-GC31-LM',
         'ECMWF-IFS-LR': 'ECMWF-IFS-LR',
         'ECMWF-IFS-HR': 'ECMWF-IFS-HR',
-        'EC-Earth-3-HR' :'EC-Earth-3-HR',
-        'EC-Earth-3-LR': 'EC-Earth-3-LR'
+        'EC-Earth3-HR' :'EC-Earth3-HR',
+        'EC-Earth3-LR': 'EC-Earth3-LR'
     }
     for model in models:
         _mdl = get_or_create(ClimateModel, short_name=model,

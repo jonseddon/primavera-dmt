@@ -8,7 +8,7 @@ data request spreadsheet.
 Uses the Google Sheets API:
 https://developers.google.com/sheets/quickstart/python
 To load the spreadsheet at:
-https://docs.google.com/spreadsheets/d/1UnYjtfQ3s7A-7ZE_qL3efvzfxysSjoFcItBHgwAsGdI/
+https://docs.google.com/spreadsheets/d/1ewKkyuaUq99HUefWIdb3JzqUwwnPLNUGJxbQyqa-10U/
 """
 from datetime import datetime
 import httplib2
@@ -37,7 +37,7 @@ from pdata_app.models import (DataRequest, Institute, Project, Settings,
 from pdata_app.utils.dbapi import match_one, get_or_create
 
 # The ID of the Google Speadsheet (taken from the sheet's URL)
-SPREADSHEET_ID = '1UnYjtfQ3s7A-7ZE_qL3efvzfxysSjoFcItBHgwAsGdI'
+SPREADSHEET_ID = '1ewKkyuaUq99HUefWIdb3JzqUwwnPLNUGJxbQyqa-10U'
 
 # If modifying these scopes, delete your previously saved credentials
 # at ~/.credentials/sheets.googleapis.com-python-quickstart.json
