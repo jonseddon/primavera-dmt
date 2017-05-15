@@ -20,7 +20,9 @@ import oauth2client
 from oauth2client import client
 from oauth2client import tools
 
-from cf_units import CALENDAR_360_DAY, CALENDAR_GREGORIAN, date2num
+from cf_units import (CALENDAR_360_DAY, CALENDAR_GREGORIAN,
+                      CALENDAR_PROLEPTIC_GREGORIAN, CALENDAR_STANDARD,
+                      date2num)
 
 try:
     import argparse
@@ -214,27 +216,24 @@ def main():
     ]
 
     # details of each of the institutes
+    # key is the column number in the spreadsheet
     institutes = {
         24: {'id': 'ECMWF', 'model_ids': ['ECMWF-IFS-LR', 'ECMWF-IFS-HR'], 
              'check_func': is_ecmwf, 'calendar': CALENDAR_GREGORIAN},
-        25: {'id': 'AWI', 'model_ids': ['AWI-CM-LR', 'AWI-CM-HR'], 
-             'check_func': is_awi, 'calendar': CALENDAR_GREGORIAN},
+        25: {'id': 'AWI', 'model_ids': ['AWI-CM-1-0-LR', 'AWI-CM-1-0-HR'],
+             'check_func': is_awi, 'calendar': CALENDAR_STANDARD},
         26: {'id': 'CNRM-CERFACS', 'model_ids': ['CNRM-CM6-1-HR', 'CNRM-CM6-1'], 
              'check_func': is_cnrm, 'calendar': CALENDAR_GREGORIAN},
-        27: {'id': 'CMCC', 'model_ids': ['CMCC-ESM-LR', 'CMCC-ESM-HR'], 
-             'check_func': is_cmcc, 'calendar': CALENDAR_GREGORIAN},
-        28: {'id': 'EC-Earth-Consortium', 'model_ids': ['ECMWF-IFS-LR', 
-             'ECMWF-IFS-HR'], 'check_func': is_knmi, 'calendar': CALENDAR_GREGORIAN},
-        # 29: {'id': 'SHMI', 'model_ids': ['EC-Earth'], 'check_func': is_shmi,
-        #      'calendar': CALENDAR_GREGORIAN},
-        # 30: {'id': 'BSC', 'model_ids': ['EC-Earth'], 'check_func': is_bsc,
-        #      'calendar': CALENDAR_GREGORIAN},
-        # 31: {'id': 'CNR', 'model_ids': ['EC-Earth'], 'check_func': is_cnr,
-        #      'calendar': CALENDAR_GREGORIAN},
-        32: {'id': 'MPI-M', 'model_ids': ['MPIESM-1-2-HR', 'MPIESM-1-2-XR'], 
-             'check_func': is_mpi, 'calendar': CALENDAR_GREGORIAN},
-        33: {'id': 'MOHC', 'model_ids': ['HadGEM3-GC31-HM', 'HadGEM3-GC31-LM'],
-             'check_func': is_metoffice, 'calendar': CALENDAR_360_DAY}
+        27: {'id': 'CMCC', 'model_ids': ['CMCC-CM2-HR4', 'CMCC-CM2-VHR4'],
+             'check_func': is_cmcc, 'calendar': CALENDAR_STANDARD},
+        28: {'id': 'EC-Earth-Consortium', 'model_ids': ['EC-Earth3-LR',
+             'EC-Earth3-HR'], 'check_func': is_knmi,
+             'calendar': CALENDAR_GREGORIAN},
+        32: {'id': 'MPI-M', 'model_ids': ['MPIESM-1-2-HR', 'MPIESM-1-2-XR'],
+             'check_func': is_mpi, 'calendar': CALENDAR_PROLEPTIC_GREGORIAN},
+        33: {'id': 'MOHC', 'model_ids': ['HadGEM3-GC31-HM', 'HadGEM3-GC31-MM',
+             'HadGEM3-GC31-LM'], 'check_func': is_metoffice,
+             'calendar': CALENDAR_360_DAY}
     }
 
     # The HighResMIP experiments
