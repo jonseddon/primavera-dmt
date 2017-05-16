@@ -208,13 +208,6 @@ class VariableRequestQueryFilter(django_filters.FilterSet):
     uid = django_filters.CharFilter(name='uid',
                                     lookup_expr='icontains')
 
-    nameless = django_filters.MethodFilter()
-
-    def filter_nameless(self, queryset, value):
-        if value:
-            return queryset.filter(cmor_name__exact='')
-        return queryset
-
 
 class RetrievalRequestFilter(django_filters.FilterSet):
     class Meta:
