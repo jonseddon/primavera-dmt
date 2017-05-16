@@ -19,7 +19,10 @@
 #   Any additional options or arguments are passed through as-is to the specified
 #   processing application.
 
-DMT_DIR=~jseddon/primavera/LIVE-prima-dm
+# get the directory that this script is run from
+DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+# get the directory that the DMT is thereofore from
+DMT_DIR=`readlink -f $DIR/..`
 VAL_DIR=~jseddon/primavera/primavera-val
 
 source ~jseddon/primavera/venvs/django/bin/activate
@@ -30,4 +33,4 @@ export PYTHONPATH=$DMT_DIR:$VAL_DIR:$PYTHONPATH
 PYTHON_SCRIPT=$1
 shift
 
-$DMT_DIR/scripts/$PYTHON_SCRIPT "$@"
+$DIR/$PYTHON_SCRIPT "$@"
