@@ -3,7 +3,7 @@
 submit_validation.py
 
 This script is run by a cron job. It checks the ownership of the files in
-DataSubmission's with a status of PENDING_PROCESSING and if they are all now
+DataSubmissions with a status of PENDING_PROCESSING and if they are all now
 owned by the administrotor then it submits a LOTUS job to run the validation.
 """
 from __future__ import print_function
