@@ -19,7 +19,7 @@
 #   Any additional options or arguments are passed through as-is to the specified
 #   processing application.
 
-DMT_DIR=~jseddon/primavera/prima-dm
+DMT_DIR=~jseddon/primavera/LIVE-prima-dm
 VAL_DIR=~jseddon/primavera/primavera-val
 
 source ~jseddon/primavera/venvs/django/bin/activate
