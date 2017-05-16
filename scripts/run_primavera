@@ -19,12 +19,13 @@
 #   Any additional options or arguments are passed through as-is to the specified
 #   processing application.
 
-DMT_DIR=~jseddon/primavera/primavera-dmt
+DMT_DIR=~jseddon/primavera/prima-dm
+VAL_DIR=~jseddon/primavera/primavera-val
 
 source ~jseddon/primavera/venvs/django/bin/activate
 
 export DJANGO_SETTINGS_MODULE=pdata_site.settings
-export PYTHONPATH=$DMT_DIR:$PYTHONPATH
+export PYTHONPATH=$DMT_DIR:$VAL_DIR:$PYTHONPATH
 
 PYTHON_SCRIPT=$1
 shift
