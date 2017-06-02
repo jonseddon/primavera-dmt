@@ -21,7 +21,7 @@ STATUS_TO_PROCESS = STATUS_VALUES['PENDING_PROCESSING']
 ADMIN_USER = 'jseddon'
 PARALLEL_SCRIPT = ('/home/users/jseddon/primavera/primavera-dmt/scripts/'
     'parallel_primavera')
-VALIDATE_SCRIPT = 'validate_data_submission.sh'
+VALIDATE_SCRIPT = 'validate_data_submission.py'
 NUM_PROCS_USE_LOTUS = 8
 LOTUS_OPTIONS = ('-o ~/lotus/%J.o -q par-single -n {} -R "span[hosts=1]" '
                  '-W 01:00'.format(NUM_PROCS_USE_LOTUS))
