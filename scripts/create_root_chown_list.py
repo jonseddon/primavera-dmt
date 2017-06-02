@@ -2,8 +2,8 @@
 """
 create_root_chown_list.py
 
-This script is run by a cron job. It the DataSubmission's with a status of
-PENDING_PROCESSING and writes their top-level directory path to a file. This
+This script is run by a cron job. It finds the DataSubmission's with a status
+of PENDING_PROCESSING and writes their top-level directory path to a file. This
 file will then be read by another cron job running as CEDA root, which will
 chown the files in the submission from the user who submitted them to the
 PRIMAVERA DMT admin user.
