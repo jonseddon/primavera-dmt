@@ -34,7 +34,7 @@ class Settings(SingletonModel):
                                        verbose_name='Base directory for '
                                                     'retrieved files',
                                        default='/group_workspaces/jasmin2/'
-                                               'primavera4/stream1')
+                                               'primavera5/stream1')
 
     class Meta:
         verbose_name = "Settings"
