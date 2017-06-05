@@ -146,8 +146,7 @@ def identify_and_validate_file(params, output, error_event):
             logger.error(msg)
             error_event.set()
         except FileValidationError as fve:
-            msg = 'File failed validation: {} {}'.format(
-                filename, fve.message)
+            msg = 'File failed validation. {}'.format(fve.message)
             logger.warning(msg)
         else:
             output.append(metadata)
