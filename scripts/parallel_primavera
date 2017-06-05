@@ -2,7 +2,7 @@
 #BSUB -o /home/users/jseddon/lotus/%J.o
 #BSUB -e /home/users/jseddon/lotus/%J.e
 #BSUB -q par-single
-#BSUB -W 01:00
+#BSUB -W 05:00
 #BSUB -n 8
 #BSUB -R "span[hosts=1"
 #
@@ -32,6 +32,7 @@ source ~jseddon/primavera/venvs/django/bin/activate
 
 export DJANGO_SETTINGS_MODULE=pdata_site.settings
 export PYTHONPATH=$DMT_DIR:$VAL_DIR:$PYTHONPATH
+export PATH=$PATH:/group_workspaces/jasmin2/primavera1/tools/adler32
 
 PYTHON_SCRIPT=$1
 shift
