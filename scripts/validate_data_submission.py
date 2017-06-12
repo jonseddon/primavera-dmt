@@ -199,10 +199,10 @@ def verify_fk_relationships(metadata):
     if var_match:
         metadata['variable'] = var_match
     else:
-        msg = ('No variable request found for file: {}. Please create a '
-            'variable request and resubmit.'.format(metadata['basename']))
+        msg = ('No variable request found for file: {}.'.
+               format(metadata['basename']))
         logger.error(msg)
-        raise SubmissionError(msg)
+        raise FileValidationError(msg)
 
     # find the data request
     dreq_match = match_one(DataRequest, project=metadata['project'],
