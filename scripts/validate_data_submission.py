@@ -215,7 +215,6 @@ def verify_fk_relationships(metadata):
     else:
         msg = ('No data request found for file: {}.'.
                format(metadata['basename']))
-        logger.error(msg)
         raise FileValidationError(msg)
 
 
