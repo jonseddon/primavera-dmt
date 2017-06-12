@@ -168,28 +168,55 @@ def calculate_checksum(metadata):
 
 def verify_fk_relationships(metadata):
     """
-    Check that entries already exist in the database for `Project`,
-    `ClimateModel` and `Experiment`.
+    Identify the variable_request and data_request objects corresponding to this file.
 
     :param dict metadata: Metadata identified for this file.
-    :returns: True if objects exist.
     :raises SubmissionError: If there are no existing entries in the
         database for `Project`, `ClimateModel` or `Experiment`.
     """
-    checks = [
+    foreign_key_types = [
         (Project, 'project'),
         (ClimateModel, 'climate_model'),
-        (Experiment, 'experiment')]
+        (Experiment, 'experiment'),
+        (Institute, 'institute'),
+        (ActivityId, 'activity_id')]
 
-    for check_type, check_str in checks:
-        results = match_one(check_type, short_name=metadata[check_str])
-        if not results:
-            msg = ('There is no existing database entry for {}: {} in file: {}'.
-                format(check_str, metadata[check_str], metadata['basename']))
+    # get values for each of the foreign key types
+    for object_type, object_str in foreign_key_types:
+        result = match_one(object_type, short_name=metadata[object_str])
+        if result:
+            metadata[object_str] = result
+        else:
+            msg = ("No {} '{}' found for file: {}. Please create this object "
+                "and resubmit.".format(object_str.replace('_', ' '),
+                metadata['project'], metadata['basename']))
             logger.error(msg)
             raise SubmissionError(msg)
 
-    return True
+    # find the variable request
+    var_match = match_one(VariableRequest, cmor_name=metadata['var_name'],
+        table_name=metadata['table'])
+    if var_match:
+        metadata['variable'] = var_match
+    else:
+        msg = ('No variable request found for file: {}. Please create a '
+            'variable request and resubmit.'.format(metadata['basename']))
+        logger.error(msg)
+        raise SubmissionError(msg)
+
+    # find the data request
+    dreq_match = match_one(DataRequest, project=metadata['project'],
+                           institute=metadata['institute'],
+                           climate_model=metadata['climate_model'],
+                           experiment=metadata['experiment'],
+                           variable_request=metadata['variable'])
+    if dreq_match:
+        metadata['data_request'] = dreq_match
+    else:
+        msg = ('No data request found for file: {}.'.
+               format(metadata['basename']))
+        logger.error(msg)
+        raise FileValidationError(msg)
 
 
 def update_database_submission(validated_metadata, data_sub, files_online=True):
@@ -255,52 +282,6 @@ def create_database_file_object(metadata, data_submission, file_online=True):
     # get a fresh DB connection after exiting from parallel operation
     django.db.connections.close_all()
 
-    foreign_key_types = [
-        (Project, 'project'),
-        (ClimateModel, 'climate_model'),
-        (Experiment, 'experiment'),
-        (Institute, 'institute'),
-        (ActivityId, 'activity_id')]
-
-    metadata_objs = {}
-
-    # get values for each of the foreign key types
-    for object_type, object_str in foreign_key_types:
-        result = match_one(object_type, short_name=metadata[object_str])
-        if result:
-            metadata_objs[object_str] = result
-        else:
-            msg = ("No {} '{}' found for file: {}. Please create this object "
-                "and resubmit.".format(object_str.replace('_', ' '),
-                metadata['project'], metadata['basename']))
-            logger.error(msg)
-            raise SubmissionError(msg)
-
-    # find the variable request
-    var_match = match_one(VariableRequest, cmor_name=metadata['var_name'],
-        table_name=metadata['table'])
-    if var_match:
-        variable = var_match
-    else:
-        msg = ('No variable request found for file: {}. Please create a '
-            'variable request and resubmit.'.format(metadata['basename']))
-        logger.error(msg)
-        raise SubmissionError(msg)
-
-    # find the data request
-    dreq_match = match_one(DataRequest, project=metadata_objs['project'],
-                           institute=metadata_objs['institute'],
-                           climate_model=metadata_objs['climate_model'],
-                           experiment=metadata_objs['experiment'],
-                           variable_request=variable)
-    if dreq_match:
-        data_request = dreq_match
-    else:
-        msg = ('No data request found for file: {}. Please create a '
-            'data request and resubmit.'.format(metadata['basename']))
-        logger.error(msg)
-        raise SubmissionError(msg)
-
     time_units = Settings.get_solo().standard_time_units
 
     # find the version number from the date in the submission directory path
@@ -323,12 +304,13 @@ def create_database_file_object(metadata, data_submission, file_online=True):
         data_file = DataFile.objects.create(name=metadata['basename'],
             incoming_directory=metadata['directory'],
             directory=directory, size=metadata['filesize'],
-            project=metadata_objs['project'],
-            institute=metadata_objs['institute'],
-            climate_model=metadata_objs['climate_model'],
-            activity_id=metadata_objs['activity_id'],
-            experiment=metadata_objs['experiment'],
-            variable_request=variable, data_request=data_request,
+            project=metadata['project'],
+            institute=metadata['institute'],
+            climate_model=metadata['climate_model'],
+            activity_id=metadata['activity_id'],
+            experiment=metadata['experiment'],
+            variable_request=metadata['variable'],
+            data_request=metadata['data_request'],
             frequency=metadata['frequency'], rip_code=metadata['rip_code'],
             start_time=pdt2num(metadata['start_date'], time_units,
                                metadata['calendar']),
