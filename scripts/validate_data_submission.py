@@ -132,10 +132,10 @@ def identify_and_validate_file(params, output, error_event):
             else:
                 metadata['project'] = project
 
-            verify_fk_relationships(metadata)
-
             cube = load_cube(filename)
             metadata.update(identify_contents_metadata(cube, filename))
+
+            verify_fk_relationships(metadata)
 
             validate_file_contents(cube, metadata)
 
