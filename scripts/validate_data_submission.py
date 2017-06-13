@@ -608,9 +608,9 @@ def main(args):
 
             if not args.relaxed and len(validated_metadata) != len(data_files):
                 if not args.output:
-                    rejected_dir = move_rejected_files(submission_dir)
-                    set_status_rejected(data_sub, rejected_dir)
-                    send_user_rejection_email(data_sub)
+            #         rejected_dir = move_rejected_files(submission_dir)
+            #         set_status_rejected(data_sub, rejected_dir)
+            #         send_user_rejection_email(data_sub)
                 msg = ('Not all files passed validation. Please fix these '
                        'errors and then re-run this script.')
                 logger.error(msg)
