@@ -689,8 +689,7 @@ def main(args):
     for partial_path in files_to_move:
         src_path = os.path.join(base_input_dir, partial_path)
         try:
-            # shutil.move(src_path, dest_dir)
-            logger.debug('shutil.move({}, {})'.format(src_path, dest_dir))
+            shutil.move(src_path, dest_dir)
         except Exception:
             logger.error('Unable to move file {}'.format(src_path))
             raise
