@@ -106,9 +106,7 @@ def submission_to_tape(directory, overwrite=False):
 
     # run the et_put.py command to send the files to tape
     cmd = 'et_put.py -v -w primavera -f {}'.format(filelist_name)
-    # cmd_output = _run_command(cmd)
-    logger.debug(cmd)
-    cmd_output = ['Batch ID: 9999']
+    cmd_output = _run_command(cmd)
 
     # find the batch id from the text returned by et_put.py
     batch_id = None
