@@ -106,7 +106,9 @@ def submission_to_tape(directory, overwrite=False):
 
     # run the et_put.py command to send the files to tape
     cmd = 'et_put.py -v -w primavera -f {}'.format(filelist_name)
-    cmd_output = _run_command(cmd)
+    # cmd_output = _run_command(cmd)
+    logger.debug(cmd)
+    cmd_output = 'Batch ID: 9999'
 
     # find the batch id from the text returned by et_put.py
     batch_id = None
@@ -162,8 +164,12 @@ def main(args):
 
     # find all data submissions that have been validated and contain no
     # datafiles that have a tape_url
-    submissions = (DataSubmission.objects.annotate(Count('datafile__tape_url')).
-        filter(status=status_to_process, datafile__tape_url__count=0))
+    # submissions = (DataSubmission.objects.annotate(Count('datafile__tape_url')).
+    #     filter(status=status_to_process, datafile__tape_url__count=0))
+    submissions = DataSubmission.objects.filter(
+        incoming_directory='/group_workspaces/jasmin2/primavera4/upload/'
+                           'CNRM-CERFACS/CNRM-CM6-1/incoming/v20170606'
+    )
 
     for submission in submissions:
         submission_to_tape(submission.incoming_directory, args.overwrite)
