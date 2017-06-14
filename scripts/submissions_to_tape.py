@@ -166,7 +166,7 @@ def main(args):
     #     filter(status=status_to_process, datafile__tape_url__count=0))
     submissions = DataSubmission.objects.filter(
         incoming_directory='/group_workspaces/jasmin2/primavera4/upload/'
-                           'CNRM-CERFACS/CNRM-CM6-1/incoming/v20170606'
+                           'CNRM-CERFACS/CNRM-CM6-1/incoming'
     )
 
     for submission in submissions:
