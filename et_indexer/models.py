@@ -126,7 +126,7 @@ class Attribute(models.Model):
 
     attribute_name = models.CharField(max_length=200, null=False, blank=False)
     attribute_type = models.CharField(max_length=200, null=False, blank=False)
-    attribute_value = models.CharField(max_length=200, null=False, blank=False)
+    attribute_value = models.CharField(max_length=1000, null=False, blank=False)
 
     def __unicode__(self):
         outstr = "\n"
