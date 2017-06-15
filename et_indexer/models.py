@@ -70,7 +70,7 @@ class Datafile(models.Model):
                                         verbose_name='Date Scanned')
     date_archived = models.DateTimeField(null=True, blank=True,
                                          verbose_name='Date Archived')
-    file_size = models.IntegerField(null=False, blank=False,
+    file_size = models.BigIntegerField(null=False, blank=False,
                                     verbose_name='File Size')
     file_checksum = models.CharField(max_length=50, null=True, blank=True,
                                      verbose_name='File Checksum')
