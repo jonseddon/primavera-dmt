@@ -54,7 +54,7 @@ class Datafile(models.Model):
     class Meta:
         verbose_name = 'Data File'
 
-    original_location = models.CharField(max_length=200, null=False,
+    original_location = models.CharField(max_length=500, null=False,
                                          blank=False, unique=True,
                                          verbose_name='Original Location')
     batch_id = models.IntegerField(null=True, blank=True,
@@ -63,7 +63,7 @@ class Datafile(models.Model):
                               verbose_name='Status')
     original_owner = models.CharField(max_length=200, null=False, blank=False,
                                       verbose_name='Original Owner')
-    workspace = models.CharField(max_length=200, null=True, blank=True,
+    workspace = models.CharField(max_length=500, null=True, blank=True,
                                  verbose_name='Workspace')
     date_scanned = models.DateTimeField(auto_now_add=True,
                                         null=False, blank=False,
