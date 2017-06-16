@@ -115,9 +115,14 @@ class NetCDFIndexedFile(object):
         for att in self.nf.ncattrs():
             v = self.nf.getncattr(att)
 
-            attribute_entry = {'attribute_name': att,
-                               'attribute_type': _typestr(v),
-                               'attribute_value': str(v), }
+            if isinstance(v, basestring):
+                attribute_entry = {'attribute_name': att,
+                                   'attribute_type': _typestr(v),
+                                   'attribute_value': v.encode('utf-8'), }
+            else:
+                attribute_entry = {'attribute_name': att,
+                                   'attribute_type': _typestr(v),
+                                   'attribute_value': str(v), }
             attribute, isnew = Attribute.objects.get_or_create(**attribute_entry)
 
             file_attribute_link = {'data_file': self.datafile,
