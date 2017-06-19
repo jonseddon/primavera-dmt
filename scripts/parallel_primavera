@@ -1,0 +1,40 @@
+#!/bin/bash
+#BSUB -o /home/users/jseddon/lotus/%J.o
+#BSUB -e /home/users/jseddon/lotus/%J.e
+#BSUB -q par-single
+#BSUB -W 05:00
+#BSUB -n 8
+#BSUB -R "span[hosts=1"
+#
+# SYNOPSIS
+#
+#   parallel_primavera <python_script.py> <options>
+#
+# DESCRIPTION
+#
+#   This script is a thin shell wrapper around Python scripts. All options are
+#   passed through to the Python script after some initialisation has been
+#   performed. This script requests a LOTUS job that use 8 cores on a single
+#   host.
+#
+# OPTIONS
+#
+#   Any additional options or arguments are passed through as-is to the specified
+#   processing application.
+
+# get the directory that this script is run from
+DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+# get the directory that the DMT is thereofore from
+DMT_DIR=`readlink -f $DIR/..`
+VAL_DIR=~jseddon/primavera/cerfacs-val
+
+source ~jseddon/primavera/venvs/django/bin/activate
+
+export DJANGO_SETTINGS_MODULE=pdata_site.settings
+export PYTHONPATH=$DMT_DIR:$VAL_DIR:$PYTHONPATH
+export PATH=$PATH:/group_workspaces/jasmin2/primavera1/tools/adler32
+
+PYTHON_SCRIPT=$1
+shift
+
+$DIR/$PYTHON_SCRIPT "$@"
