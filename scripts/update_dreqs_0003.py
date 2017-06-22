@@ -62,7 +62,7 @@ def main(args):
     files_to_move below
     """
     base_input_dir = ('/group_workspaces/jasmin2/primavera4/upload/'
-                      'CNRM-CERFACS/CNRM-CM6-1/incoming')
+                      'CNRM-CERFACS/CNRM-CM6-1-HR/incoming')
 
     dest_dir = ('/group_workspaces/jasmin2/primavera4/upload/'
                 'CNRM-CERFACS-additional/CNRM-CM6-1-HR/incoming/v20170622_1950')
