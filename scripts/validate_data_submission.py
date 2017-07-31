@@ -504,6 +504,29 @@ def _object_to_default(obj):
         obj_dict['__kwargs__'] = kwargs
 
         return obj_dict
+    elif isinstance(obj, (ActivityId, ClimateModel, Experiment, Institute,
+                          Project)):
+        obj_dict = {'__class__': obj.__class__.__name__,
+                    '__module__': obj.__module__}
+        obj_dict['__kwargs__'] = {'short_name': obj.short_name}
+        return obj_dict
+    elif isinstance(obj, VariableRequest):
+        obj_dict = {'__class__': obj.__class__.__name__,
+                    '__module__': obj.__module__}
+        obj_dict['__kwargs__'] = {'table_name': obj.table_name,
+                                  'cmor_name': obj.cmor_name}
+        return obj_dict
+    elif isinstance(obj, DataRequest):
+        obj_dict = {'__class__': obj.__class__.__name__,
+                    '__module__': obj.__module__}
+        obj_dict['__kwargs__'] = {
+            'variable_request__table_name': obj.variable_request.table_name,
+            'variable_request__cmor_name': obj.variable_request.cmor_name,
+            'institute__short_name': obj.institute.short_name,
+            'climate_model__short_name': obj.climate_model.short_name,
+            'experiment__short_name': obj.experiment.short_name
+        }
+        return obj_dict
 
 
 def _dict_to_object(dict_):
@@ -513,7 +536,16 @@ def _dict_to_object(dict_):
     if '__class__' in dict_:
         module = __import__(dict_['__module__'], fromlist=[dict_['__class__']])
         klass = getattr(module, dict_['__class__'])
-        inst = klass(**dict_['__kwargs__'])
+        if dict_['__class__'] == 'PartialDateTime':
+            inst = klass(**dict_['__kwargs__'])
+        elif dict_['__class__'] in ('ActivityId', 'ClimateModel',
+                                    'Experiment', 'Institute', 'Project',
+                                    'VariableRequest', 'DataRequest'):
+            inst = match_one(klass, **dict_['__kwargs__'])
+        else:
+            msg = ('Cannot load from JSON files class {}'.
+                   format(dict_['__class__']))
+            raise NotImplementedError(msg)
     else:
         inst = dict_
     return inst
