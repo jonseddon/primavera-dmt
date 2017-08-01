@@ -54,6 +54,10 @@ class TestIntegrationTests(TestCase):
         self.mock_logger = patch.start()
         self.addCleanup(patch.stop)
 
+        patch = mock.patch('scripts.retrieve_request._email_user_success')
+        self.mock_email = patch.start()
+        self.addCleanup(patch.stop)
+
         # create the necessary DB objects
         proj = get_or_create(Project, short_name="CMIP6", full_name="6th "
             "Coupled Model Intercomparison Project")
@@ -147,15 +151,15 @@ class TestIntegrationTests(TestCase):
         self.assertIsNotNone(df)
 
         self.mock_link.assert_called_once_with(
-            '/group_workspaces/jasmin2/primavera4/.et_retrievals/et_1234/gws/'
+            '/group_workspaces/jasmin2/primavera5/.et_retrievals/et_1234/gws/'
             'MOHC/MY-MODEL/incoming/v12345678/file_one.nc',
-            u'/group_workspaces/jasmin2/primavera4/stream1/CMIP6/HighResMIP/'
+            u'/group_workspaces/jasmin2/primavera5/stream1/CMIP6/HighResMIP/'
             u'MOHC/MY-MODEL/experiment/r1i1p1f1/my-table/my-var/gn/v12345678/'
             u'file_one.nc'
         )
 
         self.assertTrue(df.online)
-        self.assertEqual(df.directory, u'/group_workspaces/jasmin2/primavera4/'
+        self.assertEqual(df.directory, u'/group_workspaces/jasmin2/primavera5/'
                                        u'stream1/CMIP6/HighResMIP/MOHC/'
                                        u'MY-MODEL/experiment/r1i1p1f1/'
                                        u'my-table/my-var/gn/v12345678')
@@ -200,10 +204,10 @@ class TestIntegrationTests(TestCase):
         for data_file in DataFile.objects.all():
             self.assertTrue(data_file.online)
             self.assertIn(data_file.directory, [
-                u'/group_workspaces/jasmin2/primavera4/stream1/CMIP6/'
+                u'/group_workspaces/jasmin2/primavera5/stream1/CMIP6/'
                 u'HighResMIP/MOHC/MY-MODEL/experiment/r1i1p1f1/my-table/'
                 u'my-var/gn/v12345678',
-                u'/group_workspaces/jasmin2/primavera4/stream1/CMIP6/HighResMIP/'
+                u'/group_workspaces/jasmin2/primavera5/stream1/CMIP6/HighResMIP/'
                 u'MOHC/MY-MODEL/experiment/r1i1p1f1/your-table/your-var/'
                 u'gn/v12345678'
             ])
@@ -269,7 +273,7 @@ class TestIntegrationTests(TestCase):
         main(ns)
 
         self.mock_copyfile.assert_called_once_with(
-            '/group_workspaces/jasmin2/primavera4/.et_retrievals/et_1234/gws/'
+            '/group_workspaces/jasmin2/primavera5/.et_retrievals/et_1234/gws/'
             'MOHC/MY-MODEL/incoming/v12345678/file_one.nc',
             u'/group_workspaces/jasmin2/primavera3/spare_dir/CMIP6/HighResMIP/'
             u'MOHC/MY-MODEL/experiment/r1i1p1f1/my-table/my-var/gn/'
@@ -280,7 +284,7 @@ class TestIntegrationTests(TestCase):
             u'/group_workspaces/jasmin2/primavera3/spare_dir/CMIP6/HighResMIP/'
             u'MOHC/MY-MODEL/experiment/r1i1p1f1/my-table/my-var/gn/'
             u'v12345678/file_one.nc',
-            u'/group_workspaces/jasmin2/primavera4/stream1/CMIP6/HighResMIP/'
+            u'/group_workspaces/jasmin2/primavera5/stream1/CMIP6/HighResMIP/'
             u'MOHC/MY-MODEL/experiment/r1i1p1f1/my-table/my-var/gn/v12345678/'
             u'file_one.nc'
         )
@@ -305,7 +309,7 @@ class TestIntegrationTests(TestCase):
         self.assertRaises(SystemExit, main, ns)
         self.mock_logger.error.assert_called_once_with(
             'Elastic tape retrieval destination directory /group_workspaces/'
-            'jasmin2/primavera4/.et_retrievals/et_1234 already '
+            'jasmin2/primavera5/.et_retrievals/et_1234 already '
             'exists. Please delete this directory to restore from tape '
             'again, or run this script with the -n option to extract files '
             'from this existing directory.'

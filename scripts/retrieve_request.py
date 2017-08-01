@@ -31,11 +31,11 @@ DEFAULT_LOG_FORMAT = '%(levelname)s: %(message)s'
 logger = logging.getLogger(__name__)
 
 # The top-level directory to initially restore files to
-BASE_RETRIEVAL_DIR = '/group_workspaces/jasmin2/primavera4/.et_retrievals'
+BASE_RETRIEVAL_DIR = '/group_workspaces/jasmin2/primavera5/.et_retrievals'
 # The top-level directory to write output data to
 BASE_OUTPUT_DIR = Settings.get_solo().base_output_dir
 # The name of the directory to store et_get.py log files in
-LOG_FILE_DIR = '/group_workspaces/jasmin2/primavera4/.et_logs/'
+LOG_FILE_DIR = '/group_workspaces/jasmin2/primavera5/.et_logs/'
 # The prefix to use on et_get.py log files
 LOG_PREFIX = 'et_get'
 # The number of processes that et_get.py should use.
