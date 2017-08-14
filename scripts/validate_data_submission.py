@@ -218,7 +218,8 @@ def verify_fk_relationships(metadata):
         raise FileValidationError(msg)
 
 
-def update_database_submission(validated_metadata, data_sub, files_online=True):
+def update_database_submission(validated_metadata, data_sub, files_online=True,
+                               file_version=None):
     """
     Create entries in the database for the files in this submission.
 
@@ -230,7 +231,8 @@ def update_database_submission(validated_metadata, data_sub, files_online=True):
     :returns:
     """
     for data_file in validated_metadata:
-        create_database_file_object(data_file, data_sub, files_online)
+        create_database_file_object(data_file, data_sub, files_online,
+                                    file_version)
 
     data_sub.status = STATUS_VALUES['VALIDATED']
     data_sub.save()
@@ -268,7 +270,8 @@ def write_json_file(validated_metadata, filename):
     logger.debug('Metadata written to JSON file {}'.format(filename))
 
 
-def create_database_file_object(metadata, data_submission, file_online=True):
+def create_database_file_object(metadata, data_submission, file_online=True,
+                                file_version=None):
     """
     Create a database entry for a data file
 
@@ -276,6 +279,9 @@ def create_database_file_object(metadata, data_submission, file_online=True):
     :param pdata_app.models.DataSubmission data_submission: The parent data
         submission.
     :param bool file_online: True if the file is online.
+    :param str file_version: The version string to apply to each file. The 
+        string from the incoming directory name or the current date is used
+        if a string isn't supplied.
     :returns:
     """
     # get a fresh DB connection after exiting from parallel operation
@@ -283,14 +289,18 @@ def create_database_file_object(metadata, data_submission, file_online=True):
 
     time_units = Settings.get_solo().standard_time_units
 
-    # find the version number from the date in the submission directory path
-    date_string = re.search(r'(?<=/incoming/)(\d{8})', metadata['directory'])
-    if date_string:
-        date_string = date_string.group(0)
-        version_string = 'v' + date_string
+    if file_version:
+        version_string = file_version
     else:
-        today = datetime.datetime.utcnow()
-        version_string = today.strftime('v%Y%m%d')
+        # find the version number from the date in the submission directory path
+        date_string = re.search(r'(?<=/incoming/)(\d{8})',
+                                metadata['directory'])
+        if date_string:
+            date_string = date_string.group(0)
+            version_string = 'v' + date_string
+        else:
+            today = datetime.datetime.utcnow()
+            version_string = today.strftime('v%Y%m%d')
 
     # if the file isn't online (e.g. loaded from JSON) then directory is blank
     directory = metadata['directory'] if file_online else None
@@ -582,6 +592,9 @@ def parse_args():
         'debug, info, warn (the default), or error')
     parser.add_argument('-p', '--processes', help='the number of parallel processes '
         'to use (default: %(default)s)', default=8, type=int)
+    parser.add_argument('-s', '--version-string', help='an optional version to '
+        'use on all files. If not specifed the string in the incoming '
+        'directory name or the current date is used', type=str)
     parser.add_argument('-r', '--relaxed', help='create a submission from '
         'validated files, ignoring failed files (default behaviour is to only '
         'create a submission when all files pass validation)', action='store_true')
@@ -655,7 +668,7 @@ def main(args):
             write_json_file(validated_metadata, args.output)
         else:
             update_database_submission(validated_metadata, data_sub,
-                                       files_online)
+                                       files_online, args.version_string)
             logger.debug('%s files submitted successfully',
                 match_one(DataSubmission, incoming_directory=submission_dir).get_data_files().count())
 
