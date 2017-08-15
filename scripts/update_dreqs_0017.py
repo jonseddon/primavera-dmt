@@ -81,14 +81,20 @@ def main(args):
         for data_file in data_sub.datafile_set.all():
             old_dir = data_file.directory
             old_path = os.path.join(old_dir, data_file.name)
-            new_dir = os.path.join(os.path.basename(data_file.directory),
+            new_dir = os.path.join(os.path.dirname(data_file.directory),
                                     CERFACS_NEW_VERSION)
             new_path = os.path.join(new_dir, data_file.name)
 
             if not os.path.exists(new_dir):
                 os.makedirs(new_dir)
 
-            os.rename(old_path, new_path)
+            try:
+                os.rename(old_path, new_path)
+            except OSError:
+                logger.error(old_path)
+                logger.error(new_path)
+                raise
+
 
             if not os.listdir(old_dir):
                 # directory's empty so delete it
