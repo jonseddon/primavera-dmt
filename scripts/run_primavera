@@ -29,6 +29,7 @@ source ~jseddon/primavera/venvs/django/bin/activate
 
 export DJANGO_SETTINGS_MODULE=pdata_site.settings
 export PYTHONPATH=$DMT_DIR:$VAL_DIR:$PYTHONPATH
+export PATH=$PATH:/group_workspaces/jasmin2/primavera1/tools/adler32
 
 PYTHON_SCRIPT=$1
 shift
