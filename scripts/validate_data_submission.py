@@ -12,6 +12,7 @@ import json
 import logging
 import logging.config
 from multiprocessing import Process, Manager
+from netCDF4 import Dataset
 import os
 import re
 import shutil
@@ -199,10 +200,43 @@ def verify_fk_relationships(metadata):
     if var_match:
         metadata['variable'] = var_match
     else:
-        msg = ('No variable request found for file: {}.'.
-               format(metadata['basename']))
-        logger.error(msg)
-        raise FileValidationError(msg)
+        # if cmor_name doesn't match then it may be a variable where out_name
+        # is different to cmor_name so check these
+        var_matches = VariableRequest.objects.filter(
+            var_name=metadata['var_name'],
+            table_name=metadata['table'])
+        if var_matches.count() == 1:
+            metadata['variable'] = var_matches[0]
+        elif var_matches.count() == 0:
+            msg = ('No variable request found for file: {}.'.
+                   format(metadata['basename']))
+            logger.error(msg)
+            raise FileValidationError(msg)
+        else:
+            try:
+                plev_name = _guess_plev_name(metadata)
+            except Exception:
+                msg = ('Multiple variable requests found and cannot open '
+                       'file: {}.'.format(metadata['basename']))
+                logger.error(msg)
+                raise FileValidationError(msg)
+            if plev_name:
+                var_matches = VariableRequest.objects.filter(
+                    var_name=metadata['var_name'],
+                    table_name=metadata['table'],
+                    dimensions__icontains=plev_name)
+                if len(var_matches) == 1:
+                    metadata['variable'] = var_matches[0]
+                else:
+                    msg = ('Multiple variable requests found for file: {}.'.
+                           format(metadata['basename']))
+                    logger.error(msg)
+                    raise FileValidationError(msg)
+            else:
+                msg = ('Multiple variable requests found for file: {}.'.
+                       format(metadata['basename']))
+                logger.error(msg)
+                raise FileValidationError(msg)
 
     # find the data request
     dreq_match = match_one(DataRequest, project=metadata['project'],
@@ -499,6 +533,32 @@ def _get_submission_object(submission_dir):
         raise SubmissionError(msg)
 
     return data_sub
+
+
+def _guess_plev_name(metadata):
+    """
+    Guess the name of the plev in the data request dimensions.
+    
+    :param dict metadata: The file's metadata dictionary. 
+    :returns: The name of the pressure levels from the data request or none
+        if it can't be guessed.
+    :rtype: str
+    """
+    rootgrp = Dataset(os.path.join(metadata['directory'],
+                                   metadata['basename']))
+    if 'plev' in rootgrp.dimensions:
+        num_plevs = len(rootgrp.dimensions['plev'])
+        if num_plevs == 7:
+            plev_val = 'plev7h'
+        elif num_plevs == 27:
+            plev_val = 'plev27'
+        else:
+            plev_val = None
+    else:
+        plev_val = None
+
+    rootgrp.close()
+    return plev_val
 
 
 def _object_to_default(obj):
