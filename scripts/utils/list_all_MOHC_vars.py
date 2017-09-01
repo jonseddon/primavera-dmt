@@ -1,9 +1,9 @@
 #!/usr/bin/env python2.7
 """
-high_freq_list.py
+list_all_MOHC_vars.py
 
-This script will generate a summary of the high frequency (daily or higher)
-variables that are being generated.
+This script will generate a summary of the all of the HighResMIP
+variables that MOHC are planning on generating.
 """
 import argparse
 import logging.config
