@@ -190,7 +190,7 @@ def verify_fk_relationships(metadata):
         else:
             msg = ("No {} '{}' found for file: {}. Please create this object "
                 "and resubmit.".format(object_str.replace('_', ' '),
-                metadata['project'], metadata['basename']))
+                metadata[object_str], metadata['basename']))
             logger.error(msg)
             raise SubmissionError(msg)
 
