@@ -44,7 +44,7 @@ def main(args):
     """
     Main entry point
     """
-    low_res = ClimateModel(short_name='EC-Earth3-LR')
+    low_res = ClimateModel.objects.get(short_name='EC-Earth3-LR')
 
     low_res.short_name = 'EC-Earth3'
     low_res.full_name = 'EC-Earth3'
