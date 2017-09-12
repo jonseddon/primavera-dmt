@@ -1,0 +1,39 @@
+{% extends "pdata_app/base.html" %}
+
+    {% block contents %}
+        <p>
+            For these data requests, data is available between {{ earliest_year }}
+            and {{ latest_year }}.
+        </p>
+
+        <p>
+            Please choose the years to restore:
+
+            <form method="POST" action="{% url 'confirm_retrieval' %}" method="post">
+                {% csrf_token %}
+                <input type="number" name="start_year" value="{{ earliest_year }}">
+
+                <input type="number" name="final_year" value="{{ latest_year }}">
+
+                <input type="hidden" name="data_request_ids" value="{{ data_request_ids }}">
+
+                <button type="submit" class="save btn btn-default">Confirm Retrieval Request</button>
+
+                <a class="btn btn-default" href="{{ return_url }}" autofocus>Cancel</a>
+            </form>
+
+
+        <hr>
+
+        <p>
+        The data requests requested for restoration from tape are:
+        </p>
+
+        <p>
+            <ul>
+                {{ data_reqs|unordered_list }}
+            </ul>
+        </p>
+
+
+    {% endblock %}

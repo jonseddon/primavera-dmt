@@ -8,7 +8,7 @@ from django.contrib.auth.decorators import login_required
 from django.contrib.auth.forms import PasswordResetForm
 from django.contrib.auth.models import User
 from django.core.urlresolvers import reverse
-from django.db.models import Sum
+from django.db.models import Max, Min, Sum
 from django.http import HttpResponseRedirect
 from django.shortcuts import render, redirect
 
@@ -231,6 +231,44 @@ def create_submission(request):
     return render(request, 'pdata_app/create_submission_form.html',
                   {'form': form,
                    'page_title': 'Create Data Submission'})
+
+
+@login_required(login_url='/login/')
+def retrieval_years(request):
+    if request.method == 'POST':
+        data_req_ids = []
+        # loop through the items in the POST from the form and identify any
+        # DataRequest object ids that have been requested
+        for key in request.POST:
+            components = re.match(r'^request_data_req_(\d+)$', key)
+            if components:
+                data_req_ids.append(int(components.group(1)))
+        # get a string representation of each id
+        # TODO what if id doesn't exist?
+        data_req_strs = [str(DataRequest.objects.filter(id=req).first())
+                         for req in data_req_ids]
+
+        earliest_year = min([DataRequest.objects.get(id=req).
+                            datafile_set.aggregate(
+                            Min('start_time'))['start_time__min']
+                            for req in data_req_ids])
+        latest_year = max([DataRequest.objects.get(id=req).
+                           datafile_set.aggregate(
+                           Max('end_time'))['end_time__max']
+                           for req in data_req_ids])
+        # generate the confirmation page
+        return render(request, 'pdata_app/retrieval_request_confirm.html',
+                      {'request': request, 'data_reqs':data_req_strs,
+                       'page_title': 'Confirm Retrieval Request',
+                       'return_url': request.POST['variables_received_url'],
+                       'data_request_ids': ','.join(map(str, data_req_ids)),
+                       'earliest_year': earliest_year,
+                       'latest_year': latest_year})
+    else:
+        # TODO do something intelligent
+        return render(request, 'pdata_app/retrieval_request_error.html',
+                      {'request': request,
+                       'page_title': 'Retrieval Request'})
 
 
 @login_required(login_url='/login/')
