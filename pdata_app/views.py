@@ -383,9 +383,28 @@ def confirm_mark_finished(request):
             ret_req = RetrievalRequest.objects.get(id=req)
             summary['data_reqs'] = [str(data_req) for data_req in
                                     ret_req.data_request.all()]
-            summary['size'] = (ret_req.data_request.all().
-                               aggregate(Sum('datafile__size'))
-                               ['datafile__size__sum'])
+
+            # get the size of each data request
+            data_req_sizes = []
+            for data_req in ret_req.data_request.all():
+                all_files = data_req.datafile_set.all()
+                time_units = all_files[0].time_units
+                calendar = all_files[0].calendar
+                start_float = cf_units.date2num(
+                    datetime.datetime(ret_req.start_year, 1, 1), time_units,
+                    calendar
+                )
+                end_float = cf_units.date2num(
+                    datetime.datetime(ret_req.end_year + 1, 1, 1), time_units,
+                    calendar
+                )
+                data_files = all_files.filter(start_time__gte=start_float,
+                                              end_time__lt=end_float)
+
+                data_req_sizes.append(
+                    data_files.aggregate(Sum('size'))['size__sum'])
+
+            summary['size'] = sum(data_req_sizes)
             ret_req_summaries.append(summary)
 
 
