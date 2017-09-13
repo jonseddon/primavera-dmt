@@ -11,9 +11,9 @@
 
             <form method="POST" action="{% url 'confirm_retrieval' %}" method="post">
                 {% csrf_token %}
-                <input type="number" name="start_year" value="{{ earliest_year }}">
+                From: <input type="number" name="start_year" value="{{ earliest_year }}">
 
-                <input type="number" name="final_year" value="{{ latest_year }}">
+                To: <input type="number" name="final_year" value="{{ latest_year }}">
 
                 <input type="hidden" name="data_request_ids" value="{{ data_request_ids }}">
                 <input type="hidden" name="return_url" value="{{ return_url }}">
