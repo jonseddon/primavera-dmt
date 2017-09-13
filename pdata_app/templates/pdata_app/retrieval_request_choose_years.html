@@ -13,7 +13,7 @@
                 {% csrf_token %}
                 From: <input type="number" name="start_year" value="{{ earliest_year }}">
 
-                To: <input type="number" name="final_year" value="{{ latest_year }}">
+                To: <input type="number" name="end_year" value="{{ end_year }}">
 
                 <input type="hidden" name="data_request_ids" value="{{ data_request_ids }}">
                 <input type="hidden" name="return_url" value="{{ return_url }}">

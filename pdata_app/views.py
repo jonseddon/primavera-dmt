@@ -266,7 +266,7 @@ def retrieval_years(request):
               DataRequest.objects.get(id=req).datafile_set.first().time_units,
               DataRequest.objects.get(id=req).datafile_set.first().calendar)
              for req in data_req_ids])
-        latest_year = cf_units.num2date(latest_year_float, time_units,
+        end_year = cf_units.num2date(latest_year_float, time_units,
                                           calendar).strftime('%Y')
         # generate the confirmation page
         return render(request, 'pdata_app/retrieval_request_choose_years.html',
@@ -275,7 +275,7 @@ def retrieval_years(request):
                        'return_url': request.POST['variables_received_url'],
                        'data_request_ids': ','.join(map(str, data_req_ids)),
                        'earliest_year': earliest_year,
-                       'latest_year': latest_year})
+                       'end_year': end_year})
     else:
         # TODO do something intelligent
         return render(request, 'pdata_app/retrieval_request_error.html',
@@ -292,7 +292,7 @@ def confirm_retrieval(request):
                          for req in data_req_ids]
 
         start_year = request.POST['start_year']
-        final_year = request.POST['final_year']
+        end_year = request.POST['end_year']
 
         # get the size of each data request
         request_sizes = []
@@ -304,7 +304,7 @@ def confirm_retrieval(request):
                 datetime.datetime(int(start_year), 1, 1), time_units, calendar
             )
             end_float = cf_units.date2num(
-                datetime.datetime(int(final_year) + 1, 1, 1), time_units, calendar
+                datetime.datetime(int(end_year) + 1, 1, 1), time_units, calendar
             )
             data_files = all_files.filter(start_time__gte=start_float,
                                           end_time__lt=end_float)
@@ -319,7 +319,7 @@ def confirm_retrieval(request):
                       {'request': request, 'data_reqs':data_req_strs,
                        'page_title': 'Confirm Retrieval Request',
                        'return_url': request.POST['return_url'],
-                       'start_year': start_year, 'final_year': final_year,
+                       'start_year': start_year, 'end_year': end_year,
                        'data_request_ids': data_req_str,
                        'request_size': request_size})
     else:
@@ -333,7 +333,11 @@ def confirm_retrieval(request):
 def create_retrieval(request):
     if request.method == 'POST':
         # create the request
-        retrieval = RetrievalRequest.objects.create(requester=request.user)
+        retrieval = RetrievalRequest.objects.create(
+            requester=request.user,
+            start_year=int(request.POST['start_year']),
+            end_year=int(request.POST['end_year'])
+        )
         retrieval.save()
         # add the data requests asked for
         data_req_ids = [int(req_id) for req_id in

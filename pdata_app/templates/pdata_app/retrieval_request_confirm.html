@@ -18,7 +18,7 @@
 
         <p>
             The data requests requested for restoration from tape from
-            {{ start_year }} to {{ final_year }} are:
+            {{ start_year }} to {{ end_year }} are:
         </p>
 
         <p>
@@ -41,6 +41,8 @@
                 {% csrf_token %}
 
                 <input type="hidden" name="data_request_ids" value="{{ data_request_ids }}">
+                <input type="hidden" name="start_year" value="{{ start_year }}">
+                <input type="hidden" name="end_year" value="{{ end_year }}">
 
                 <button type="submit" class="save btn btn-default">Confirm Retrieval Request</button>
 
