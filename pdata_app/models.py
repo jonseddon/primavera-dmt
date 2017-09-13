@@ -648,6 +648,9 @@ class RetrievalRequest(models.Model):
                                         verbose_name="Data Finished?",
                                         null=False, blank=False)
 
+    start_year = models.IntegerField(verbose_name="Start Year", null=False, blank=False)
+    end_year = models.IntegerField(verbose_name="End Year", null=False, blank=False)
+
     def __unicode__(self):
         return '{}'.format(self.id)
 
