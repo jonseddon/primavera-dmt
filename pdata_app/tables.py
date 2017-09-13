@@ -242,7 +242,8 @@ class DataReceivedTable(DataRequestTable):
 
     def render_tape_urls(self, record):
         tape_urls = record.get_tape_urls()
-        return _to_comma_sep(tape_urls)
+        return format_html('<div class="truncate-ellipsis"><span>{}'
+                           '</span></div>'.format(_to_comma_sep(tape_urls)))
 
     def render_file_versions(self, record):
         file_versions = record.get_file_versions()
@@ -399,7 +400,10 @@ class RetrievalRequestTable(tables.Table):
         tape_urls = list(record.data_request.all().values_list(
             'datafile__tape_url', flat=True).distinct())
 
-        return ', '.join([tu for tu in tape_urls if tu is not None])
+        tape_urls_str = ', '.join([tu for tu in tape_urls if tu is not None])
+
+        return format_html('<div class="truncate-ellipsis"><span>{}'
+                           '</span></div>'.format(tape_urls_str))
 
 
 def _to_comma_sep(list_values):
