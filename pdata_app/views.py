@@ -16,7 +16,8 @@ from django.http import HttpResponseRedirect
 from django.shortcuts import render, redirect
 
 from .models import (DataFile, DataSubmission, ESGFDataset, CEDADataset,
-                     DataRequest, DataIssue, VariableRequest, RetrievalRequest)
+                     DataRequest, DataIssue, VariableRequest, RetrievalRequest,
+                     EmailQueue, Settings)
 from .forms import (CreateSubmissionForm, PasswordChangeBootstrapForm,
                     UserBootstrapForm)
 from .tables import (DataRequestTable, DataFileTable, DataSubmissionTable,
@@ -345,6 +346,15 @@ def create_retrieval(request):
         data_reqs = DataRequest.objects.filter(id__in=data_req_ids)
         retrieval.data_request.add(*data_reqs)
         retrieval.save()
+        retrieval.refresh_from_db()
+
+        # advise the admin of the new request
+        contact_user_id = Settings.get_solo().contact_user_id
+        contact_user = User.objects.get(username=contact_user_id)
+        message = 'PRIMAVERA Retrieval Request {} created'.format(retrieval.id)
+        _em = EmailQueue.objects.create(recipient=contact_user,
+                                        subject=message, message=message)
+
         # redirect to the retrieval just created
         return _custom_redirect('retrieval_requests')
     else:
