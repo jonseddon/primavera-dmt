@@ -1,6 +1,9 @@
+import datetime
 import os
 import re
 import urllib
+
+import cf_units
 
 from django.contrib.auth import (authenticate, login, logout,
                                  update_session_auth_hash)
@@ -248,18 +251,27 @@ def retrieval_years(request):
         data_req_strs = [str(DataRequest.objects.filter(id=req).first())
                          for req in data_req_ids]
 
-        earliest_year = min([DataRequest.objects.get(id=req).
-                            datafile_set.aggregate(
-                            Min('start_time'))['start_time__min']
-                            for req in data_req_ids])
-        latest_year = max([DataRequest.objects.get(id=req).
-                           datafile_set.aggregate(
-                           Max('end_time'))['end_time__max']
-                           for req in data_req_ids])
+        earliest_year_float, time_units, calendar = min(
+            [(DataRequest.objects.get(id=req).datafile_set.aggregate(
+                Min('start_time'))['start_time__min'],
+              DataRequest.objects.get(id=req).datafile_set.first().time_units,
+              DataRequest.objects.get(id=req).datafile_set.first().calendar)
+             for req in data_req_ids], key=lambda x: x[0]
+        )
+        earliest_year = cf_units.num2date(earliest_year_float, time_units,
+                                          calendar).strftime('%Y')
+        latest_year_float, time_units, calendar = max(
+            [(DataRequest.objects.get(id=req).datafile_set.aggregate(
+                Max('end_time'))['end_time__max'],
+              DataRequest.objects.get(id=req).datafile_set.first().time_units,
+              DataRequest.objects.get(id=req).datafile_set.first().calendar)
+             for req in data_req_ids])
+        latest_year = cf_units.num2date(latest_year_float, time_units,
+                                          calendar).strftime('%Y')
         # generate the confirmation page
-        return render(request, 'pdata_app/retrieval_request_confirm.html',
+        return render(request, 'pdata_app/retrieval_request_choose_years.html',
                       {'request': request, 'data_reqs':data_req_strs,
-                       'page_title': 'Confirm Retrieval Request',
+                       'page_title': 'Choose Retrieval Years',
                        'return_url': request.POST['variables_received_url'],
                        'data_request_ids': ','.join(map(str, data_req_ids)),
                        'earliest_year': earliest_year,
@@ -274,27 +286,41 @@ def retrieval_years(request):
 @login_required(login_url='/login/')
 def confirm_retrieval(request):
     if request.method == 'POST':
-        data_req_ids = []
-        # loop through the items in the POST from the form and identify any
-        # DataRequest object ids that have been requested
-        for key in request.POST:
-            components = re.match(r'^request_data_req_(\d+)$', key)
-            if components:
-                data_req_ids.append(int(components.group(1)))
-        # get a string representation of each id
-        # TODO what if id doesn't exist?
+        data_req_str = request.POST['data_request_ids']
+        data_req_ids = data_req_str.split(',')
         data_req_strs = [str(DataRequest.objects.filter(id=req).first())
                          for req in data_req_ids]
-        # get the total size of the retrieval request
-        request_size = sum([DataRequest.objects.get(id=req).
-                            datafile_set.aggregate(Sum('size'))['size__sum']
-                            for req in data_req_ids])
+
+        start_year = request.POST['start_year']
+        final_year = request.POST['final_year']
+
+        # get the size of each data request
+        request_sizes = []
+        for req in data_req_ids:
+            all_files = DataRequest.objects.get(id=req).datafile_set.all()
+            time_units = all_files[0].time_units
+            calendar = all_files[0].calendar
+            start_float = cf_units.date2num(
+                datetime.datetime(int(start_year), 1, 1), time_units, calendar
+            )
+            end_float = cf_units.date2num(
+                datetime.datetime(int(final_year) + 1, 1, 1), time_units, calendar
+            )
+            data_files = all_files.filter(start_time__gte=start_float,
+                                          end_time__lt=end_float)
+
+            request_sizes.append(data_files.aggregate(Sum('size'))['size__sum'])
+
+        # get the total retrieval size
+        request_size = sum(request_sizes)
+
         # generate the confirmation page
         return render(request, 'pdata_app/retrieval_request_confirm.html',
                       {'request': request, 'data_reqs':data_req_strs,
                        'page_title': 'Confirm Retrieval Request',
-                       'return_url': request.POST['variables_received_url'],
-                       'data_request_ids': ','.join(map(str, data_req_ids)),
+                       'return_url': request.POST['return_url'],
+                       'start_year': start_year, 'final_year': final_year,
+                       'data_request_ids': data_req_str,
                        'request_size': request_size})
     else:
         # TODO do something intelligent

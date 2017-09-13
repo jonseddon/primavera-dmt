@@ -77,6 +77,9 @@ urlpatterns = [
         pdata_app.views.RetrievalRequestList.as_view(),
         name='retrieval_requests'),
 
+    url(r'^retrieval_years/$', pdata_app.views.retrieval_years,
+        name='retrieval_years'),
+
     url(r'^confirm_retrieval/$', pdata_app.views.confirm_retrieval,
         name='confirm_retrieval'),
 

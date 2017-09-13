@@ -53,7 +53,7 @@
         </p>
 
         {% if get_received_data %}
-            <form action="{% url 'confirm_retrieval' %}" method="post">
+            <form action="{% url 'retrieval_years' %}" method="post">
                 {% csrf_token %}
                 <input type="hidden" name="variables_received_url" value="{{ request.get_full_path }}">
         {% endif %}
