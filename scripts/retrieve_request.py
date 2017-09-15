@@ -208,74 +208,84 @@ def copy_files_into_drs(retrieval, tape_url, args):
 
     url_dir = _make_tape_url_dir(tape_url, skip_creation=True)
 
-    data_files = DataFile.objects.filter(
-        data_request__in=retrieval.data_request.all(), tape_url=tape_url).all()
+    for data_req in retrieval:
+        first_file = data_req.datafile_set.first()
+        time_units = first_file.time_units
+        calendar = first_file.calendar
+        start_float = cf_units.date2num(
+            datetime.datetime(retrieval.start_year, 1, 1), time_units,
+            calendar
+        )
+        end_float = cf_units.date2num(
+            datetime.datetime(retrieval.end_year + 1, 1, 1), time_units,
+            calendar
+        )
 
-    for data_file in data_files:
-        if data_file.online:
-            logger.debug('Skipping file marked as online in the database: {}'
-                         .format(data_file.name))
-            continue
+        data_files = data_req.datafile_set.filter(tape_url=tape_url,
+                                                  online=False,
+                                                  start_time__gte=start_float,
+                                                  end_time__lt=end_float)
 
-        file_submission_dir = data_file.incoming_directory
-        extracted_file_path = os.path.join(url_dir,
-                                           file_submission_dir.lstrip('/'),
-                                           data_file.name)
-        if not os.path.exists(extracted_file_path):
-            msg = ('Unable to find file {} in the extracted data at {}. The '
-                   'expected path was {}'.format(data_file.name, url_dir,
-                                                 extracted_file_path))
-            logger.error(msg)
-            sys.exit(1)
+        for data_file in data_files:
+            file_submission_dir = data_file.incoming_directory
+            extracted_file_path = os.path.join(url_dir,
+                                               file_submission_dir.lstrip('/'),
+                                               data_file.name)
+            if not os.path.exists(extracted_file_path):
+                msg = ('Unable to find file {} in the extracted data at {}. The '
+                       'expected path was {}'.format(data_file.name, url_dir,
+                                                     extracted_file_path))
+                logger.error(msg)
+                sys.exit(1)
 
-        drs_path = construct_drs_path(data_file)
-        if not args.alternative:
-            drs_dir = os.path.join(BASE_OUTPUT_DIR, drs_path)
-        else:
-            drs_dir = os.path.join(args.alternative, drs_path)
-        dest_file_path = os.path.join(drs_dir, data_file.name)
-
-        # create the path if it doesn't exist
-        if not os.path.exists(drs_dir):
-            os.makedirs(drs_dir)
-
-        if os.path.exists(dest_file_path):
-            msg = 'File already exists on disk: {}'.format(dest_file_path)
-            logger.warning(msg)
-        else:
-            if check_same_gws(extracted_file_path, drs_dir):
-                # if src and destination are on the same GWS then create a hard
-                # link, which will be faster and use less disk space
-                os.link(extracted_file_path, dest_file_path)
-                logger.debug('Created link to:\n{}\nat:\n{}'.format(
-                    extracted_file_path, dest_file_path))
+            drs_path = construct_drs_path(data_file)
+            if not args.alternative:
+                drs_dir = os.path.join(BASE_OUTPUT_DIR, drs_path)
             else:
-                # if on different GWS then will have to copy
-                shutil.copyfile(extracted_file_path, dest_file_path)
-                logger.debug('Copied:\n{}\nto:\n{}'.format(
-                    extracted_file_path, dest_file_path))
+                drs_dir = os.path.join(args.alternative, drs_path)
+            dest_file_path = os.path.join(drs_dir, data_file.name)
 
-        if not args.skip_checksums:
-            try:
-                _check_file_checksum(data_file, dest_file_path)
-            except ChecksumError:
-                # warning message has already been displayed and so take no
-                # further action
-                pass
+            # create the path if it doesn't exist
+            if not os.path.exists(drs_dir):
+                os.makedirs(drs_dir)
 
-        # create symbolic link from main directory if storing data in an
-        # alternative directory
-        if args.alternative:
-            primary_path = os.path.join(BASE_OUTPUT_DIR, drs_path)
-            if not os.path.exists(primary_path):
-                os.makedirs(primary_path)
-            os.symlink(dest_file_path,
-                       os.path.join(primary_path, data_file.name))
+            if os.path.exists(dest_file_path):
+                msg = 'File already exists on disk: {}'.format(dest_file_path)
+                logger.warning(msg)
+            else:
+                if check_same_gws(extracted_file_path, drs_dir):
+                    # if src and destination are on the same GWS then create a
+                    # hard link, which will be faster and use less disk space
+                    os.link(extracted_file_path, dest_file_path)
+                    logger.debug('Created link to:\n{}\nat:\n{}'.format(
+                        extracted_file_path, dest_file_path))
+                else:
+                    # if on different GWS then will have to copy
+                    shutil.copyfile(extracted_file_path, dest_file_path)
+                    logger.debug('Copied:\n{}\nto:\n{}'.format(
+                        extracted_file_path, dest_file_path))
 
-        # set directory and set status as being online
-        data_file.directory = drs_dir
-        data_file.online = True
-        data_file.save()
+            if not args.skip_checksums:
+                try:
+                    _check_file_checksum(data_file, dest_file_path)
+                except ChecksumError:
+                    # warning message has already been displayed and so take no
+                    # further action
+                    pass
+
+            # create symbolic link from main directory if storing data in an
+            # alternative directory
+            if args.alternative:
+                primary_path = os.path.join(BASE_OUTPUT_DIR, drs_path)
+                if not os.path.exists(primary_path):
+                    os.makedirs(primary_path)
+                os.symlink(dest_file_path,
+                           os.path.join(primary_path, data_file.name))
+    
+            # set directory and set status as being online
+            data_file.directory = drs_dir
+            data_file.online = True
+            data_file.save()
 
     logger.debug('Finished copying files from tape url {}'.format(tape_url))
 
