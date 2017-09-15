@@ -126,63 +126,73 @@ def get_moose_url(tape_url, retrieval):
     """
     logger.debug('Starting restoring {}'.format(tape_url))
 
-    data_files = DataFile.objects.filter(
-        data_request__in=retrieval.data_request.all(), tape_url=tape_url).all()
+    for data_req in retrieval.data_request.all():
+        all_files = data_req.datafile_set.filter(tape_url=tape_url,
+                                                 online=False)
+        if not all_files:
+            # There may not be any files for this data request at this URL that
+            # are not online
+            continue
+        time_units = all_files[0].time_units
+        calendar = all_files[0].calendar
+        start_float = cf_units.date2num(
+            datetime.datetime(retrieval.start_year, 1, 1), time_units,
+            calendar
+        )
+        end_float = cf_units.date2num(
+            datetime.datetime(retrieval.end_year + 1, 1, 1), time_units,
+            calendar
+        )
+        data_files = all_files.filter(start_time__gte=start_float,
+                                      end_time__lt=end_float)
 
-    skipping_files = [df.name for df in data_files if df.online]
-    if skipping_files:
-        logger.debug('Skipping the following {} files, which are marked as '
-            'online in the database:\n{}'.format(len(skipping_files),
-            '\n'.join(skipping_files)))
+        if not data_files:
+            # There may not be any files for this data request at this time
+            # period at this URL
+            continue
 
-    moose_urls = ['{}/{}'.format(tape_url, df.name) for df in data_files
-                  if not df.online]
+        # because the PRIMAVERA data that has been stored in MASS is in a DRS
+        # directory structure already then all files that have an identical
+        # tape_url will be placed in the same output directory
+        data_file = data_files.first()
+        drs_path = construct_drs_path(data_file)
+        if not cmd_args.alternative:
+            drs_dir = os.path.join(BASE_OUTPUT_DIR, drs_path)
+        else:
+            drs_dir = os.path.join(cmd_args.alternative, drs_path)
 
-    if not moose_urls:
-        logger.debug('No files to retrieve for URL {}.'.format(tape_url))
-        return
+        # create the path if it doesn't exist
+        if not os.path.exists(drs_dir):
+            os.makedirs(drs_dir)
 
-    # because the PRIMAVERA data that has been stored in MASS is in a DRS
-    # directory structure already then all files that have an identical
-    # tape_url will be placed in the same output directory
-    data_file = data_files.first()
-    drs_path = construct_drs_path(data_file)
-    if not cmd_args.alternative:
-        drs_dir = os.path.join(BASE_OUTPUT_DIR, drs_path)
-    else:
-        drs_dir = os.path.join(cmd_args.alternative, drs_path)
+        moose_urls = ['{}/{}'.format(tape_url, df.name) for df in data_files]
+        cmd = 'moo get {} {}'.format(' '.join(moose_urls), drs_dir)
 
-    # create the path if it doesn't exist
-    if not os.path.exists(drs_dir):
-        os.makedirs(drs_dir)
+        logger.debug('MOOSE command is:\n{}'.format(cmd))
 
-    cmd = 'moo get {} {}'.format(' '.join(moose_urls), drs_dir)
-
-    logger.debug('MOOSE command is:\n{}'.format(cmd))
-
-    try:
-        cmd_out = _run_command(cmd)
-    except RuntimeError as exc:
-        logger.error('MOOSE command failed\n{}'.
-                     format(exc.message))
-        sys.exit(1)
-
-    logger.debug('Restored {}'.format(tape_url))
-
-    _remove_data_license_files(drs_dir)
-
-    for data_file in data_files:
         try:
-            _check_file_checksum(data_file, os.path.join(drs_dir,
-                                                         data_file.name))
-        except ChecksumError:
-            # warning message has already been displayed and so take no
-            # further action
-            pass
+            cmd_out = _run_command(cmd)
+        except RuntimeError as exc:
+            logger.error('MOOSE command failed\n{}'.
+                         format(exc.message))
+            sys.exit(1)
 
-        data_file.directory = drs_dir
-        data_file.online = True
-        data_file.save()
+        logger.debug('Restored {}'.format(tape_url))
+
+        _remove_data_license_files(drs_dir)
+
+        for data_file in data_files:
+            try:
+                _check_file_checksum(data_file, os.path.join(drs_dir,
+                                                             data_file.name))
+            except ChecksumError:
+                # warning message has already been displayed and so take no
+                # further action
+                pass
+
+            data_file.directory = drs_dir
+            data_file.online = True
+            data_file.save()
 
 
 def copy_files_into_drs(retrieval, tape_url, args):
