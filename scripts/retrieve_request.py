@@ -57,17 +57,19 @@ class ChecksumError(Exception):
         self.message = message
 
 
-def get_tape_url(tape_url, retrieval):
+def get_tape_url(tape_url, retrieval, args):
     """
     Get all of the data from `tape_url`.
 
     :param str tape_url: The URL of the tape data to fetch.
     :param pdata_app.models.RetrievalRequest retrieval: The retrieval object
+    :param argparse.Namespace args: The parsed command line arguments
+        namespace.
     """
     if tape_url.startswith('et:'):
         get_et_url(tape_url)
     elif tape_url.startswith('moose:'):
-        get_moose_url(tape_url, retrieval)
+        get_moose_url(tape_url, retrieval, args)
     else:
         msg = ('Tape url {} is not a currently supported type of tape.'.
                format(tape_url))
@@ -115,7 +117,7 @@ def get_et_url(tape_url):
     logger.debug('Restored {}'.format(tape_url))
 
 
-def get_moose_url(tape_url, retrieval):
+def get_moose_url(tape_url, retrieval, args):
     """
     Get all of the data from `tape_url`, which is already known to be a MOOSE
     url. Data is not cached and is instead copied directly into the destination
@@ -123,6 +125,8 @@ def get_moose_url(tape_url, retrieval):
 
     :param str tape_url: The url to fetch
     :param pdata_app.models.RetrievalRequest retrieval: The retrieval object
+    :param argparse.Namespace args: The parsed command line arguments
+        namespace.
     """
     logger.debug('Starting restoring {}'.format(tape_url))
 
@@ -182,14 +186,14 @@ def get_moose_url(tape_url, retrieval):
         _remove_data_license_files(drs_dir)
 
         for data_file in data_files:
-            try:
-                _check_file_checksum(data_file, os.path.join(drs_dir,
-                                                             data_file.name))
-            except ChecksumError:
-                # warning message has already been displayed and so take no
-                # further action
-                pass
-
+            if not args.skip_checksums:
+                try:
+                    _check_file_checksum(data_file,
+                                         os.path.join(drs_dir, data_file.name))
+                except ChecksumError:
+                    # warning message has already been displayed and so take no
+                    # further action
+                    pass
             data_file.directory = drs_dir
             data_file.online = True
             data_file.save()
@@ -519,7 +523,7 @@ def main(args):
 
     for tape_url in tape_urls:
         if not args.no_restore:
-            get_tape_url(tape_url, retrieval)
+            get_tape_url(tape_url, retrieval, args)
 
         if tape_url.startswith('et:'):
             copy_files_into_drs(retrieval, tape_url, args)
