@@ -13,6 +13,8 @@ import shutil
 import subprocess
 import sys
 
+import cf_units
+
 import django
 django.setup()
 from django.contrib.auth.models import User
@@ -473,14 +475,27 @@ def main(args):
                             retrieval.date_complete.strftime('%Y-%m-%d %H:%M')))
         sys.exit(1)
 
-    # Retrieve the data from tape
-    #
-    # retrieval.data_request.values('datafile__tape_url') gives:
-    # <QuerySet [{'datafile__tape_url': u'et:9876'},
-    #            {'datafile__tape_url': u'et:8765'}]>
+    tape_urls = []
+    for data_req in retrieval.data_request.all():
+        all_files = data_req.datafile_set.all()
+        time_units = all_files[0].time_units
+        calendar = all_files[0].calendar
+        start_float = cf_units.date2num(
+            datetime.datetime(retrieval.start_year, 1, 1), time_units,
+            calendar
+        )
+        end_float = cf_units.date2num(
+            datetime.datetime(retrieval.end_year + 1, 1, 1), time_units,
+            calendar
+        )
+        data_files = all_files.filter(start_time__gte=start_float,
+                                      end_time__lt=end_float)
 
-    tape_urls = list(set([qs['datafile__tape_url'] for qs in
-                          retrieval.data_request.values('datafile__tape_url')]))
+        tape_urls += [qs['tape_url'] for qs in data_files.values('tape_url')]
+
+    tape_urls = list(set(tape_urls))
+    tape_urls.sort()
+
 
     for tape_url in tape_urls:
         if not args.no_restore:
