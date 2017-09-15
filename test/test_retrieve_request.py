@@ -126,7 +126,8 @@ class TestIntegrationTests(TestCase):
             data_submission=dsub)
 
     def test_simplest(self):
-        ret_req = get_or_create(RetrievalRequest, requester=self.user)
+        ret_req = get_or_create(RetrievalRequest, requester=self.user,
+                                start_year=1000, end_year=3000)
         ret_req.data_request.add(self.dreq1)
         ret_req.save()
 
@@ -165,7 +166,8 @@ class TestIntegrationTests(TestCase):
                                        u'my-table/my-var/gn/v12345678')
 
     def test_multiple_tapes(self):
-        ret_req = get_or_create(RetrievalRequest, requester=self.user)
+        ret_req = get_or_create(RetrievalRequest, requester=self.user,
+                                start_year=1000, end_year=3000)
         ret_req.data_request.add(self.dreq1, self.dreq2)
         ret_req.save()
 
@@ -235,7 +237,8 @@ class TestIntegrationTests(TestCase):
         completion_time = make_aware(completion_time)
 
         ret_req = get_or_create(RetrievalRequest, requester=self.user,
-                                date_complete=completion_time)
+                                date_complete=completion_time, start_year=1000,
+                                end_year=3000)
 
         class ArgparseNamespace(object):
             retrieval_id = ret_req.id
@@ -250,7 +253,8 @@ class TestIntegrationTests(TestCase):
             ret_req.id, completion_time.strftime('%Y-%m-%d %H:%M')))
 
     def test_alternative_dir(self):
-        ret_req = get_or_create(RetrievalRequest, requester=self.user)
+        ret_req = get_or_create(RetrievalRequest, requester=self.user,
+                                start_year=1000, end_year=3000)
         ret_req.data_request.add(self.dreq1)
         ret_req.save()
 
@@ -290,7 +294,8 @@ class TestIntegrationTests(TestCase):
         )
 
     def test_retrieval_exists(self):
-        ret_req = get_or_create(RetrievalRequest, requester=self.user)
+        ret_req = get_or_create(RetrievalRequest, requester=self.user,
+                                start_year=1000, end_year=3000)
         ret_req.data_request.add(self.dreq1)
         ret_req.save()
 

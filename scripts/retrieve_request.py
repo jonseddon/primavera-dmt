@@ -208,7 +208,7 @@ def copy_files_into_drs(retrieval, tape_url, args):
 
     url_dir = _make_tape_url_dir(tape_url, skip_creation=True)
 
-    for data_req in retrieval:
+    for data_req in retrieval.data_request.all():
         first_file = data_req.datafile_set.first()
         time_units = first_file.time_units
         calendar = first_file.calendar
@@ -281,7 +281,7 @@ def copy_files_into_drs(retrieval, tape_url, args):
                     os.makedirs(primary_path)
                 os.symlink(dest_file_path,
                            os.path.join(primary_path, data_file.name))
-    
+
             # set directory and set status as being online
             data_file.directory = drs_dir
             data_file.online = True
