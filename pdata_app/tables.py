@@ -1,4 +1,7 @@
+import datetime
 from urllib import urlencode
+
+import cf_units
 
 from django.db.models import Count, Sum
 from django.template.defaultfilters import filesizeformat
@@ -239,7 +242,8 @@ class DataReceivedTable(DataRequestTable):
 
     def render_tape_urls(self, record):
         tape_urls = record.get_tape_urls()
-        return _to_comma_sep(tape_urls)
+        return format_html('<div class="truncate-ellipsis"><span>{}'
+                           '</span></div>'.format(_to_comma_sep(tape_urls)))
 
     def render_file_versions(self, record):
         file_versions = record.get_file_versions()
@@ -375,14 +379,31 @@ class RetrievalRequestTable(tables.Table):
         return reqs_str
 
     def render_req_size(self, record):
-        return filesizeformat(record.data_request.all().aggregate(
-            Sum('datafile__size'))['datafile__size__sum'])
+        request_sizes = []
+        for req in record.data_request.all():
+            all_files = req.datafile_set.all()
+            time_units = all_files[0].time_units
+            calendar = all_files[0].calendar
+
+            start_date = datetime.datetime(record.start_year, 1, 1)
+            start_float = cf_units.date2num(start_date, time_units, calendar)
+            end_date = datetime.datetime(record.end_year + 1, 1, 1)
+            end_float = cf_units.date2num(end_date, time_units, calendar)
+
+            data_files = all_files.filter(start_time__gte=start_float,
+                                          end_time__lt=end_float)
+            request_sizes.append(data_files.aggregate(Sum('size'))['size__sum'])
+
+        return filesizeformat(sum(request_sizes))
 
     def render_tape_urls(self, record):
         tape_urls = list(record.data_request.all().values_list(
             'datafile__tape_url', flat=True).distinct())
 
-        return ', '.join([tu for tu in tape_urls if tu is not None])
+        tape_urls_str = ', '.join([tu for tu in tape_urls if tu is not None])
+
+        return format_html('<div class="truncate-ellipsis"><span>{}'
+                           '</span></div>'.format(tape_urls_str))
 
 
 def _to_comma_sep(list_values):

@@ -13,6 +13,8 @@ import shutil
 import subprocess
 import sys
 
+import cf_units
+
 import django
 django.setup()
 from django.contrib.auth.models import User
@@ -55,17 +57,19 @@ class ChecksumError(Exception):
         self.message = message
 
 
-def get_tape_url(tape_url, retrieval):
+def get_tape_url(tape_url, retrieval, args):
     """
     Get all of the data from `tape_url`.
 
     :param str tape_url: The URL of the tape data to fetch.
     :param pdata_app.models.RetrievalRequest retrieval: The retrieval object
+    :param argparse.Namespace args: The parsed command line arguments
+        namespace.
     """
     if tape_url.startswith('et:'):
         get_et_url(tape_url)
     elif tape_url.startswith('moose:'):
-        get_moose_url(tape_url, retrieval)
+        get_moose_url(tape_url, retrieval, args)
     else:
         msg = ('Tape url {} is not a currently supported type of tape.'.
                format(tape_url))
@@ -113,7 +117,7 @@ def get_et_url(tape_url):
     logger.debug('Restored {}'.format(tape_url))
 
 
-def get_moose_url(tape_url, retrieval):
+def get_moose_url(tape_url, retrieval, args):
     """
     Get all of the data from `tape_url`, which is already known to be a MOOSE
     url. Data is not cached and is instead copied directly into the destination
@@ -121,66 +125,78 @@ def get_moose_url(tape_url, retrieval):
 
     :param str tape_url: The url to fetch
     :param pdata_app.models.RetrievalRequest retrieval: The retrieval object
+    :param argparse.Namespace args: The parsed command line arguments
+        namespace.
     """
     logger.debug('Starting restoring {}'.format(tape_url))
 
-    data_files = DataFile.objects.filter(
-        data_request__in=retrieval.data_request.all(), tape_url=tape_url).all()
+    for data_req in retrieval.data_request.all():
+        all_files = data_req.datafile_set.filter(tape_url=tape_url,
+                                                 online=False)
+        if not all_files:
+            # There may not be any files for this data request at this URL that
+            # are not online
+            continue
+        time_units = all_files[0].time_units
+        calendar = all_files[0].calendar
+        start_float = cf_units.date2num(
+            datetime.datetime(retrieval.start_year, 1, 1), time_units,
+            calendar
+        )
+        end_float = cf_units.date2num(
+            datetime.datetime(retrieval.end_year + 1, 1, 1), time_units,
+            calendar
+        )
+        data_files = all_files.filter(start_time__gte=start_float,
+                                      end_time__lt=end_float)
 
-    skipping_files = [df.name for df in data_files if df.online]
-    if skipping_files:
-        logger.debug('Skipping the following {} files, which are marked as '
-            'online in the database:\n{}'.format(len(skipping_files),
-            '\n'.join(skipping_files)))
+        if not data_files:
+            # There may not be any files for this data request at this time
+            # period at this URL
+            continue
 
-    moose_urls = ['{}/{}'.format(tape_url, df.name) for df in data_files
-                  if not df.online]
+        # because the PRIMAVERA data that has been stored in MASS is in a DRS
+        # directory structure already then all files that have an identical
+        # tape_url will be placed in the same output directory
+        data_file = data_files.first()
+        drs_path = construct_drs_path(data_file)
+        if not cmd_args.alternative:
+            drs_dir = os.path.join(BASE_OUTPUT_DIR, drs_path)
+        else:
+            drs_dir = os.path.join(cmd_args.alternative, drs_path)
 
-    if not moose_urls:
-        logger.debug('No files to retrieve for URL {}.'.format(tape_url))
-        return
+        # create the path if it doesn't exist
+        if not os.path.exists(drs_dir):
+            os.makedirs(drs_dir)
 
-    # because the PRIMAVERA data that has been stored in MASS is in a DRS
-    # directory structure already then all files that have an identical
-    # tape_url will be placed in the same output directory
-    data_file = data_files.first()
-    drs_path = construct_drs_path(data_file)
-    if not cmd_args.alternative:
-        drs_dir = os.path.join(BASE_OUTPUT_DIR, drs_path)
-    else:
-        drs_dir = os.path.join(cmd_args.alternative, drs_path)
+        moose_urls = ['{}/{}'.format(tape_url, df.name) for df in data_files]
+        cmd = 'moo get {} {}'.format(' '.join(moose_urls), drs_dir)
 
-    # create the path if it doesn't exist
-    if not os.path.exists(drs_dir):
-        os.makedirs(drs_dir)
+        logger.debug('MOOSE command is:\n{}'.format(cmd))
 
-    cmd = 'moo get {} {}'.format(' '.join(moose_urls), drs_dir)
-
-    logger.debug('MOOSE command is:\n{}'.format(cmd))
-
-    try:
-        cmd_out = _run_command(cmd)
-    except RuntimeError as exc:
-        logger.error('MOOSE command failed\n{}'.
-                     format(exc.message))
-        sys.exit(1)
-
-    logger.debug('Restored {}'.format(tape_url))
-
-    _remove_data_license_files(drs_dir)
-
-    for data_file in data_files:
         try:
-            _check_file_checksum(data_file, os.path.join(drs_dir,
-                                                         data_file.name))
-        except ChecksumError:
-            # warning message has already been displayed and so take no
-            # further action
-            pass
+            cmd_out = _run_command(cmd)
+        except RuntimeError as exc:
+            logger.error('MOOSE command failed\n{}'.
+                         format(exc.message))
+            sys.exit(1)
 
-        data_file.directory = drs_dir
-        data_file.online = True
-        data_file.save()
+        logger.debug('Restored {}'.format(tape_url))
+
+        _remove_data_license_files(drs_dir)
+
+        for data_file in data_files:
+            if not args.skip_checksums:
+                try:
+                    _check_file_checksum(data_file,
+                                         os.path.join(drs_dir, data_file.name))
+                except ChecksumError:
+                    # warning message has already been displayed and so take no
+                    # further action
+                    pass
+            data_file.directory = drs_dir
+            data_file.online = True
+            data_file.save()
 
 
 def copy_files_into_drs(retrieval, tape_url, args):
@@ -196,74 +212,84 @@ def copy_files_into_drs(retrieval, tape_url, args):
 
     url_dir = _make_tape_url_dir(tape_url, skip_creation=True)
 
-    data_files = DataFile.objects.filter(
-        data_request__in=retrieval.data_request.all(), tape_url=tape_url).all()
+    for data_req in retrieval.data_request.all():
+        first_file = data_req.datafile_set.first()
+        time_units = first_file.time_units
+        calendar = first_file.calendar
+        start_float = cf_units.date2num(
+            datetime.datetime(retrieval.start_year, 1, 1), time_units,
+            calendar
+        )
+        end_float = cf_units.date2num(
+            datetime.datetime(retrieval.end_year + 1, 1, 1), time_units,
+            calendar
+        )
 
-    for data_file in data_files:
-        if data_file.online:
-            logger.debug('Skipping file marked as online in the database: {}'
-                         .format(data_file.name))
-            continue
+        data_files = data_req.datafile_set.filter(tape_url=tape_url,
+                                                  online=False,
+                                                  start_time__gte=start_float,
+                                                  end_time__lt=end_float)
 
-        file_submission_dir = data_file.incoming_directory
-        extracted_file_path = os.path.join(url_dir,
-                                           file_submission_dir.lstrip('/'),
-                                           data_file.name)
-        if not os.path.exists(extracted_file_path):
-            msg = ('Unable to find file {} in the extracted data at {}. The '
-                   'expected path was {}'.format(data_file.name, url_dir,
-                                                 extracted_file_path))
-            logger.error(msg)
-            sys.exit(1)
+        for data_file in data_files:
+            file_submission_dir = data_file.incoming_directory
+            extracted_file_path = os.path.join(url_dir,
+                                               file_submission_dir.lstrip('/'),
+                                               data_file.name)
+            if not os.path.exists(extracted_file_path):
+                msg = ('Unable to find file {} in the extracted data at {}. The '
+                       'expected path was {}'.format(data_file.name, url_dir,
+                                                     extracted_file_path))
+                logger.error(msg)
+                sys.exit(1)
 
-        drs_path = construct_drs_path(data_file)
-        if not args.alternative:
-            drs_dir = os.path.join(BASE_OUTPUT_DIR, drs_path)
-        else:
-            drs_dir = os.path.join(args.alternative, drs_path)
-        dest_file_path = os.path.join(drs_dir, data_file.name)
-
-        # create the path if it doesn't exist
-        if not os.path.exists(drs_dir):
-            os.makedirs(drs_dir)
-
-        if os.path.exists(dest_file_path):
-            msg = 'File already exists on disk: {}'.format(dest_file_path)
-            logger.warning(msg)
-        else:
-            if check_same_gws(extracted_file_path, drs_dir):
-                # if src and destination are on the same GWS then create a hard
-                # link, which will be faster and use less disk space
-                os.link(extracted_file_path, dest_file_path)
-                logger.debug('Created link to:\n{}\nat:\n{}'.format(
-                    extracted_file_path, dest_file_path))
+            drs_path = construct_drs_path(data_file)
+            if not args.alternative:
+                drs_dir = os.path.join(BASE_OUTPUT_DIR, drs_path)
             else:
-                # if on different GWS then will have to copy
-                shutil.copyfile(extracted_file_path, dest_file_path)
-                logger.debug('Copied:\n{}\nto:\n{}'.format(
-                    extracted_file_path, dest_file_path))
+                drs_dir = os.path.join(args.alternative, drs_path)
+            dest_file_path = os.path.join(drs_dir, data_file.name)
 
-        if not args.skip_checksums:
-            try:
-                _check_file_checksum(data_file, dest_file_path)
-            except ChecksumError:
-                # warning message has already been displayed and so take no
-                # further action
-                pass
+            # create the path if it doesn't exist
+            if not os.path.exists(drs_dir):
+                os.makedirs(drs_dir)
 
-        # create symbolic link from main directory if storing data in an
-        # alternative directory
-        if args.alternative:
-            primary_path = os.path.join(BASE_OUTPUT_DIR, drs_path)
-            if not os.path.exists(primary_path):
-                os.makedirs(primary_path)
-            os.symlink(dest_file_path,
-                       os.path.join(primary_path, data_file.name))
+            if os.path.exists(dest_file_path):
+                msg = 'File already exists on disk: {}'.format(dest_file_path)
+                logger.warning(msg)
+            else:
+                if check_same_gws(extracted_file_path, drs_dir):
+                    # if src and destination are on the same GWS then create a
+                    # hard link, which will be faster and use less disk space
+                    os.link(extracted_file_path, dest_file_path)
+                    logger.debug('Created link to:\n{}\nat:\n{}'.format(
+                        extracted_file_path, dest_file_path))
+                else:
+                    # if on different GWS then will have to copy
+                    shutil.copyfile(extracted_file_path, dest_file_path)
+                    logger.debug('Copied:\n{}\nto:\n{}'.format(
+                        extracted_file_path, dest_file_path))
 
-        # set directory and set status as being online
-        data_file.directory = drs_dir
-        data_file.online = True
-        data_file.save()
+            if not args.skip_checksums:
+                try:
+                    _check_file_checksum(data_file, dest_file_path)
+                except ChecksumError:
+                    # warning message has already been displayed and so take no
+                    # further action
+                    pass
+
+            # create symbolic link from main directory if storing data in an
+            # alternative directory
+            if args.alternative:
+                primary_path = os.path.join(BASE_OUTPUT_DIR, drs_path)
+                if not os.path.exists(primary_path):
+                    os.makedirs(primary_path)
+                os.symlink(dest_file_path,
+                           os.path.join(primary_path, data_file.name))
+
+            # set directory and set status as being online
+            data_file.directory = drs_dir
+            data_file.online = True
+            data_file.save()
 
     logger.debug('Finished copying files from tape url {}'.format(tape_url))
 
@@ -473,18 +499,31 @@ def main(args):
                             retrieval.date_complete.strftime('%Y-%m-%d %H:%M')))
         sys.exit(1)
 
-    # Retrieve the data from tape
-    #
-    # retrieval.data_request.values('datafile__tape_url') gives:
-    # <QuerySet [{'datafile__tape_url': u'et:9876'},
-    #            {'datafile__tape_url': u'et:8765'}]>
+    tape_urls = []
+    for data_req in retrieval.data_request.all():
+        all_files = data_req.datafile_set.all()
+        time_units = all_files[0].time_units
+        calendar = all_files[0].calendar
+        start_float = cf_units.date2num(
+            datetime.datetime(retrieval.start_year, 1, 1), time_units,
+            calendar
+        )
+        end_float = cf_units.date2num(
+            datetime.datetime(retrieval.end_year + 1, 1, 1), time_units,
+            calendar
+        )
+        data_files = all_files.filter(start_time__gte=start_float,
+                                      end_time__lt=end_float)
 
-    tape_urls = list(set([qs['datafile__tape_url'] for qs in
-                          retrieval.data_request.values('datafile__tape_url')]))
+        tape_urls += [qs['tape_url'] for qs in data_files.values('tape_url')]
+
+    tape_urls = list(set(tape_urls))
+    tape_urls.sort()
+
 
     for tape_url in tape_urls:
         if not args.no_restore:
-            get_tape_url(tape_url, retrieval)
+            get_tape_url(tape_url, retrieval, args)
 
         if tape_url.startswith('et:'):
             copy_files_into_drs(retrieval, tape_url, args)

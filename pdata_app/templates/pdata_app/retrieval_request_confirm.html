@@ -17,7 +17,8 @@
         <hr>
 
         <p>
-        The data requests requested for restoration from tape are:
+            The data requests requested for restoration from tape from
+            {{ start_year }} to {{ end_year }} are:
         </p>
 
         <p>
@@ -27,11 +28,11 @@
         </p>
 
         <p>
-            Total size of retrieval request is {{ request_size|filesizeformat }}.
+            The total size of this retrieval request is {{ request_size|filesizeformat }}.
         </p>
 
         <p>
-        Are you sure that you want to request that the following data be restored
+        Are you sure that you want to request that this data be restored
         from tape to group workspace?
         </p>
 
@@ -40,6 +41,8 @@
                 {% csrf_token %}
 
                 <input type="hidden" name="data_request_ids" value="{{ data_request_ids }}">
+                <input type="hidden" name="start_year" value="{{ start_year }}">
+                <input type="hidden" name="end_year" value="{{ end_year }}">
 
                 <button type="submit" class="save btn btn-default">Confirm Retrieval Request</button>
 

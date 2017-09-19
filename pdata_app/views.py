@@ -1,6 +1,9 @@
+import datetime
 import os
 import re
 import urllib
+
+import cf_units
 
 from django.contrib.auth import (authenticate, login, logout,
                                  update_session_auth_hash)
@@ -8,12 +11,13 @@ from django.contrib.auth.decorators import login_required
 from django.contrib.auth.forms import PasswordResetForm
 from django.contrib.auth.models import User
 from django.core.urlresolvers import reverse
-from django.db.models import Sum
+from django.db.models import Max, Min, Sum
 from django.http import HttpResponseRedirect
 from django.shortcuts import render, redirect
 
 from .models import (DataFile, DataSubmission, ESGFDataset, CEDADataset,
-                     DataRequest, DataIssue, VariableRequest, RetrievalRequest)
+                     DataRequest, DataIssue, VariableRequest, RetrievalRequest,
+                     EmailQueue, Settings)
 from .forms import (CreateSubmissionForm, PasswordChangeBootstrapForm,
                     UserBootstrapForm)
 from .tables import (DataRequestTable, DataFileTable, DataSubmissionTable,
@@ -234,7 +238,7 @@ def create_submission(request):
 
 
 @login_required(login_url='/login/')
-def confirm_retrieval(request):
+def retrieval_years(request):
     if request.method == 'POST':
         data_req_ids = []
         # loop through the items in the POST from the form and identify any
@@ -247,16 +251,77 @@ def confirm_retrieval(request):
         # TODO what if id doesn't exist?
         data_req_strs = [str(DataRequest.objects.filter(id=req).first())
                          for req in data_req_ids]
-        # get the total size of the retrieval request
-        request_size = sum([DataRequest.objects.get(id=req).
-                            datafile_set.aggregate(Sum('size'))['size__sum']
-                            for req in data_req_ids])
+
+        earliest_year_float, time_units, calendar = min(
+            [(DataRequest.objects.get(id=req).datafile_set.aggregate(
+                Min('start_time'))['start_time__min'],
+              DataRequest.objects.get(id=req).datafile_set.first().time_units,
+              DataRequest.objects.get(id=req).datafile_set.first().calendar)
+             for req in data_req_ids], key=lambda x: x[0]
+        )
+        earliest_year = cf_units.num2date(earliest_year_float, time_units,
+                                          calendar).strftime('%Y')
+        latest_year_float, time_units, calendar = max(
+            [(DataRequest.objects.get(id=req).datafile_set.aggregate(
+                Max('end_time'))['end_time__max'],
+              DataRequest.objects.get(id=req).datafile_set.first().time_units,
+              DataRequest.objects.get(id=req).datafile_set.first().calendar)
+             for req in data_req_ids])
+        end_year = cf_units.num2date(latest_year_float, time_units,
+                                          calendar).strftime('%Y')
+        # generate the confirmation page
+        return render(request, 'pdata_app/retrieval_request_choose_years.html',
+                      {'request': request, 'data_reqs':data_req_strs,
+                       'page_title': 'Choose Retrieval Years',
+                       'return_url': request.POST['variables_received_url'],
+                       'data_request_ids': ','.join(map(str, data_req_ids)),
+                       'earliest_year': earliest_year,
+                       'end_year': end_year})
+    else:
+        # TODO do something intelligent
+        return render(request, 'pdata_app/retrieval_request_error.html',
+                      {'request': request,
+                       'page_title': 'Retrieval Request'})
+
+
+@login_required(login_url='/login/')
+def confirm_retrieval(request):
+    if request.method == 'POST':
+        data_req_str = request.POST['data_request_ids']
+        data_req_ids = data_req_str.split(',')
+        data_req_strs = [str(DataRequest.objects.filter(id=req).first())
+                         for req in data_req_ids]
+
+        start_year = request.POST['start_year']
+        end_year = request.POST['end_year']
+
+        # get the size of each data request
+        request_sizes = []
+        for req in data_req_ids:
+            all_files = DataRequest.objects.get(id=req).datafile_set.all()
+            time_units = all_files[0].time_units
+            calendar = all_files[0].calendar
+            start_float = cf_units.date2num(
+                datetime.datetime(int(start_year), 1, 1), time_units, calendar
+            )
+            end_float = cf_units.date2num(
+                datetime.datetime(int(end_year) + 1, 1, 1), time_units, calendar
+            )
+            data_files = all_files.filter(start_time__gte=start_float,
+                                          end_time__lt=end_float)
+
+            request_sizes.append(data_files.aggregate(Sum('size'))['size__sum'])
+
+        # get the total retrieval size
+        request_size = sum(request_sizes)
+
         # generate the confirmation page
         return render(request, 'pdata_app/retrieval_request_confirm.html',
                       {'request': request, 'data_reqs':data_req_strs,
                        'page_title': 'Confirm Retrieval Request',
-                       'return_url': request.POST['variables_received_url'],
-                       'data_request_ids': ','.join(map(str, data_req_ids)),
+                       'return_url': request.POST['return_url'],
+                       'start_year': start_year, 'end_year': end_year,
+                       'data_request_ids': data_req_str,
                        'request_size': request_size})
     else:
         # TODO do something intelligent
@@ -269,7 +334,11 @@ def confirm_retrieval(request):
 def create_retrieval(request):
     if request.method == 'POST':
         # create the request
-        retrieval = RetrievalRequest.objects.create(requester=request.user)
+        retrieval = RetrievalRequest.objects.create(
+            requester=request.user,
+            start_year=int(request.POST['start_year']),
+            end_year=int(request.POST['end_year'])
+        )
         retrieval.save()
         # add the data requests asked for
         data_req_ids = [int(req_id) for req_id in
@@ -277,6 +346,15 @@ def create_retrieval(request):
         data_reqs = DataRequest.objects.filter(id__in=data_req_ids)
         retrieval.data_request.add(*data_reqs)
         retrieval.save()
+        retrieval.refresh_from_db()
+
+        # advise the admin of the new request
+        contact_user_id = Settings.get_solo().contact_user_id
+        contact_user = User.objects.get(username=contact_user_id)
+        message = 'PRIMAVERA Retrieval Request {} created'.format(retrieval.id)
+        _em = EmailQueue.objects.create(recipient=contact_user,
+                                        subject=message, message=message)
+
         # redirect to the retrieval just created
         return _custom_redirect('retrieval_requests')
     else:
@@ -305,9 +383,28 @@ def confirm_mark_finished(request):
             ret_req = RetrievalRequest.objects.get(id=req)
             summary['data_reqs'] = [str(data_req) for data_req in
                                     ret_req.data_request.all()]
-            summary['size'] = (ret_req.data_request.all().
-                               aggregate(Sum('datafile__size'))
-                               ['datafile__size__sum'])
+
+            # get the size of each data request
+            data_req_sizes = []
+            for data_req in ret_req.data_request.all():
+                all_files = data_req.datafile_set.all()
+                time_units = all_files[0].time_units
+                calendar = all_files[0].calendar
+                start_float = cf_units.date2num(
+                    datetime.datetime(ret_req.start_year, 1, 1), time_units,
+                    calendar
+                )
+                end_float = cf_units.date2num(
+                    datetime.datetime(ret_req.end_year + 1, 1, 1), time_units,
+                    calendar
+                )
+                data_files = all_files.filter(start_time__gte=start_float,
+                                              end_time__lt=end_float)
+
+                data_req_sizes.append(
+                    data_files.aggregate(Sum('size'))['size__sum'])
+
+            summary['size'] = sum(data_req_sizes)
             ret_req_summaries.append(summary)
 
 
