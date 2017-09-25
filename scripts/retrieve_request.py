@@ -34,8 +34,6 @@ DEFAULT_LOG_FORMAT = '%(levelname)s: %(message)s'
 
 logger = logging.getLogger(__name__)
 
-# The top-level directory to initially restore files to
-BASE_RETRIEVAL_DIR = '/group_workspaces/jasmin2/primavera5/.et_retrievals'
 # The top-level directory to write output data to
 BASE_OUTPUT_DIR = Settings.get_solo().base_output_dir
 # The name of the directory to store et_get.py log files in
@@ -59,19 +57,20 @@ class ChecksumError(Exception):
         self.message = message
 
 
-def get_tape_url(tape_url, retrieval, args):
+def get_tape_url(tape_url, data_files, args):
     """
     Get all of the data from `tape_url`.
 
     :param str tape_url: The URL of the tape data to fetch.
-    :param pdata_app.models.RetrievalRequest retrieval: The retrieval object
+    :param list data_files: DataFile objects corresponding to the data files
+        required.
     :param argparse.Namespace args: The parsed command line arguments
         namespace.
     """
     if tape_url.startswith('et:'):
-        get_et_url(tape_url)
+        get_et_url(tape_url, data_files, args)
     elif tape_url.startswith('moose:'):
-        get_moose_url(tape_url, retrieval, args)
+        get_moose_url(tape_url, data_files, args)
     else:
         msg = ('Tape url {} is not a currently supported type of tape.'.
                format(tape_url))
@@ -150,12 +149,21 @@ def get_et_url(tape_url, data_files, args):
     filelist_name = get_temp_filename('et_files.txt')
     with open(filelist_name, 'w') as fh:
         for data_file in data_files:
-            fh.write(os.path.join(data_file.directory, data_file.name) + '\n')
+            fh.write(os.path.join(data_file.incoming_directory, data_file.name)
+                     + '\n')
     logger.debug('File list written to {}'.format(filelist_name))
 
-    retrieval_dir = os.path.join(BASE_RETRIEVAL_DIR, tape_url.replace(':', '_'))
+    if not args.alternative:
+        retrieval_dir = os.path.normpath(
+            os.path.join(BASE_OUTPUT_DIR, '..', '.et_retrievals',
+            tape_url.replace(':', '_')))
+    else:
+        retrieval_dir = os.path.normpath(
+            os.path.join(args.alternative, '..', '.et_retrievals',
+            tape_url.replace(':', '_')))
+
     if not os.path.exists(retrieval_dir):
-        os.mkdir(retrieval_dir)
+        os.makedirs(retrieval_dir)
 
     logger.debug('Restoring to {}'.format(retrieval_dir))
 
@@ -172,7 +180,7 @@ def get_et_url(tape_url, data_files, args):
         logger.error('et_get.py command failed\n{}'.format(exc.message))
         sys.exit(1)
 
-    copy_et_files_into_drs(data_files, tape_url, args)
+    copy_et_files_into_drs(data_files, retrieval_dir, args)
 
     try:
         os.remove(filelist_name)
@@ -189,27 +197,25 @@ def get_et_url(tape_url, data_files, args):
     logger.debug('Restored {}'.format(tape_url))
 
 
-def copy_et_files_into_drs(data_files, tape_url, args):
+def copy_et_files_into_drs(data_files, retrieval_dir, args):
     """
     Copy files from the restored data cache into the DRS structure.
 
     :param list data_files: The DataFile objects to copy.
-    :param str tape_url: The portion of the data now available on disk.
+    :param str retrieval_dir: The path that the files were retrieved to.
     :param argparse.Namespace args: The parsed command line arguments
         namespace.
     """
     logger.debug('Copying elastic tape files')
 
-    url_dir = os.path.join(BASE_RETRIEVAL_DIR, tape_url.replace(':', '_'))
-
     for data_file in data_files:
         file_submission_dir = data_file.incoming_directory
-        extracted_file_path = os.path.join(url_dir,
+        extracted_file_path = os.path.join(retrieval_dir,
                                            file_submission_dir.lstrip('/'),
                                            data_file.name)
         if not os.path.exists(extracted_file_path):
             msg = ('Unable to find file {} in the extracted data at {}. The '
-                   'expected path was {}'.format(data_file.name, url_dir,
+                   'expected path was {}'.format(data_file.name, retrieval_dir,
                                                  extracted_file_path))
             logger.error(msg)
             sys.exit(1)
@@ -229,17 +235,7 @@ def copy_et_files_into_drs(data_files, tape_url, args):
             msg = 'File already exists on disk: {}'.format(dest_file_path)
             logger.warning(msg)
         else:
-            if check_same_gws(extracted_file_path, drs_dir):
-                # if src and destination are on the same GWS then create a
-                # hard link, which will be faster and use less disk space
-                os.link(extracted_file_path, dest_file_path)
-                logger.debug('Created link to:\n{}\nat:\n{}'.format(
-                    extracted_file_path, dest_file_path))
-            else:
-                # if on different GWS then will have to copy
-                shutil.copyfile(extracted_file_path, dest_file_path)
-                logger.debug('Copied:\n{}\nto:\n{}'.format(
-                    extracted_file_path, dest_file_path))
+            os.rename(extracted_file_path, dest_file_path)
 
         if not args.skip_checksums:
             try:
@@ -471,9 +467,10 @@ def main(args):
         tape_urls.sort()
 
         for tape_url in tape_urls:
+            proper_tape_url = tape_url
             if tape_url.startswith('et'):
                 tape_url = 'et:all_files'
-            url_files = data_files.filter(tape_url=tape_url)
+            url_files = data_files.filter(tape_url=proper_tape_url)
             if tape_url in tapes:
                 tapes[tape_url] = list(chain(tapes[tape_url], url_files))
             else:
