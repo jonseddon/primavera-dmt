@@ -105,7 +105,7 @@ def get_moose_url(tape_url, data_files, args):
         os.makedirs(drs_dir)
 
     moose_urls = ['{}/{}'.format(tape_url, df.name) for df in data_files]
-    cmd = 'moo get {} {}'.format(' '.join(moose_urls), drs_dir)
+    cmd = 'moo get -I {} {}'.format(' '.join(moose_urls), drs_dir)
 
     logger.debug('MOOSE command is:\n{}'.format(cmd))
 
