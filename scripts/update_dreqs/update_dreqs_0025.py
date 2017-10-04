@@ -55,6 +55,7 @@ def main(args):
             logger.debug('{} {}'.format(data_req, dfs.count()))
             if dfs.count() == 2:
                 if dfs[0].name == dfs[1].name:
+                    logger.debug('{}'.format(data_req))
                     dfs[1].delete()
 
 
