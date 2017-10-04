@@ -134,7 +134,7 @@ def get_moose_url(tape_url, data_files, args):
         try:
             data_file.save()
         except django.db.utils.IntegrityError:
-            logger.error('{} {}'.format(data_file.directory, data_file.name))
+            logger.error('data_file.save() failed for {} {}'.format(data_file.directory, data_file.name))
             raise
 
 
