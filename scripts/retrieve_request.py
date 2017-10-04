@@ -352,7 +352,10 @@ def _run_command(command):
             logger.warning(msg)
             raise RuntimeError(msg)
 
-    return cmd_out.rstrip().split('\n')
+    if isinstance(cmd_out, str):
+        return cmd_out.rstrip().split('\n')
+    else:
+        return None
 
 
 def _email_user_success(retrieval):
