@@ -36,7 +36,13 @@ class DataRequestList(DataRequestsFilteredView):
     table_class = DataRequestTable
     filter_class = DataRequestFilter
     page_title = 'Data Requests'
-    message = 'These are the data requests made...'
+    message = ('These are the data requests that institutes said that '
+               'they would provide on the original data request spreadsheet. '
+               'Additional variables are sometimes received and are added '
+               'to this list. If an institute does not appear to be '
+               'intending to produce a variable that you require then please '
+               'contact that institute to see if they can produce the '
+               'variable that you require.')
 
 
 class OutstandingDataRequestList(DataRequestsFilteredView):
