@@ -131,7 +131,11 @@ def get_moose_url(tape_url, data_files, args):
                 pass
         data_file.directory = drs_dir
         data_file.online = True
-        data_file.save()
+        try:
+            data_file.save()
+        except django.db.utils.IntegrityError:
+            logger.error('data_file.save() failed for {} {}'.format(data_file.directory, data_file.name))
+            raise
 
 
 def get_et_url(tape_url, data_files, args):
@@ -344,13 +348,18 @@ def _run_command(command):
         cmd_out = subprocess.check_output(command, stderr=subprocess.STDOUT,
                                           shell=True)
     except subprocess.CalledProcessError as exc:
-        msg = ('Command did not complete sucessfully.\ncommmand:\n{}\n'
-               'produced error:\n{}'.format(command, exc.output))
-        logger.warning(msg)
-        if exc.returncode != 0:
+        if exc.returncode == 17:
+            pass
+        else:
+            msg = ('Command did not complete sucessfully.\ncommmand:\n{}\n'
+                   'produced error:\n{}'.format(command, exc.output))
+            logger.warning(msg)
             raise RuntimeError(msg)
 
-    return cmd_out.rstrip().split('\n')
+    if isinstance(cmd_out, str):
+        return cmd_out.rstrip().split('\n')
+    else:
+        return None
 
 
 def _email_user_success(retrieval):
