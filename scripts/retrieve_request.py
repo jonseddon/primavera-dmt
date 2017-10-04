@@ -344,10 +344,12 @@ def _run_command(command):
         cmd_out = subprocess.check_output(command, stderr=subprocess.STDOUT,
                                           shell=True)
     except subprocess.CalledProcessError as exc:
-        msg = ('Command did not complete sucessfully.\ncommmand:\n{}\n'
-               'produced error:\n{}'.format(command, exc.output))
-        logger.warning(msg)
-        if exc.returncode != 0:
+        if exc.returncode == 17:
+            pass
+        else:
+            msg = ('Command did not complete sucessfully.\ncommmand:\n{}\n'
+                   'produced error:\n{}'.format(command, exc.output))
+            logger.warning(msg)
             raise RuntimeError(msg)
 
     return cmd_out.rstrip().split('\n')
