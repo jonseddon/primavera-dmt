@@ -131,7 +131,11 @@ def get_moose_url(tape_url, data_files, args):
                 pass
         data_file.directory = drs_dir
         data_file.online = True
-        data_file.save()
+        try:
+            data_file.save()
+        except django.db.utils.IntegrityError:
+            logger.error('{} {}'.format(data_file.directory, data_file.name))
+            raise
 
 
 def get_et_url(tape_url, data_files, args):

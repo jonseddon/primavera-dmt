@@ -162,8 +162,10 @@ def main(args):
 
     # find all data submissions that have been validated and contain no
     # datafiles that have a tape_url
-    submissions = (DataSubmission.objects.annotate(Count('datafile__tape_url')).
-        filter(status=status_to_process, datafile__tape_url__count=0))
+    # submissions = (DataSubmission.objects.annotate(Count('datafile__tape_url')).
+    #     filter(status=status_to_process, datafile__tape_url__count=0))
+    submissions = (DataSubmission.objects.filter(incoming_directory=
+                   '/group_workspaces/jasmin2/primavera4/upload/CMCC/CMCC-VHR4/20170927'))
 
     for submission in submissions:
         submission_to_tape(submission.incoming_directory, args.overwrite)
