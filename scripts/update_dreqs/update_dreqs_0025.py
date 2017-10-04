@@ -53,6 +53,10 @@ def main(args):
                 name__contains='_195001'
             )
             logger.debug('{} {}'.format(data_req, dfs.count()))
+            if dfs.count() == 2:
+                if dfs[0].name == dfs[1].name:
+                    logger.debug('{}'.format(dfs[0].online == dfs[1].online))
+                    logger.debug('{}'.format(dfs[0].directory == dfs[1].directory))
 
 
 if __name__ == "__main__":
