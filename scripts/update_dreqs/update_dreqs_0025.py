@@ -50,9 +50,9 @@ def main(args):
         if data_req.datafile_set.count() == 66:
             dfs = DataFile.objects.filter(
                 data_request=data_req,
-                name__contains='1950'
+                name__contains='_195001'
             )
-            print '{} {}'.format(data_req, dfs.count())
+            logger.debug('{} {}'.format(data_req, dfs.count()))
 
 
 if __name__ == "__main__":
