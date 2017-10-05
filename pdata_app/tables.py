@@ -70,6 +70,7 @@ class DataSubmissionTable(tables.Table):
         model = DataSubmission
         attrs = {'class': 'paleblue'}
         exclude = ('id',)
+        per_page = 10
         sequence = ('incoming_directory', 'directory', 'status',
                     'date_submitted', 'user', 'online_status', 'num_files',
                     'num_issues', 'earliest_date', 'latest_date', 'tape_urls',
