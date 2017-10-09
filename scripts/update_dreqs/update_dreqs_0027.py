@@ -61,13 +61,16 @@ def copy_cerfacs_data():
 
     # Clear the directory and status on the files that aren't going to be moved
     logger.debug('*** Deleting files: ***')
-    files_to_delete = all_submission_files.filter(directory=PRIM3_DIRECTORY)
+    files_to_delete = all_submission_files.exclude(
+        data_request__in=ret_req.data_request.all()
+    )
     for df in files_to_delete:
         logger.debug('{}'.format(df.name))
         # df.directory = None
         # df.online = False
         # df.save()
         # os.remove(os.path.join(df.directory, df.name))
+        logger.debug('os.remove {}'.format(os.path.join(df.directory, df.name)))
 
 
 def delete_cerfacs_prim5_data():
