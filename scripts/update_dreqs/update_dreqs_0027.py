@@ -37,7 +37,9 @@ def copy_cerfacs_data():
     PRIM3_DIRECTORY = ('/group_workspaces/jasmin2/primavera3/upload/'
                        'CNRM-CERFACS/CNRM-CM6-1-HR/incoming/v20170623_2000')
 
-    ret_req = RetrievalRequest.objects.get(id=67)
+    WANTED_RETRIEVAL_ID = 67
+
+    ret_req = RetrievalRequest.objects.get(id=WANTED_RETRIEVAL_ID)
     data_sub = DataSubmission.objects.get(
         incoming_directory=PRIM3_DIRECTORY
     )
@@ -78,7 +80,28 @@ def delete_cerfacs_prim5_data():
     Delete files from the submissions on primavera5/stream1 that are not in
     the listed retrieval requests
     """
-    high_res_subs = ['']
+    WANTED_RETRIEVAL_ID = 67
+
+    ret_req = RetrievalRequest.objects.get(id=WANTED_RETRIEVAL_ID)
+    data_req_ids = list(ret_req.data_request.values_list('id', flat=True))
+
+    high_res_subs = ['/group_workspaces/jasmin2/primavera4/upload/CNRM-CERFACS/'
+                     'CNRM-CM6-1-HR/incoming/v20170518_1970',
+                     '/group_workspaces/jasmin2/primavera4/upload/CNRM-CERFACS/'
+                     'CNRM-CM6-1-HR/incoming/v20170518_1960',
+                     '/group_workspaces/jasmin2/primavera4/upload/CNRM-CERFACS/'
+                     'CNRM-CM6-1-HR/incoming/v20170518_1950']
+
+    data_files = DataFile.objects.filter(
+        data_submission__incoming_directory__in=high_res_subs
+    )
+
+    for df in data_files:
+        logger.debug('{}'.format(df.name))
+        if df.data_request_id not in data_req_ids:
+            logger.debug('os.remove {}'.format(df.name))
+        else:
+            logger.debug('keeping {}'.format(df.name))
 
 
 def parse_args():
