@@ -8,15 +8,12 @@ submissions apart from items that are in certain known retrieval requests.
 import argparse
 import logging.config
 import os
-import shutil
 import sys
 
 import django
 django.setup()
 
-from pdata_app.models import (DataRequest, RetrievalRequest, DataSubmission,
-                              DataFile, Settings)
-from pdata_app.utils.common import construct_drs_path
+from pdata_app.models import DataSubmission
 
 
 __version__ = '0.1.0b1'
@@ -26,94 +23,40 @@ DEFAULT_LOG_FORMAT = '%(levelname)s: %(message)s'
 
 logger = logging.getLogger(__name__)
 
-# The top-level directory to write output data to
-BASE_OUTPUT_DIR = Settings.get_solo().base_output_dir
 
-
-def copy_cerfacs_prim3_data():
+def delete_submission_files(incoming_directory, description):
     """
-    Copy data from the CERFACS submission on primavera3 to primavera5
+    Delete all files from the data submission specified by its
+    incoming_directory.
+
+    :param str incoming_directory: The incoming_directory of the submission to
+        delete all files from.
+    :param str description: A description of the submission to include in the
+        debug messages.
     """
-    PRIM3_DIRECTORY = ('/group_workspaces/jasmin2/primavera3/upload/'
-                       'CNRM-CERFACS/CNRM-CM6-1-HR/incoming/v20170623_2000')
-
-    WANTED_RETRIEVAL_ID = 67
-
-    ret_req = RetrievalRequest.objects.get(id=WANTED_RETRIEVAL_ID)
     data_sub = DataSubmission.objects.get(
-        incoming_directory=PRIM3_DIRECTORY
+        incoming_directory=incoming_directory
     )
 
     all_submission_files = data_sub.datafile_set.all()
 
-    # Move the files that we want to keep
-    files_to_copy = all_submission_files.filter(
-        data_request__in=ret_req.data_request.all()
-    )
-
-    for df in files_to_copy:
-        src_path = os.path.join(df.directory, df.name)
-        dest_path = os.path.join(BASE_OUTPUT_DIR, construct_drs_path(df))
-        # try:
-        #     shutil.move(src_path, dest_path)
-        # except:
-        #     logger.error('Unable to move {} to {}'.format(src_path, dest_path))
-        # df.directory = dest_path
-        # df.save()
-        logger.debug('CERFACS prim3 shutil.move {} {}'.format(src_path, dest_path))
-
-    # Clear the directory and status on the files that aren't going to be moved
-    files_to_delete = all_submission_files.exclude(
-        data_request__in=ret_req.data_request.all()
-    )
-    for df in files_to_delete:
+    for df in all_submission_files:
         # df.directory = None
         # df.online = False
         # df.save()
-        # try:
-        #     os.remove(os.path.join(df.directory, df.name))
-        # except OSError:
-        #     logger.error('Unable to delete {}'.format(os.path.join(
-        #         df.directory, df.name
-        #     )))
-        logger.debug('CERFACS prim3 os.remove {}'.format(os.path.join(df.directory, df.name)))
-
-
-def delete_cerfacs_prim5_data():
-    """
-    Delete files from the submissions on primavera5/stream1 that are not in
-    the listed retrieval requests
-    """
-    WANTED_RETRIEVAL_ID = 67
-
-    ret_req = RetrievalRequest.objects.get(id=WANTED_RETRIEVAL_ID)
-    data_req_ids = list(ret_req.data_request.values_list('id', flat=True))
-
-    high_res_subs = ['/group_workspaces/jasmin2/primavera4/upload/CNRM-CERFACS/'
-                     'CNRM-CM6-1-HR/incoming/v20170518_1970',
-                     '/group_workspaces/jasmin2/primavera4/upload/CNRM-CERFACS/'
-                     'CNRM-CM6-1-HR/incoming/v20170518_1960',
-                     '/group_workspaces/jasmin2/primavera4/upload/CNRM-CERFACS/'
-                     'CNRM-CM6-1-HR/incoming/v20170518_1950']
-
-    data_files = DataFile.objects.filter(
-        data_submission__incoming_directory__in=high_res_subs
-    )
-
-    for df in data_files:
-        if df.data_request_id not in data_req_ids:
-            # df.directory = None
-            # df.online = False
-            # df.save()
-            # try:
-            #     os.remove(os.path.join(df.directory, df.name))
-            # except OSError:
-            #     logger.error('Unable to delete {}'.format(os.path.join(
-            #         df.directory, df.name
-            #     )))
-            logger.debug('CERFACS prim5 os.remove {}'.format(df.name))
+        try:
+            # os.remove(os.path.join(df.directory, df.name))
+            pass
+        except OSError:
+            logger.error('Unable to delete from {} {}'.format(
+                description,
+                os.path.join(df.directory, df.name
+            )))
         else:
-            logger.debug('CERFACS prim5 keeping {}'.format(df.name))
+            logger.debug('{} os.remove {}'.format(
+                description,
+                os.path.join(df.directory, df.name))
+            )
 
 
 def parse_args():
@@ -134,8 +77,37 @@ def main(args):
     """
     Main entry point
     """
-    copy_cerfacs_prim3_data()
-    delete_cerfacs_prim5_data()
+
+    submissions_to_delete = [
+        {'directory': '/group_workspaces/jasmin2/primavera3/upload/'
+                      'CNRM-CERFACS/CNRM-CM6-1-HR/incoming/v20170623_2000',
+         'description': 'CERFACS 2000'},
+        {'directory': '/group_workspaces/jasmin2/primavera4/upload/'
+                      'CNRM-CERFACS/CNRM-CM6-1-HR/incoming/v20170518_1970',
+         'description': 'CERFACS 1970'},
+        {'directory': '/group_workspaces/jasmin2/primavera4/upload/'
+                      'CNRM-CERFACS/CNRM-CM6-1-HR/incoming/v20170518_1960',
+         'description': 'CERFACS 1960'},
+        {'directory': '/group_workspaces/jasmin2/primavera4/upload/'
+                      'CNRM-CERFACS/CNRM-CM6-1-HR/incoming/v20170518_1950',
+         'description': 'CERFACS 1950'},
+        {'directory': '/group_workspaces/jasmin2/primavera4/upload/CMCC/'
+                      '20170703',
+         'description': 'CMCC 20170703'},
+        {'directory': '/group_workspaces/jasmin2/primavera4/upload/CMCC/'
+                      '20170708',
+         'description': 'CMCC 20170708'},
+        {'directory': '/group_workspaces/jasmin2/primavera4/upload/CMCC/'
+                      '20170725',
+         'description': 'CMCC 20170725'},
+        {'directory': '/group_workspaces/jasmin2/primavera4/upload/CMCC/'
+                      'CMCC-VHR4/20170927',
+         'description': 'CMCC VHR'},
+    ]
+
+    for submission in submissions_to_delete:
+        delete_submission_files(submission['directory'],
+                                submission['description'])
 
 
 if __name__ == "__main__":
