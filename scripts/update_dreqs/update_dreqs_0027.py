@@ -30,7 +30,7 @@ logger = logging.getLogger(__name__)
 BASE_OUTPUT_DIR = Settings.get_solo().base_output_dir
 
 
-def copy_cerfacs_data():
+def copy_cerfacs_prim3_data():
     """
     Copy data from the CERFACS submission on primavera3 to primavera5
     """
@@ -47,32 +47,36 @@ def copy_cerfacs_data():
     all_submission_files = data_sub.datafile_set.all()
 
     # Move the files that we want to keep
-    logger.debug('*** Keeping files: ***')
     files_to_copy = all_submission_files.filter(
         data_request__in=ret_req.data_request.all()
     )
 
     for df in files_to_copy:
-        logger.debug('{}'.format(df.name))
         src_path = os.path.join(df.directory, df.name)
         dest_path = os.path.join(BASE_OUTPUT_DIR, construct_drs_path(df))
-        # shutil.move(src_path, dest_path)
+        # try:
+        #     shutil.move(src_path, dest_path)
+        # except:
+        #     logger.error('Unable to move {} to {}'.format(src_path, dest_path))
         # df.directory = dest_path
         # df.save()
-        logger.debug('shutil.move {} {}'.format(src_path, dest_path))
+        logger.debug('CERFACS prim3 shutil.move {} {}'.format(src_path, dest_path))
 
     # Clear the directory and status on the files that aren't going to be moved
-    logger.debug('*** Deleting files: ***')
     files_to_delete = all_submission_files.exclude(
         data_request__in=ret_req.data_request.all()
     )
     for df in files_to_delete:
-        logger.debug('{}'.format(df.name))
         # df.directory = None
         # df.online = False
         # df.save()
-        # os.remove(os.path.join(df.directory, df.name))
-        logger.debug('os.remove {}'.format(os.path.join(df.directory, df.name)))
+        # try:
+        #     os.remove(os.path.join(df.directory, df.name))
+        # except OSError:
+        #     logger.error('Unable to delete {}'.format(os.path.join(
+        #         df.directory, df.name
+        #     )))
+        logger.debug('CERFACS prim3 os.remove {}'.format(os.path.join(df.directory, df.name)))
 
 
 def delete_cerfacs_prim5_data():
@@ -97,11 +101,19 @@ def delete_cerfacs_prim5_data():
     )
 
     for df in data_files:
-        logger.debug('{}'.format(df.name))
         if df.data_request_id not in data_req_ids:
-            logger.debug('os.remove {}'.format(df.name))
+            # df.directory = None
+            # df.online = False
+            # df.save()
+            # try:
+            #     os.remove(os.path.join(df.directory, df.name))
+            # except OSError:
+            #     logger.error('Unable to delete {}'.format(os.path.join(
+            #         df.directory, df.name
+            #     )))
+            logger.debug('CERFACS prim5 os.remove {}'.format(df.name))
         else:
-            logger.debug('keeping {}'.format(df.name))
+            logger.debug('CERFACS prim5 keeping {}'.format(df.name))
 
 
 def parse_args():
@@ -122,10 +134,8 @@ def main(args):
     """
     Main entry point
     """
-    copy_cerfacs_data()
+    copy_cerfacs_prim3_data()
     delete_cerfacs_prim5_data()
-
-
 
 
 if __name__ == "__main__":
