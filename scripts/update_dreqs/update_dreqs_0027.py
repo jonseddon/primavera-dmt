@@ -79,6 +79,9 @@ def main(args):
     """
 
     submissions_to_delete = [
+        {'directory': '/group_workspaces/jasmin2/primavera4/upload/'
+                      'CNRM-CERFACS/CNRM-CM6-1/incoming',
+         'description': 'CERFACS LR'},
         {'directory': '/group_workspaces/jasmin2/primavera3/upload/'
                       'CNRM-CERFACS/CNRM-CM6-1-HR/incoming/v20170623_2000',
          'description': 'CERFACS 2000'},
