@@ -3,7 +3,7 @@
 update_dreqs_0027.py
 
 Delete existing data that was set-up using incoming_to_drs.py from known
-submissions apart from items that are in certain known retrieval requests.
+submissions.
 """
 import argparse
 import logging.config
@@ -41,12 +41,11 @@ def delete_submission_files(incoming_directory, description):
     all_submission_files = data_sub.datafile_set.all()
 
     for df in all_submission_files:
-        # df.directory = None
-        # df.online = False
-        # df.save()
+        df.directory = None
+        df.online = False
+        df.save()
         try:
-            # os.remove(os.path.join(df.directory, df.name))
-            pass
+            os.remove(os.path.join(df.directory, df.name))
         except OSError:
             logger.error('Unable to delete from {} {}'.format(
                 description,
