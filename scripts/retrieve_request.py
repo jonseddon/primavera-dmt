@@ -22,7 +22,7 @@ from django.contrib.auth.models import User
 from django.utils import timezone
 
 from pdata_app.models import Settings, RetrievalRequest, DataFile, EmailQueue
-from pdata_app.utils.common import (md5, sha256, adler32, check_same_gws,
+from pdata_app.utils.common import (md5, sha256, adler32, construct_drs_path,
                                     get_temp_filename)
 from pdata_app.utils.dbapi import match_one
 
@@ -264,27 +264,6 @@ def copy_et_files_into_drs(data_files, retrieval_dir, args):
         data_file.save()
 
     logger.debug('Finished copying elastic tape files')
-
-
-def construct_drs_path(data_file):
-    """
-    Make the CMIP6 DRS directory path for the specified file.
-
-    :param pdata_app.models.DataFile data_file:
-    :returns: A string containing the DRS directory structure
-    """
-    return os.path.join(
-        data_file.project.short_name,
-        data_file.activity_id.short_name,
-        data_file.institute.short_name,
-        data_file.climate_model.short_name,
-        data_file.experiment.short_name,
-        data_file.rip_code,
-        data_file.variable_request.table_name,
-        data_file.variable_request.cmor_name,
-        data_file.grid,
-        data_file.version
-    )
 
 
 def _check_file_checksum(data_file, file_path):

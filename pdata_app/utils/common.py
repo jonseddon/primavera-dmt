@@ -281,3 +281,24 @@ def check_same_gws(path1, path2):
         raise RuntimeError(msg)
 
     return True if gws1.group(0) == gws2.group(0) else False
+
+
+def construct_drs_path(data_file):
+    """
+    Make the CMIP6 DRS directory path for the specified file.
+
+    :param pdata_app.models.DataFile data_file:
+    :returns: A string containing the DRS directory structure
+    """
+    return os.path.join(
+        data_file.project.short_name,
+        data_file.activity_id.short_name,
+        data_file.institute.short_name,
+        data_file.climate_model.short_name,
+        data_file.experiment.short_name,
+        data_file.rip_code,
+        data_file.variable_request.table_name,
+        data_file.variable_request.cmor_name,
+        data_file.grid,
+        data_file.version
+    )
