@@ -52,13 +52,13 @@ def delete_submission_files(incoming_directory, description):
                 os.path.join(df.directory, df.name
             )))
         else:
-            df.directory = None
-            df.online = False
-            df.save()
             logger.debug('{} os.remove {}'.format(
                 description,
                 os.path.join(df.directory, df.name))
             )
+            df.directory = None
+            df.online = False
+            df.save()
 
 
 def parse_args():
