@@ -38,20 +38,23 @@ def delete_submission_files(incoming_directory, description):
         incoming_directory=incoming_directory
     )
 
-    all_submission_files = data_sub.datafile_set.all()
+    all_submission_files = data_sub.datafile_set.filter(online=True)
 
     for df in all_submission_files:
-        df.directory = None
-        df.online = False
-        df.save()
         try:
             os.remove(os.path.join(df.directory, df.name))
+        except AttributeError:
+            logger.error('Unable to os.path.join {} {}'.format(df.directory,
+                                                               df.name))
         except OSError:
             logger.error('Unable to delete from {} {}'.format(
                 description,
                 os.path.join(df.directory, df.name
             )))
         else:
+            df.directory = None
+            df.online = False
+            df.save()
             logger.debug('{} os.remove {}'.format(
                 description,
                 os.path.join(df.directory, df.name))
