@@ -94,7 +94,7 @@ def main(args):
     """
     logger.debug('Starting split_retrieve_request.py')
 
-    ret_reqs = RetrievalRequest.objecs.filter(date_complete__isnull=True,
+    ret_reqs = RetrievalRequest.objects.filter(date_complete__isnull=True,
                                               date_deleted__isnull=True)
 
     for ret_req in ret_reqs:
@@ -110,7 +110,7 @@ def main(args):
             ret_req.save()
 
             # get the original retrieval request
-            orig_req = RetrievalRequest.object.get(id=original_id)
+            orig_req = RetrievalRequest.objects.get(id=original_id)
 
             # add the MASS data requests to the new request
             for data_req in orig_req.data_request.filter(
