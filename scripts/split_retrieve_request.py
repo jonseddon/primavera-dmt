@@ -6,26 +6,14 @@ This script is run by a cron job to separate retrieve_requests into ones
 on elastic tape and ones in MASS.
 """
 import argparse
-import datetime
-import glob
-from itertools import chain
 import logging.config
-import os
-import shutil
-import subprocess
 import sys
-
-import cf_units
 
 import django
 django.setup()
 from django.contrib.auth.models import User
-from django.utils import timezone
 
-from pdata_app.models import Settings, RetrievalRequest, DataFile, EmailQueue
-from pdata_app.utils.common import (md5, sha256, adler32, construct_drs_path,
-                                    get_temp_filename)
-from pdata_app.utils.dbapi import match_one
+from pdata_app.models import Settings, RetrievalRequest, EmailQueue
 
 
 __version__ = '0.1.0b1'
@@ -77,7 +65,7 @@ def parse_args():
     """
     Parse command-line arguments
     """
-    parser = argparse.ArgumentParser(description='Perform a PRIMAVERA '
+    parser = argparse.ArgumentParser(description='Split a PRIMAVERA '
                                                  'retrieval request.')
     parser.add_argument('-l', '--log-level', help='set logging level to one of '
         'debug, info, warn (the default), or error')
