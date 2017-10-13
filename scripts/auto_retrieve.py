@@ -7,6 +7,7 @@ periodically restore any data that needs to be restored from either elastic
 tape or MASS.
 """
 import argparse
+import datetime
 import logging.config
 import subprocess
 import sys
@@ -106,6 +107,8 @@ def main(args):
             else:
                 raise NotImplementedError('Unknown tape system specified.')
 
+        logger.debug('Waiting for one hour at {}'.format(
+            datetime.datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S')))
         sleep(ONE_HOUR)
 
 
