@@ -88,8 +88,9 @@ def main(args):
     logger.debug('Starting auto_retrieve.py')
 
     while True:
-        ret_reqs = RetrievalRequest.objects.filter(date_complete__isnull=True,
-                                                  date_deleted__isnull=True)
+        ret_reqs = (RetrievalRequest.objects.filter(date_complete__isnull=True,
+                                                    date_deleted__isnull=True).
+                    order_by('date_created'))
 
         for ret_req in ret_reqs:
             if args.mass:
