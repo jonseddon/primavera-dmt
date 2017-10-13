@@ -48,7 +48,7 @@ def run_retrieve_request(retrieval_id):
     cmd = ('/home/users/jseddon/primavera/LIVE-prima-dm/scripts/'
            'retrieve_request.py -l debug {}'.format(retrieval_id))
     try:
-        subprocess.check_output(cmd)
+        subprocess.check_output(cmd, shell=True)
     except OSError as exc:
         logger.error('Unable to run command:\n{}\n{}'.format(cmd,
                                                              exc.strerror))
