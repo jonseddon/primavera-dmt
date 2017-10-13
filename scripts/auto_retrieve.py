@@ -49,6 +49,10 @@ def run_retrieve_request(retrieval_id):
            'retrieve_request.py -l debug {}'.format(retrieval_id))
     try:
         subprocess.check_output(cmd)
+    except OSError as exc:
+        logger.error('Unable to run command:\n{}\n{}'.format(cmd,
+                                                             exc.strerror))
+        sys.exit(1)
     except subprocess.CalledProcessError as exc:
         logger.error('Retrieval failed: {}\n{}'.format(cmd, exc.output))
     else:
