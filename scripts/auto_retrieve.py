@@ -42,7 +42,7 @@ def run_retrieve_request(retrieval_id):
 
     if get_request_size(retrieval_request) > TWO_TEBIBYTES:
         logger.warning('Skipping retrieval {} as it is bigger than {}.'.format(
-            retrieval_id, filesizeformat(TWO_TEBIBYTES)
+            retrieval_id, filesizeformat(TWO_TEBIBYTES).encode('utf-8')
         ))
         return
 
