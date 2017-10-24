@@ -160,11 +160,11 @@ def get_et_url(tape_url, data_files, args):
     if not args.alternative:
         retrieval_dir = os.path.normpath(
             os.path.join(BASE_OUTPUT_DIR, '..', '.et_retrievals',
-            tape_url.replace(':', '_')))
+            'ret_{:04}'.format(args.retrieval_id)))
     else:
         retrieval_dir = os.path.normpath(
             os.path.join(args.alternative, '..', '.et_retrievals',
-            tape_url.replace(':', '_')))
+            'ret_{:04}'.format(args.retrieval_id)))
 
     if not os.path.exists(retrieval_dir):
         os.makedirs(retrieval_dir)
