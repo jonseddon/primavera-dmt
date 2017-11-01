@@ -73,7 +73,7 @@ def parallel_get_urls(tapes, args):
     manager = Manager()
     params = manager.Queue()
     for i in range(MAX_MOOSE_GET_PROC):
-        p = Process(target=parallel_worker, args=params)
+        p = Process(target=parallel_worker, args=(params,))
         jobs.append(p)
         p.start()
 
