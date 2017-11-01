@@ -11,9 +11,11 @@ from itertools import chain
 import logging.config
 from multiprocessing import Process, Manager
 import os
+import random
 import shutil
 import subprocess
 import sys
+import time
 
 import cf_units
 
@@ -152,7 +154,16 @@ def get_moose_url(tape_url, data_files, args):
 
     # create the path if it doesn't exist
     if not os.path.exists(drs_dir):
-        os.makedirs(drs_dir)
+        try:
+            os.makedirs(drs_dir)
+        except OSError:
+            # if running in parallel, another process could have created this
+            # directory at the same time and so wait a random time less than
+            # one second. If it fails a second time then there is a genuine
+            # problem
+            time.sleep(random.random())
+            if not os.path.exists(drs_dir):
+                os.makedirs(drs_dir)
 
     moose_urls = ['{}/{}'.format(tape_url, df.name) for df in data_files]
     cmd = 'moo get -I {} {}'.format(' '.join(moose_urls), drs_dir)
