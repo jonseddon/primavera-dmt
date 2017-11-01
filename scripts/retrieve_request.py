@@ -96,6 +96,9 @@ def parallel_worker(params):
         call parameters from
     """
     while True:
+        # close existing connections so that a fresh connection is made
+        django.db.connections.close_all()
+
         tape_url, data_files, args = params.get()
 
         if tape_url is None:
@@ -523,6 +526,9 @@ def main(args):
     else:
         # lets get parallel to speed things up
         parallel_get_urls(tapes, args)
+        # get a fresh DB connection after exiting from parallel operation
+        django.db.connections.close_all()
+
 
     # set date_complete in the db
     retrieval.date_complete = timezone.now()
