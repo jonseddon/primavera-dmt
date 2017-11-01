@@ -9,6 +9,7 @@ import datetime
 import glob
 from itertools import chain
 import logging.config
+from multiprocessing import Process, Manager
 import os
 import shutil
 import subprocess
@@ -43,7 +44,8 @@ LOG_PREFIX = 'et_get'
 # The number of processes that et_get.py should use.
 # Between 5 and 10 are recommended
 MAX_ET_GET_PROC = 5
-
+# The maximum number of MASS retrievals to run in parallel
+MAX_MOOSE_GET_PROC = 10
 
 class ChecksumError(Exception):
     def __init__(self, message=''):
@@ -55,6 +57,51 @@ class ChecksumError(Exception):
         """
         Exception.__init__(self)
         self.message = message
+
+
+def parallel_get_urls(tapes, args):
+    """
+    Get several tape URLs in parallel so that MOOSE can group retrievals
+    together to minimise the number of tape loads.
+
+    :param dict tapes: The keys are the tape URLs to retrieve. The values are
+        a list of DataFile objects to retrieve for that URL.
+    :param argparse.Namespace args: The parsed command line arguments
+        namespace.
+    """
+    jobs = []
+    manager = Manager()
+    params = manager.Queue()
+    for i in range(MAX_MOOSE_GET_PROC):
+        p = Process(target=parallel_worker, args=params)
+        jobs.append(p)
+        p.start()
+
+    tape_urls_list = [(tape_url, tapes[tape_url], args) for tape_url in tapes]
+
+    iters = chain(tape_urls_list, (None, None, None) * MAX_MOOSE_GET_PROC)
+    for iter in iters:
+        params.put(iter)
+
+    for j in jobs:
+        j.join()
+
+
+def parallel_worker(params):
+    """
+    The worker function that unpacks the parameters and calls the usual
+    serial function.
+
+    :param multiprocessing.Manager.Queue params: the queue to get function
+        call parameters from
+    """
+    while True:
+        tape_url, data_files, args = params.get()
+
+        if tape_url is None:
+            return
+
+        get_tape_url(tape_url, data_files, args)
 
 
 def get_tape_url(tape_url, data_files, args):
@@ -465,8 +512,17 @@ def main(args):
             else:
                 tapes[tape_url] = list(url_files)
 
+    all_moose = True
     for tape_url in tapes:
-        get_tape_url(tape_url, tapes[tape_url], args)
+        if not tape_url.startswith('moose:'):
+            all_moose = False
+
+    if not all_moose:
+        for tape_url in tapes:
+            get_tape_url(tape_url, tapes[tape_url], args)
+    else:
+        # lets get parallel to speed things up
+        parallel_get_urls(tapes, args)
 
     # set date_complete in the db
     retrieval.date_complete = timezone.now()
