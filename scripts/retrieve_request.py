@@ -518,10 +518,7 @@ def main(args):
         tape_urls.sort()
 
         for tape_url in tape_urls:
-            proper_tape_url = tape_url
-            if tape_url.startswith('et'):
-                tape_url = 'et:all_files'
-            url_files = data_files.filter(tape_url=proper_tape_url)
+            url_files = data_files.filter(tape_url=tape_url)
             if tape_url in tapes:
                 tapes[tape_url] = list(chain(tapes[tape_url], url_files))
             else:
