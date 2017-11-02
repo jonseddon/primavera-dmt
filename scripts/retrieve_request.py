@@ -45,7 +45,7 @@ LOG_FILE_DIR = '/group_workspaces/jasmin2/primavera5/.et_logs/'
 LOG_PREFIX = 'et_get'
 # The number of processes that et_get.py should use.
 # Between 5 and 10 are recommended
-MAX_ET_GET_PROC = 5
+MAX_ET_GET_PROC = 10
 # The maximum number of MASS retrievals to run in parallel
 MAX_MOOSE_GET_PROC = 10
 
