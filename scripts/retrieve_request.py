@@ -81,7 +81,8 @@ def parallel_get_urls(tapes, args):
 
     tape_urls_list = [(tape_url, tapes[tape_url], args) for tape_url in tapes]
 
-    iters = chain(tape_urls_list, (None, None, None) * MAX_MOOSE_GET_PROC)
+    null_arguments = (None, None, None)
+    iters = chain(tape_urls_list,  (null_arguments,) * MAX_MOOSE_GET_PROC)
     for iter in iters:
         params.put(iter)
 
