@@ -47,7 +47,7 @@ LOG_PREFIX = 'et_get'
 # Between 5 and 10 are recommended
 MAX_ET_GET_PROC = 10
 # The maximum number of MASS retrievals to run in parallel
-MAX_MOOSE_GET_PROC = 10
+MAX_MOOSE_GET_PROC = 5
 
 class ChecksumError(Exception):
     def __init__(self, message=''):
@@ -191,6 +191,16 @@ def get_moose_url(tape_url, data_files, args):
                 # warning message has already been displayed and so take no
                 # further action
                 pass
+
+        # create symbolic link from main directory if storing data in an
+        # alternative directory
+        if args.alternative:
+            primary_path = os.path.join(BASE_OUTPUT_DIR, drs_path)
+            if not os.path.exists(primary_path):
+                os.makedirs(primary_path)
+            os.symlink(os.path.join(drs_dir, data_file.name),
+                       os.path.join(primary_path, data_file.name))
+
         data_file.directory = drs_dir
         data_file.online = True
         try:
