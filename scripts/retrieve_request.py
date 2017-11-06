@@ -3,6 +3,12 @@
 retrieve_request.py
 
 This script is run by the admin to perform a retrieval request.
+
+Currently, the MOOSE and ET clients are installed on different servers. It
+is therefore assumed that all of the data in a retrieval is on a single tape
+system, but this is not checked by this script. `split_retrieve_request.py`
+and `auto_retrieve.py` can be used to split requests and run them on the
+appropriate tape systems respectively.
 """
 import argparse
 import datetime
@@ -46,8 +52,8 @@ LOG_PREFIX = 'et_get'
 # The number of processes that et_get.py should use.
 # Between 5 and 10 are recommended
 MAX_ET_GET_PROC = 10
-# The maximum number of MASS retrievals to run in parallel
-MAX_MOOSE_GET_PROC = 5
+# The maximum number of retrievals to run in parallel
+MAX_TAPE_GET_PROC = 5
 
 class ChecksumError(Exception):
     def __init__(self, message=''):
@@ -64,7 +70,8 @@ class ChecksumError(Exception):
 def parallel_get_urls(tapes, args):
     """
     Get several tape URLs in parallel so that MOOSE can group retrievals
-    together to minimise the number of tape loads.
+    together to minimise the number of tape loads and ET retrievals can run
+    on multiple tape drives simultaneously.
 
     :param dict tapes: The keys are the tape URLs to retrieve. The values are
         a list of DataFile objects to retrieve for that URL.
@@ -74,7 +81,7 @@ def parallel_get_urls(tapes, args):
     jobs = []
     manager = Manager()
     params = manager.Queue()
-    for i in range(MAX_MOOSE_GET_PROC):
+    for i in range(MAX_TAPE_GET_PROC):
         p = Process(target=parallel_worker, args=(params,))
         jobs.append(p)
         p.start()
@@ -82,7 +89,7 @@ def parallel_get_urls(tapes, args):
     tape_urls_list = [(tape_url, tapes[tape_url], args) for tape_url in tapes]
 
     null_arguments = (None, None, None)
-    iters = chain(tape_urls_list,  (null_arguments,) * MAX_MOOSE_GET_PROC)
+    iters = chain(tape_urls_list, (null_arguments,) * MAX_TAPE_GET_PROC)
     for iter in iters:
         params.put(iter)
 
@@ -229,14 +236,15 @@ def get_et_url(tape_url, data_files, args):
                      + '\n')
     logger.debug('File list written to {}'.format(filelist_name))
 
-    if not args.alternative:
-        retrieval_dir = os.path.normpath(
-            os.path.join(BASE_OUTPUT_DIR, '..', '.et_retrievals',
-            'ret_{:04}'.format(args.retrieval_id)))
+    if args.alternative:
+        base_dir = args.alternative
     else:
-        retrieval_dir = os.path.normpath(
-            os.path.join(args.alternative, '..', '.et_retrievals',
-            'ret_{:04}'.format(args.retrieval_id)))
+        base_dir = BASE_OUTPUT_DIR
+
+    retrieval_dir = os.path.normpath(
+        os.path.join(base_dir, '..', '.et_retrievals',
+                     'ret_{:04}'.format(args.retrieval_id),
+                     'batch_{:05}'.format(tape_url.split(':')[1])))
 
     if not os.path.exists(retrieval_dir):
         os.makedirs(retrieval_dir)
@@ -490,7 +498,8 @@ def main(args):
     """
     Main entry point
     """
-    logger.debug('Starting retrieve_request.py')
+    logger.debug('Starting retrieve_request.py for retrieval {}'.
+                 format(args.retrieval_id))
 
     # check retrieval
     retrieval = match_one(RetrievalRequest, id=args.retrieval_id)
@@ -534,20 +543,10 @@ def main(args):
             else:
                 tapes[tape_url] = list(url_files)
 
-    all_moose = True
-    for tape_url in tapes:
-        if not tape_url.startswith('moose:'):
-            all_moose = False
-
-    if not all_moose:
-        for tape_url in tapes:
-            get_tape_url(tape_url, tapes[tape_url], args)
-    else:
-        # lets get parallel to speed things up
-        parallel_get_urls(tapes, args)
-        # get a fresh DB connection after exiting from parallel operation
-        django.db.connections.close_all()
-
+    # lets get parallel to speed things up
+    parallel_get_urls(tapes, args)
+    # get a fresh DB connection after exiting from parallel operation
+    django.db.connections.close_all()
 
     # set date_complete in the db
     retrieval.date_complete = timezone.now()
@@ -556,7 +555,8 @@ def main(args):
     # send an email to advise the user that their data's been restored
     _email_user_success(retrieval)
 
-    logger.debug('Completed retrieve_request.py')
+    logger.debug('Completed retrieve_request.py for retrieval {}'.
+                 format(args.retrieval_id))
 
 
 if __name__ == "__main__":
