@@ -22,6 +22,7 @@ import shutil
 import subprocess
 import sys
 import time
+import traceback
 
 import cf_units
 
@@ -30,7 +31,7 @@ django.setup()
 from django.contrib.auth.models import User
 from django.utils import timezone
 
-from pdata_app.models import Settings, RetrievalRequest, DataFile, EmailQueue
+from pdata_app.models import Settings, RetrievalRequest, EmailQueue
 from pdata_app.utils.common import (md5, sha256, adler32, construct_drs_path,
                                     get_temp_filename)
 from pdata_app.utils.dbapi import match_one
@@ -128,7 +129,10 @@ def parallel_worker(params, error_event):
         try:
             get_tape_url(tape_url, data_files, args)
         except:
-            logger.error('Fetching {} failed.'.format(tape_url))
+            exc_type, exc_value, exc_tb = sys.exc_info()
+            tb_list = traceback.format_exception(exc_type, exc_value, exc_tb)
+            tb_string = '\n'.join(tb_list)
+            logger.error('Fetching {} failed.\n{}'.format(tape_url, tb_string))
             error_event.set()
 
 
