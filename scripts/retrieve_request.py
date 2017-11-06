@@ -241,10 +241,11 @@ def get_et_url(tape_url, data_files, args):
     else:
         base_dir = BASE_OUTPUT_DIR
 
+    batch_id = tape_url.split(':')[1]
     retrieval_dir = os.path.normpath(
         os.path.join(base_dir, '..', '.et_retrievals',
                      'ret_{:04}'.format(args.retrieval_id),
-                     'batch_{:05}'.format(tape_url.split(':')[1])))
+                     'batch_{:05}'.format(batch_id)))
 
     if not os.path.exists(retrieval_dir):
         os.makedirs(retrieval_dir)
