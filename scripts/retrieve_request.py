@@ -52,8 +52,8 @@ LOG_PREFIX = 'et_get'
 # The number of processes that et_get.py should use.
 # Between 5 and 10 are recommended
 MAX_ET_GET_PROC = 10
-# The maximum number of MASS retrievals to run in parallel
-MAX_MOOSE_GET_PROC = 5
+# The maximum number of retrievals to run in parallel
+MAX_TAPE_GET_PROC = 5
 
 class ChecksumError(Exception):
     def __init__(self, message=''):
@@ -81,7 +81,7 @@ def parallel_get_urls(tapes, args):
     jobs = []
     manager = Manager()
     params = manager.Queue()
-    for i in range(MAX_MOOSE_GET_PROC):
+    for i in range(MAX_TAPE_GET_PROC):
         p = Process(target=parallel_worker, args=(params,))
         jobs.append(p)
         p.start()
@@ -89,7 +89,7 @@ def parallel_get_urls(tapes, args):
     tape_urls_list = [(tape_url, tapes[tape_url], args) for tape_url in tapes]
 
     null_arguments = (None, None, None)
-    iters = chain(tape_urls_list,  (null_arguments,) * MAX_MOOSE_GET_PROC)
+    iters = chain(tape_urls_list, (null_arguments,) * MAX_TAPE_GET_PROC)
     for iter in iters:
         params.put(iter)
 
