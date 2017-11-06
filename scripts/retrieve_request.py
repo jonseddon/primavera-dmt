@@ -3,6 +3,12 @@
 retrieve_request.py
 
 This script is run by the admin to perform a retrieval request.
+
+Currently, the MOOSE and ET clients are installed on different servers. It
+is therefore assumed that all of the data in a retrieval is on a single tape
+system, but this is not checked by this script. `split_retrieve_request.py`
+and `auto_retrieve.py` can be used to split requests and run them on the
+appropriate tape systems respectively.
 """
 import argparse
 import datetime
@@ -64,7 +70,8 @@ class ChecksumError(Exception):
 def parallel_get_urls(tapes, args):
     """
     Get several tape URLs in parallel so that MOOSE can group retrievals
-    together to minimise the number of tape loads.
+    together to minimise the number of tape loads and ET retrievals can run
+    on multiple tape drives simultaneously.
 
     :param dict tapes: The keys are the tape URLs to retrieve. The values are
         a list of DataFile objects to retrieve for that URL.
@@ -536,20 +543,10 @@ def main(args):
             else:
                 tapes[tape_url] = list(url_files)
 
-    all_moose = True
-    for tape_url in tapes:
-        if not tape_url.startswith('moose:'):
-            all_moose = False
-
-    if not all_moose:
-        for tape_url in tapes:
-            get_tape_url(tape_url, tapes[tape_url], args)
-    else:
-        # lets get parallel to speed things up
-        parallel_get_urls(tapes, args)
-        # get a fresh DB connection after exiting from parallel operation
-        django.db.connections.close_all()
-
+    # lets get parallel to speed things up
+    parallel_get_urls(tapes, args)
+    # get a fresh DB connection after exiting from parallel operation
+    django.db.connections.close_all()
 
     # set date_complete in the db
     retrieval.date_complete = timezone.now()
