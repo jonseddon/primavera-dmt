@@ -260,7 +260,7 @@ def get_et_url(tape_url, data_files, args):
     else:
         base_dir = BASE_OUTPUT_DIR
 
-    batch_id = tape_url.split(':')[1]
+    batch_id = int(tape_url.split(':')[1])
     retrieval_dir = os.path.normpath(
         os.path.join(base_dir, '..', '.et_retrievals',
                      'ret_{:04}'.format(args.retrieval_id),
