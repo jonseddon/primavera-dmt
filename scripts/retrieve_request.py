@@ -229,14 +229,15 @@ def get_et_url(tape_url, data_files, args):
                      + '\n')
     logger.debug('File list written to {}'.format(filelist_name))
 
-    if not args.alternative:
-        retrieval_dir = os.path.normpath(
-            os.path.join(BASE_OUTPUT_DIR, '..', '.et_retrievals',
-            'ret_{:04}'.format(args.retrieval_id)))
+    if args.alternative:
+        base_dir = args.alternative
     else:
-        retrieval_dir = os.path.normpath(
-            os.path.join(args.alternative, '..', '.et_retrievals',
-            'ret_{:04}'.format(args.retrieval_id)))
+        base_dir = BASE_OUTPUT_DIR
+
+    retrieval_dir = os.path.normpath(
+        os.path.join(base_dir, '..', '.et_retrievals',
+                     'ret_{:04}'.format(args.retrieval_id),
+                     'batch_{:05}'.format(tape_url.split(':')[1])))
 
     if not os.path.exists(retrieval_dir):
         os.makedirs(retrieval_dir)
@@ -490,7 +491,8 @@ def main(args):
     """
     Main entry point
     """
-    logger.debug('Starting retrieve_request.py')
+    logger.debug('Starting retrieve_request.py for retrieval {}'.
+                 format(args.retrieval_id))
 
     # check retrieval
     retrieval = match_one(RetrievalRequest, id=args.retrieval_id)
@@ -556,7 +558,8 @@ def main(args):
     # send an email to advise the user that their data's been restored
     _email_user_success(retrieval)
 
-    logger.debug('Completed retrieve_request.py')
+    logger.debug('Completed retrieve_request.py for retrieval {}'.
+                 format(args.retrieval_id))
 
 
 if __name__ == "__main__":
