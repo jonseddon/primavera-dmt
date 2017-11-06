@@ -22,6 +22,7 @@ import shutil
 import subprocess
 import sys
 import time
+import traceback
 
 import cf_units
 
@@ -30,7 +31,7 @@ django.setup()
 from django.contrib.auth.models import User
 from django.utils import timezone
 
-from pdata_app.models import Settings, RetrievalRequest, DataFile, EmailQueue
+from pdata_app.models import Settings, RetrievalRequest, EmailQueue
 from pdata_app.utils.common import (md5, sha256, adler32, construct_drs_path,
                                     get_temp_filename)
 from pdata_app.utils.dbapi import match_one
@@ -81,8 +82,9 @@ def parallel_get_urls(tapes, args):
     jobs = []
     manager = Manager()
     params = manager.Queue()
+    error_event = manager.Event()
     for i in range(MAX_TAPE_GET_PROC):
-        p = Process(target=parallel_worker, args=(params,))
+        p = Process(target=parallel_worker, args=(params, error_event))
         jobs.append(p)
         p.start()
 
@@ -96,25 +98,42 @@ def parallel_get_urls(tapes, args):
     for j in jobs:
         j.join()
 
+    if error_event.is_set():
+        logger.error('One or more retrievals failed.')
+        sys.exit(1)
 
-def parallel_worker(params):
+
+def parallel_worker(params, error_event):
     """
     The worker function that unpacks the parameters and calls the usual
     serial function.
 
     :param multiprocessing.Manager.Queue params: the queue to get function
         call parameters from
+    :param multiprocessing.Manager.Event error_event: If set then a
+        catastrophic error has occurred in another process and processing
+        should end
     """
     while True:
         # close existing connections so that a fresh connection is made
         django.db.connections.close_all()
+
+        if error_event.is_set():
+            return
 
         tape_url, data_files, args = params.get()
 
         if tape_url is None:
             return
 
-        get_tape_url(tape_url, data_files, args)
+        try:
+            get_tape_url(tape_url, data_files, args)
+        except:
+            exc_type, exc_value, exc_tb = sys.exc_info()
+            tb_list = traceback.format_exception(exc_type, exc_value, exc_tb)
+            tb_string = '\n'.join(tb_list)
+            logger.error('Fetching {} failed.\n{}'.format(tape_url, tb_string))
+            error_event.set()
 
 
 def get_tape_url(tape_url, data_files, args):
@@ -241,7 +260,7 @@ def get_et_url(tape_url, data_files, args):
     else:
         base_dir = BASE_OUTPUT_DIR
 
-    batch_id = tape_url.split(':')[1]
+    batch_id = int(tape_url.split(':')[1])
     retrieval_dir = os.path.normpath(
         os.path.join(base_dir, '..', '.et_retrievals',
                      'ret_{:04}'.format(args.retrieval_id),
