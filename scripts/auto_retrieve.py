@@ -9,6 +9,7 @@ tape or MASS.
 import argparse
 import datetime
 import logging.config
+import os
 import subprocess
 import sys
 from time import sleep
@@ -18,7 +19,7 @@ django.setup()
 
 from django.template.defaultfilters import filesizeformat
 from pdata_app.models import RetrievalRequest
-from pdata_app.utils.common import get_request_size
+from pdata_app.utils.common import get_request_size, PAUSE_FILES
 
 __version__ = '0.1.0b1'
 
@@ -93,13 +94,24 @@ def main(args):
                     order_by('date_created'))
 
         for ret_req in ret_reqs:
+            # check for retrievals that are purely elastic tape or pure MASS
             if args.mass:
+                # however, if pausing the system jump to the wait
+                if os.path.exists(PAUSE_FILES['moose:']):
+                    logger.debug('Waiting due to {}'.
+                                 format(PAUSE_FILES['moose:']))
+                    break
                 if (ret_req.data_request.filter
                         (institute__short_name='MOHC').count() and
                         not ret_req.data_request.exclude
                         (institute__short_name='MOHC').count()):
                     run_retrieve_request(ret_req.id)
             elif args.et:
+                # however, if pausing the system jump to the wait
+                if os.path.exists(PAUSE_FILES['et:']):
+                    logger.debug('Waiting due to {}'.
+                                 format(PAUSE_FILES['et:']))
+                    break
                 if (ret_req.data_request.exclude
                         (institute__short_name='MOHC').count() and
                         not ret_req.data_request.filter

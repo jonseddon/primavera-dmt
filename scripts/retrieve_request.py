@@ -33,7 +33,7 @@ from django.utils import timezone
 
 from pdata_app.models import Settings, RetrievalRequest, EmailQueue
 from pdata_app.utils.common import (md5, sha256, adler32, construct_drs_path,
-                                    get_temp_filename)
+                                    get_temp_filename, PAUSE_FILES)
 from pdata_app.utils.dbapi import match_one
 
 
@@ -122,6 +122,15 @@ def parallel_worker(params, error_event):
             return
 
         tape_url, data_files, args = params.get()
+
+        # don't start any new work if we want to pause the system
+        for pause_file in PAUSE_FILES:
+            if tape_url.startswith(pause_file):
+                if os.path.exists(PAUSE_FILES[pause_file]):
+                    logger.warning('Stopping due to {}'.
+                                   format(PAUSE_FILES[pause_file]))
+                    error_event.set()
+                    return
 
         if tape_url is None:
             return
