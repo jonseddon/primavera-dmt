@@ -546,8 +546,15 @@ def _guess_plev_name(metadata):
     """
     rootgrp = Dataset(os.path.join(metadata['directory'],
                                    metadata['basename']))
+    level_name = None
+
     if 'plev' in rootgrp.dimensions:
-        num_plevs = len(rootgrp.dimensions['plev'])
+        level_name = 'plev'
+    elif 'lev' in rootgrp.dimensions:
+        level_name = 'lev'
+
+    if level_name:
+        num_plevs = len(rootgrp.dimensions[level_name])
         if num_plevs == 7:
             plev_val = 'plev7h'
         elif num_plevs == 27:
