@@ -224,8 +224,11 @@ def get_moose_url(tape_url, data_files, args):
             primary_path = os.path.join(BASE_OUTPUT_DIR, drs_path)
             if not os.path.exists(primary_path):
                 os.makedirs(primary_path)
-            os.symlink(os.path.join(drs_dir, data_file.name),
-                       os.path.join(primary_path, data_file.name))
+
+            primary_file = os.path.join(primary_path, data_file.name)
+            if not os.path.exists(primary_file):
+                os.symlink(os.path.join(drs_dir, data_file.name),
+                           primary_file)
 
         data_file.directory = drs_dir
         data_file.online = True
