@@ -123,6 +123,9 @@ def parallel_worker(params, error_event):
 
         tape_url, data_files, args = params.get()
 
+        if tape_url is None:
+            return
+
         # don't start any new work if we want to pause the system
         for pause_file in PAUSE_FILES:
             if tape_url.startswith(pause_file):
@@ -131,9 +134,6 @@ def parallel_worker(params, error_event):
                                    format(PAUSE_FILES[pause_file]))
                     error_event.set()
                     return
-
-        if tape_url is None:
-            return
 
         try:
             get_tape_url(tape_url, data_files, args)
