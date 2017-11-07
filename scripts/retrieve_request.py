@@ -33,7 +33,7 @@ from django.utils import timezone
 
 from pdata_app.models import Settings, RetrievalRequest, EmailQueue
 from pdata_app.utils.common import (md5, sha256, adler32, construct_drs_path,
-                                    get_temp_filename)
+                                    get_temp_filename, PAUSE_FILES)
 from pdata_app.utils.dbapi import match_one
 
 
@@ -122,6 +122,15 @@ def parallel_worker(params, error_event):
             return
 
         tape_url, data_files, args = params.get()
+
+        # don't start any new work if we want to pause the system
+        for pause_file in PAUSE_FILES:
+            if tape_url.startswith(pause_file):
+                if os.path.exists(PAUSE_FILES[pause_file]):
+                    logger.warning('Stopping due to {}'.
+                                   format(PAUSE_FILES[pause_file]))
+                    error_event.set()
+                    return
 
         if tape_url is None:
             return
@@ -224,8 +233,11 @@ def get_moose_url(tape_url, data_files, args):
             primary_path = os.path.join(BASE_OUTPUT_DIR, drs_path)
             if not os.path.exists(primary_path):
                 os.makedirs(primary_path)
-            os.symlink(os.path.join(drs_dir, data_file.name),
-                       os.path.join(primary_path, data_file.name))
+
+            primary_file = os.path.join(primary_path, data_file.name)
+            if not os.path.exists(primary_file):
+                os.symlink(os.path.join(drs_dir, data_file.name),
+                           primary_file)
 
         data_file.directory = drs_dir
         data_file.online = True
