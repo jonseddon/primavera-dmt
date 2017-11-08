@@ -36,7 +36,7 @@ def parse_args():
     """
     parser = argparse.ArgumentParser(description='Move retrieval to a '
                                                  'different directory.')
-    parser.add_argument('-r', '--retrieval-id', help='the id of the retrieval '
+    parser.add_argument('retrieval-id', help='the id of the retrieval '
         'to move', type=int)
     parser.add_argument('-d', '--directory', help='the new top-level directory '
         ' for the DRS structure (default: %(default)s)',
