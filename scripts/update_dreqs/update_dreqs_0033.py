@@ -63,6 +63,7 @@ def main(args):
         dest_file = os.path.join(NEW_BASE_OUTPUT_DIR, drs_path, data_file.name)
         if not os.path.exists(stream1_file):
             os.symlink(dest_file, stream1_file)
+            links_created += 1
 
     logger.debug('{} links created'.format(links_created))
 
