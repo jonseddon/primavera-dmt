@@ -362,9 +362,11 @@ def create_database_file_object(metadata, data_submission, file_online=True,
             data_request=metadata['data_request'],
             frequency=metadata['frequency'], rip_code=metadata['rip_code'],
             start_time=pdt2num(metadata['start_date'], time_units,
-                               metadata['calendar']),
+                               metadata['calendar']) if metadata['start_date']
+                                            else None,
             end_time=pdt2num(metadata['end_date'], time_units,
-                             metadata['calendar'], start_of_period=False),
+                             metadata['calendar'], start_of_period=False) if
+                             metadata['start_date'] else None,
             time_units=time_units, calendar=metadata['calendar'],
             version=version_string,
             data_submission=data_submission, online=file_online,
