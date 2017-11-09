@@ -258,23 +258,50 @@ def retrieval_years(request):
         data_req_strs = [str(DataRequest.objects.filter(id=req).first())
                          for req in data_req_ids]
 
-        earliest_year_float, time_units, calendar = min(
-            [(DataRequest.objects.get(id=req).datafile_set.aggregate(
+        start_year_objects = [
+            (DataRequest.objects.get(id=req).datafile_set.aggregate(
                 Min('start_time'))['start_time__min'],
               DataRequest.objects.get(id=req).datafile_set.first().time_units,
               DataRequest.objects.get(id=req).datafile_set.first().calendar)
-             for req in data_req_ids], key=lambda x: x[0]
-        )
-        earliest_year = cf_units.num2date(earliest_year_float, time_units,
-                                          calendar).strftime('%Y')
-        latest_year_float, time_units, calendar = max(
-            [(DataRequest.objects.get(id=req).datafile_set.aggregate(
+             for req in data_req_ids
+        ]
+        start_year_objects_no_nones = [
+            (start_time, time_units, calendar)
+            for start_time, time_units, calendar in start_year_objects
+            if start_time is not None
+        ]
+
+        if start_year_objects_no_nones:
+            earliest_year_float, time_units, calendar = min(
+                start_year_objects_no_nones, key=lambda x: x[0]
+            )
+            earliest_year = cf_units.num2date(earliest_year_float, time_units,
+                                              calendar).strftime('%Y')
+        else:
+            earliest_year = None
+
+        end_year_objects = [
+            (DataRequest.objects.get(id=req).datafile_set.aggregate(
                 Max('end_time'))['end_time__max'],
               DataRequest.objects.get(id=req).datafile_set.first().time_units,
               DataRequest.objects.get(id=req).datafile_set.first().calendar)
-             for req in data_req_ids])
-        end_year = cf_units.num2date(latest_year_float, time_units,
-                                          calendar).strftime('%Y')
+             for req in data_req_ids
+        ]
+        end_year_objects_no_nones = [
+            (end_time, time_units, calendar)
+            for end_time, time_units, calendar in end_year_objects
+            if end_time is not None
+        ]
+
+        if end_year_objects_no_nones:
+            latest_year_float, time_units, calendar = max(
+                end_year_objects_no_nones, key=lambda x: x[0]
+            )
+            end_year = cf_units.num2date(latest_year_float, time_units,
+                                              calendar).strftime('%Y')
+        else:
+            end_year = None
+
         # generate the confirmation page
         return render(request, 'pdata_app/retrieval_request_choose_years.html',
                       {'request': request, 'data_reqs':data_req_strs,
