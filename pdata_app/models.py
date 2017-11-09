@@ -249,6 +249,9 @@ class DataFileAggregationBase(models.Model):
                                for std_time, cal in std_times
                                if std_time is not None]
 
+        if not none_values_removed:
+            return None
+
         earliest_time, calendar = min(none_values_removed, key=lambda x: x[0])
 
         earliest_obj = cf_units.num2date(earliest_time, std_units, calendar)
@@ -269,7 +272,14 @@ class DataFileAggregationBase(models.Model):
             for time, unit, cal in end_times
         ]
 
-        latest_time, calendar = max(std_times, key=lambda x: x[0])
+        none_values_removed = [(std_time, cal)
+                               for std_time, cal in std_times
+                               if std_time is not None]
+
+        if not none_values_removed:
+            return None
+
+        latest_time, calendar = max(none_values_removed, key=lambda x: x[0])
 
         latest_obj = cf_units.num2date(latest_time, std_units, calendar)
 
