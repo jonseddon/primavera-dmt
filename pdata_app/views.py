@@ -441,7 +441,7 @@ def confirm_mark_finished(request):
             ret_req = RetrievalRequest.objects.get(id=req)
             summary['data_reqs'] = [str(data_req) for data_req in
                                     ret_req.data_request.all()]
-            summary['size'] = get_request_size(ret_req)
+            summary['size'] = get_request_size(ret_req, online=True)
             ret_req_summaries.append(summary)
 
         # generate the confirmation page

@@ -381,7 +381,7 @@ class RetrievalRequestTable(tables.Table):
         return reqs_str
 
     def render_req_size(self, record):
-        return filesizeformat(get_request_size(record))
+        return filesizeformat(get_request_size(record, offline=True))
 
     def render_tape_urls(self, record):
         tape_urls = list(record.data_request.all().values_list(
