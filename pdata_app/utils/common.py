@@ -328,13 +328,29 @@ def get_request_size(retrieval_request):
         time_units = all_files[0].time_units
         calendar = all_files[0].calendar
 
-        start_date = datetime.datetime(retrieval_request.start_year, 1, 1)
-        start_float = cf_units.date2num(start_date, time_units, calendar)
-        end_date = datetime.datetime(retrieval_request.end_year + 1, 1, 1)
-        end_float = cf_units.date2num(end_date, time_units, calendar)
+        if retrieval_request.start_year and time_units and calendar:
+            start_date = datetime.datetime(retrieval_request.start_year, 1, 1)
+            start_float = cf_units.date2num(start_date, time_units, calendar)
+        else:
+            start_float = None
+        if retrieval_request.end_year and time_units and calendar:
+            end_date = datetime.datetime(retrieval_request.end_year + 1, 1, 1)
+            end_float = cf_units.date2num(end_date, time_units, calendar)
+        else:
+            end_float = None
 
-        data_files = all_files.filter(start_time__gte=start_float,
-                                      end_time__lt=end_float)
-        request_sizes.append(data_files.aggregate(Sum('size'))['size__sum'])
+        timeless_files = all_files.filter(start_time__isnull=True)
+        timeless_size = timeless_files.aggregate(Sum('size'))['size__sum']
+        if timeless_size is None:
+            timeless_size = 0
+
+        if start_float is not None and end_float is not None:
+            timed_files = all_files.filter(start_time__gte=start_float,
+                                          end_time__lt=end_float)
+            timed_size = timed_files.aggregate(Sum('size'))['size__sum']
+            if timed_size is None:
+                timed_size = 0
+
+        request_sizes.append(timeless_size + timed_size)
 
     return sum(request_sizes)
