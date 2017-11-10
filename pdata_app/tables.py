@@ -347,6 +347,8 @@ class RetrievalRequestTable(tables.Table):
                               verbose_name='Data Requests')
     req_size = tables.Column(empty_values=(), orderable=False,
                               verbose_name='Request Size')
+    retrieval_size = tables.Column(empty_values=(), orderable=False,
+                                   verbose_name='Retrieval Size')
     tape_urls = tables.Column(empty_values=(), orderable=False,
                               verbose_name='Tape URLs')
     mark_data_finished = tables.TemplateColumn('''
@@ -381,6 +383,9 @@ class RetrievalRequestTable(tables.Table):
         return reqs_str
 
     def render_req_size(self, record):
+        return filesizeformat(get_request_size(record))
+
+    def render_retrieval_size(self, record):
         return filesizeformat(get_request_size(record, offline=True))
 
     def render_tape_urls(self, record):
