@@ -345,8 +345,9 @@ def get_request_size(retrieval_request):
             timeless_size = 0
 
         if start_float is not None and end_float is not None:
-            timed_files = all_files.filter(start_time__gte=start_float,
-                                          end_time__lt=end_float)
+            timed_files = (all_files.exclude(start_time__isnull=True).
+                           filter(start_time__gte=start_float,
+                                  end_time__lt=end_float))
             timed_size = timed_files.aggregate(Sum('size'))['size__sum']
             if timed_size is None:
                 timed_size = 0
