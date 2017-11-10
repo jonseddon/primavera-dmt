@@ -6,9 +6,13 @@ This script is run by the admin to delete previously retrieved data from the
 file structure.
 """
 import argparse
+import datetime
+from itertools import chain
 import logging.config
 import os
 import sys
+
+import cf_units
 
 import django
 django.setup()
@@ -99,8 +103,30 @@ def main(args):
 
     # delete each file
     for data_req in retrieval.data_request.all():
-        for data_file in data_req.datafile_set.filter(online=True,
-                                                      directory__isnull=False):
+        all_files = data_req.datafile_set.filter(online=True,
+                                                 directory__isnull=False)
+        time_units = all_files[0].time_units
+        calendar = all_files[0].calendar
+        start_float = None
+        if retrieval.start_year is not None and time_units and calendar:
+            start_float = cf_units.date2num(
+                datetime.datetime(retrieval.start_year, 1, 1), time_units,
+                calendar
+            )
+        end_float = None
+        if retrieval.end_year is not None and time_units and calendar:
+            end_float = cf_units.date2num(
+                datetime.datetime(retrieval.end_year + 1, 1, 1), time_units,
+                calendar
+            )
+
+        timeless_files = all_files.filter(start_time__isnull=True)
+
+        timed_files = (all_files.exclude(start_time__isnull=True).
+                       filter(start_time__gte=start_float,
+                             end_time__lt=end_float))
+
+        for data_file in chain(timeless_files, timed_files):
             try:
                 os.remove(os.path.join(data_file.directory, data_file.name))
             except OSError as exc:
@@ -118,7 +144,7 @@ def main(args):
         if not os.listdir(directory):
             delete_dir(directory)
 
-    # set date_complete in the db
+    # set date_deleted in the db
     if not problems_encountered:
         retrieval.date_deleted = timezone.now()
         retrieval.save()

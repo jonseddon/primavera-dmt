@@ -332,7 +332,8 @@ def confirm_retrieval(request):
         # get the size of each data request
         request_sizes = []
         for req in data_req_ids:
-            all_files = DataRequest.objects.get(id=req).datafile_set.all()
+            all_files = (DataRequest.objects.get(id=req).datafile_set.
+                         filter(online=False))
             time_units = all_files[0].time_units
             calendar = all_files[0].calendar
             start_float = cf_units.date2num(
@@ -350,7 +351,7 @@ def confirm_retrieval(request):
             if start_float is not None and end_float is not None:
                 timed_files = (all_files.exclude(start_time__isnull=True).
                               filter(start_time__gte=start_float,
-                                              end_time__lt=end_float))
+                                     end_time__lt=end_float))
                 timed_size = timed_files.aggregate(Sum('size'))['size__sum']
                 if timed_size is None:
                     timed_size = 0
