@@ -58,7 +58,7 @@ def main(args):
         for dr in rr.data_request.all():
             logger.debug('Starting data request {}'.format(dr))
             num_files_moved = 0
-            for df in dr.datafile_set.all():
+            for df in dr.datafile_set.filter(online=True):
                 if df.directory.startswith(INCOMING_DIR):
                     drs_path = construct_drs_path(df)
                     dest_dir = os.path.join(NEW_BASE_OUTPUT_DIR, drs_path)
