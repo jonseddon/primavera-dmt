@@ -328,12 +328,12 @@ def get_request_size(retrieval_request):
         time_units = all_files[0].time_units
         calendar = all_files[0].calendar
 
-        if retrieval_request.start_year and time_units and calendar:
+        if retrieval_request.start_year is not None and time_units and calendar:
             start_date = datetime.datetime(retrieval_request.start_year, 1, 1)
             start_float = cf_units.date2num(start_date, time_units, calendar)
         else:
             start_float = None
-        if retrieval_request.end_year and time_units and calendar:
+        if retrieval_request.end_year is not None and time_units and calendar:
             end_date = datetime.datetime(retrieval_request.end_year + 1, 1, 1)
             end_float = cf_units.date2num(end_date, time_units, calendar)
         else:

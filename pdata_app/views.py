@@ -336,10 +336,10 @@ def confirm_retrieval(request):
             calendar = all_files[0].calendar
             start_float = cf_units.date2num(
                 datetime.datetime(int(start_year), 1, 1), time_units, calendar
-            ) if start_year and time_units and calendar else None
+            ) if start_year is not None and time_units and calendar else None
             end_float = cf_units.date2num(
                 datetime.datetime(int(end_year) + 1, 1, 1), time_units, calendar
-            ) if end_year and time_units and calendar else None
+            ) if end_year is not None and time_units and calendar else None
 
             timeless_files = all_files.filter(start_time__isnull=True)
             timeless_size = timeless_files.aggregate(Sum('size'))['size__sum']
@@ -380,15 +380,17 @@ def confirm_retrieval(request):
 def create_retrieval(request):
     if request.method == 'POST':
         # create the request
-        if request.POST['start_year']:
+        if (request.POST['start_year'] is not None and
+                request.POST['start_year'] != ''):
             start_year = int(request.POST['start_year'])
         else:
-            start_year = 0
+            start_year = None
 
-        if request.POST['end_year']:
+        if (request.POST['end_year'] is not None and
+                request.POST['end_year'] != ''):
             end_year = int(request.POST['end_year'])
         else:
-            end_year = 9999
+            end_year = None
 
         retrieval = RetrievalRequest.objects.create(requester=request.user,
                                                     start_year=start_year,
