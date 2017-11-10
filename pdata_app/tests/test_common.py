@@ -4,12 +4,17 @@ test_common.py - unit tests for pdata_app.utils.common.py
 from iris.time import PartialDateTime
 from numpy.testing import assert_almost_equal
 
+from django.contrib.auth.models import User
 from django.test import TestCase
 
+from pdata_app import models
 from pdata_app.utils.common import (make_partial_date_time,
                                     standardise_time_unit,
                                     calc_last_day_in_month, pdt2num,
-                                    check_same_gws)
+                                    check_same_gws, get_request_size)
+from pdata_app.utils import dbapi
+from vocabs.vocabs import STATUS_VALUES, FREQUENCY_VALUES, VARIABLE_TYPES
+
 
 class TestMakePartialDateTime(TestCase):
     def test_yyyymm(self):
@@ -166,3 +171,159 @@ class TestCheckSameGws(TestCase):
         self.assertRaisesRegexp(RuntimeError, 'Cannot determine group '
             'workspace name from /group_workspaces/jasmin1/primavera1/some/dir',
                                 check_same_gws, path1, path2)
+
+
+class TestGetRequestSize(TestCase):
+    def setUp(self):
+        project = dbapi.get_or_create(models.Project, short_name='t',
+                                      full_name='test')
+        clim_mod = dbapi.get_or_create(models.ClimateModel, short_name='t',
+                                       full_name='test')
+        institute = dbapi.get_or_create(models.Institute, short_name='MOHC',
+                                        full_name='Met Office Hadley Centre')
+        expt = dbapi.get_or_create(models.Experiment, short_name='t',
+                                   full_name='test')
+        vble1 = dbapi.get_or_create(models.VariableRequest,
+                                   table_name='Amon',
+                                   long_name='very descriptive', units='1',
+                                   var_name='var1',
+                                   standard_name='var_name',
+                                   cell_methods='time:mean',
+                                   positive='optimistic',
+                                   variable_type=VARIABLE_TYPES['real'],
+                                   dimensions='massive', cmor_name='var1',
+                                   modeling_realm='atmos',
+                                   frequency=FREQUENCY_VALUES['ann'],
+                                   cell_measures='', uid='123abc')
+        vble2 = dbapi.get_or_create(models.VariableRequest,
+                                   table_name='Amon',
+                                   long_name='very descriptive', units='1',
+                                   var_name='var2',
+                                   standard_name='var_name',
+                                   cell_methods='time:mean',
+                                   positive='optimistic',
+                                   variable_type=VARIABLE_TYPES['real'],
+                                   dimensions='massive', cmor_name='var1',
+                                   modeling_realm='atmos',
+                                   frequency=FREQUENCY_VALUES['ann'],
+                                   cell_measures='', uid='123abc')
+        self.dreq1 = dbapi.get_or_create(models.DataRequest, project=project,
+                                   institute=institute,
+                                   climate_model=clim_mod, experiment=expt,
+                                   variable_request=vble1,
+                                   rip_code='r1i1p1f1',
+                                   request_start_time=0.0,
+                                   request_end_time=23400.0,
+                                   time_units='days since 1950-01-01',
+                                   calendar='360_day')
+        self.dreq2 = dbapi.get_or_create(models.DataRequest, project=project,
+                                   institute=institute,
+                                   climate_model=clim_mod, experiment=expt,
+                                   variable_request=vble2,
+                                   rip_code='r1i1p1f1',
+                                   request_start_time=0.0,
+                                   request_end_time=23400.0,
+                                   time_units='days since 1950-01-01',
+                                   calendar='360_day')
+        self.user = dbapi.get_or_create(User, username='fred')
+        act_id = dbapi.get_or_create(models.ActivityId,
+                                     short_name='HighResMIP',
+                                     full_name='High Resolution Model Intercomparison Project')
+        dsub = dbapi.get_or_create(models.DataSubmission,
+                                   status=STATUS_VALUES['EXPECTED'],
+                                   incoming_directory='/some/dir',
+                                   directory='/some/dir', user=self.user)
+        data_file1 = dbapi.get_or_create(models.DataFile, name='test1',
+                                        incoming_directory='/some/dir',
+                                        directory='/some/dir', size=1,
+                                        project=project,
+                                        climate_model=clim_mod,
+                                        institute=institute,
+                                        experiment=expt,
+                                        variable_request=vble1,
+                                        data_request=self.dreq1,
+                                        activity_id=act_id, frequency='t',
+                                        rip_code='r1i1p1',
+                                        data_submission=dsub, online=True,
+                                        start_time=0, end_time=18000,
+                                        calendar='360_day',
+                                        time_units='days since 1950-01-01')
+        data_file2 = dbapi.get_or_create(models.DataFile, name='test2',
+                                        incoming_directory='/some/dir',
+                                        directory='/some/dir', size=2,
+                                        project=project,
+                                        climate_model=clim_mod,
+                                        institute=institute,
+                                        experiment=expt,
+                                        variable_request=vble2,
+                                        data_request=self.dreq2,
+                                        activity_id=act_id, frequency='t',
+                                        rip_code='r1i1p1',
+                                        data_submission=dsub, online=False)
+
+    def test_all_files(self):
+        rreq = dbapi.get_or_create(models.RetrievalRequest,
+                                   requester=self.user,
+                                   start_year=1950, end_year=2000)
+        rreq.data_request.add(self.dreq1)
+        rreq.save()
+        rreq.data_request.add(self.dreq2)
+        rreq.save()
+
+        self.assertEqual(3, get_request_size(rreq))
+
+    def test_dates(self):
+        rreq = dbapi.get_or_create(models.RetrievalRequest,
+                                    requester=self.user,
+                                    start_year=2001, end_year=2014)
+        rreq.data_request.add(self.dreq1)
+        rreq.save()
+        rreq.data_request.add(self.dreq2)
+        rreq.save()
+
+        self.assertEqual(2, get_request_size(rreq))
+
+    def test_online(self):
+        rreq = dbapi.get_or_create(models.RetrievalRequest,
+                                    requester=self.user,
+                                    start_year=1950, end_year=2014)
+        rreq.data_request.add(self.dreq1)
+        rreq.save()
+        rreq.data_request.add(self.dreq2)
+        rreq.save()
+
+        self.assertEqual(1, get_request_size(rreq, online=True))
+
+    def test_offline(self):
+        rreq = dbapi.get_or_create(models.RetrievalRequest,
+                                    requester=self.user,
+                                    start_year=1950, end_year=2014)
+        rreq.data_request.add(self.dreq1)
+        rreq.save()
+        rreq.data_request.add(self.dreq2)
+        rreq.save()
+
+        self.assertEqual(2, get_request_size(rreq, offline=True))
+
+    def test_both_options(self):
+        rreq = dbapi.get_or_create(models.RetrievalRequest,
+                                    requester=self.user,
+                                    start_year=1950, end_year=2014)
+        rreq.data_request.add(self.dreq1)
+        rreq.save()
+        rreq.data_request.add(self.dreq2)
+        rreq.save()
+
+        self.assertRaises(ValueError, get_request_size, rreq,
+                          online= True, offline=True)
+
+    def test_no_files(self):
+        rreq = dbapi.get_or_create(models.RetrievalRequest,
+                                    requester=self.user,
+                                    start_year=2001, end_year=2014)
+        rreq.data_request.add(self.dreq1)
+        rreq.save()
+        rreq.data_request.add(self.dreq2)
+        rreq.save()
+
+        self.assertEqual(0, get_request_size(rreq, online=True))

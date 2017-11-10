@@ -313,20 +313,37 @@ def construct_drs_path(data_file):
     )
 
 
-def get_request_size(retrieval_request):
+def get_request_size(retrieval_request, online=False, offline=False):
     """
     Find the size in bytes of a retrieval request.
 
     :param pdata_app.models.RetrievalRequest retrieval_request: The retrieval
         request
+    :param bool online: show the size of only files that are currently online
+    :param bool offline: show the size of only files that are currently offline
     :rtype: int
     :return: The size in bytes of the retrieval request.
+    :raises ValueError: if both online and offline are set
     """
+    if online and offline:
+        msg = 'online and offline arguments cannot both be True'
+        raise ValueError(msg)
+
     request_sizes = []
     for req in retrieval_request.data_request.all():
-        all_files = req.datafile_set.all()
-        time_units = all_files[0].time_units
-        calendar = all_files[0].calendar
+        if online:
+            all_files = req.datafile_set.filter(online=True)
+        elif offline:
+            all_files = req.datafile_set.filter(online=False)
+        else:
+            all_files = req.datafile_set.all()
+
+        if all_files:
+            time_units = all_files[0].time_units
+            calendar = all_files[0].calendar
+        else:
+            time_units = None
+            calendar = None
 
         if retrieval_request.start_year is not None and time_units and calendar:
             start_date = datetime.datetime(retrieval_request.start_year, 1, 1)
