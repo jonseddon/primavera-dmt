@@ -336,14 +336,27 @@ def confirm_retrieval(request):
             calendar = all_files[0].calendar
             start_float = cf_units.date2num(
                 datetime.datetime(int(start_year), 1, 1), time_units, calendar
-            )
+            ) if start_year and time_units and calendar else None
             end_float = cf_units.date2num(
                 datetime.datetime(int(end_year) + 1, 1, 1), time_units, calendar
-            )
-            data_files = all_files.filter(start_time__gte=start_float,
-                                          end_time__lt=end_float)
+            ) if end_year and time_units and calendar else None
 
-            request_sizes.append(data_files.aggregate(Sum('size'))['size__sum'])
+            timeless_files = all_files.filter(start_time__isnull=True)
+            timeless_size = timeless_files.aggregate(Sum('size'))['size__sum']
+            if timeless_size is None:
+                timeless_size = 0
+
+            if start_float is not None and end_float is not None:
+                timed_files = (all_files.exclude(start_time__isnull=True).
+                              filter(start_time__gte=start_float,
+                                              end_time__lt=end_float))
+                timed_size = timed_files.aggregate(Sum('size'))['size__sum']
+                if timed_size is None:
+                    timed_size = 0
+            else:
+                timed_size = 0
+
+            request_sizes.append(timeless_size + timed_size)
 
         # get the total retrieval size
         request_size = sum(request_sizes)
