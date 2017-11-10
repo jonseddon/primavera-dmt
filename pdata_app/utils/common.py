@@ -350,6 +350,8 @@ def get_request_size(retrieval_request):
             timed_size = timed_files.aggregate(Sum('size'))['size__sum']
             if timed_size is None:
                 timed_size = 0
+        else:
+            timed_size = 0
 
         request_sizes.append(timeless_size + timed_size)
 

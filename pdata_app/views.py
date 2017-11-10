@@ -380,11 +380,19 @@ def confirm_retrieval(request):
 def create_retrieval(request):
     if request.method == 'POST':
         # create the request
-        retrieval = RetrievalRequest.objects.create(
-            requester=request.user,
-            start_year=int(request.POST['start_year']),
-            end_year=int(request.POST['end_year'])
-        )
+        if request.POST['start_year']:
+            start_year = int(request.POST['start_year'])
+        else:
+            start_year = 0
+
+        if request.POST['end_year']:
+            end_year = int(request.POST['end_year'])
+        else:
+            end_year = 9999
+
+        retrieval = RetrievalRequest.objects.create(requester=request.user,
+                                                    start_year=start_year,
+                                                    end_year=end_year)
         retrieval.save()
         # add the data requests asked for
         data_req_ids = [int(req_id) for req_id in
