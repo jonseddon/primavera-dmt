@@ -313,28 +313,64 @@ def construct_drs_path(data_file):
     )
 
 
-def get_request_size(retrieval_request):
+def get_request_size(retrieval_request, online=False, offline=False):
     """
     Find the size in bytes of a retrieval request.
 
     :param pdata_app.models.RetrievalRequest retrieval_request: The retrieval
         request
+    :param bool online: show the size of only files that are currently online
+    :param bool offline: show the size of only files that are currently offline
     :rtype: int
     :return: The size in bytes of the retrieval request.
+    :raises ValueError: if both online and offline are set
     """
+    if online and offline:
+        msg = 'online and offline arguments cannot both be True'
+        raise ValueError(msg)
+
     request_sizes = []
     for req in retrieval_request.data_request.all():
-        all_files = req.datafile_set.all()
-        time_units = all_files[0].time_units
-        calendar = all_files[0].calendar
+        if online:
+            all_files = req.datafile_set.filter(online=True)
+        elif offline:
+            all_files = req.datafile_set.filter(online=False)
+        else:
+            all_files = req.datafile_set.all()
 
-        start_date = datetime.datetime(retrieval_request.start_year, 1, 1)
-        start_float = cf_units.date2num(start_date, time_units, calendar)
-        end_date = datetime.datetime(retrieval_request.end_year + 1, 1, 1)
-        end_float = cf_units.date2num(end_date, time_units, calendar)
+        if all_files:
+            time_units = all_files[0].time_units
+            calendar = all_files[0].calendar
+        else:
+            time_units = None
+            calendar = None
 
-        data_files = all_files.filter(start_time__gte=start_float,
-                                      end_time__lt=end_float)
-        request_sizes.append(data_files.aggregate(Sum('size'))['size__sum'])
+        if retrieval_request.start_year is not None and time_units and calendar:
+            start_date = datetime.datetime(retrieval_request.start_year, 1, 1)
+            start_float = cf_units.date2num(start_date, time_units, calendar)
+        else:
+            start_float = None
+        if retrieval_request.end_year is not None and time_units and calendar:
+            end_date = datetime.datetime(retrieval_request.end_year + 1, 1, 1)
+            end_float = cf_units.date2num(end_date, time_units, calendar)
+        else:
+            end_float = None
+
+        timeless_files = all_files.filter(start_time__isnull=True)
+        timeless_size = timeless_files.aggregate(Sum('size'))['size__sum']
+        if timeless_size is None:
+            timeless_size = 0
+
+        if start_float is not None and end_float is not None:
+            timed_files = (all_files.exclude(start_time__isnull=True).
+                           filter(start_time__gte=start_float,
+                                  end_time__lt=end_float))
+            timed_size = timed_files.aggregate(Sum('size'))['size__sum']
+            if timed_size is None:
+                timed_size = 0
+        else:
+            timed_size = 0
+
+        request_sizes.append(timeless_size + timed_size)
 
     return sum(request_sizes)

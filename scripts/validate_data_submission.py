@@ -9,7 +9,6 @@ import argparse
 import datetime
 import itertools
 import json
-import logging
 import logging.config
 from multiprocessing import Process, Manager
 from netCDF4 import Dataset
@@ -21,7 +20,9 @@ import sys
 import iris
 
 from primavera_val import (identify_filename_metadata, validate_file_contents,
-                           identify_contents_metadata, load_cube,
+                           identify_contents_metadata,
+                           validate_cell_measures_contents,
+                           identify_cell_measures_metadata, load_cube,
                            FileValidationError)
 
 import django
@@ -133,12 +134,17 @@ def identify_and_validate_file(params, output, error_event):
             else:
                 metadata['project'] = project
 
-            cube = load_cube(filename)
-            metadata.update(identify_contents_metadata(cube, filename))
+            cell_measures = ['areacella', 'areacello', 'volcello']
+            if metadata['cmor_name'] in cell_measures:
+                cf = iris.fileformats.cf.CFReader(filename)
+                metadata.update(identify_cell_measures_metadata(cf, filename))
+                validate_cell_measures_contents(cf, metadata)
+            else:
+                cube = load_cube(filename)
+                metadata.update(identify_contents_metadata(cube, filename))
+                validate_file_contents(cube, metadata)
 
             verify_fk_relationships(metadata)
-
-            validate_file_contents(cube, metadata)
 
             calculate_checksum(metadata)
         except SubmissionError:
@@ -356,9 +362,11 @@ def create_database_file_object(metadata, data_submission, file_online=True,
             data_request=metadata['data_request'],
             frequency=metadata['frequency'], rip_code=metadata['rip_code'],
             start_time=pdt2num(metadata['start_date'], time_units,
-                               metadata['calendar']),
+                               metadata['calendar']) if metadata['start_date']
+                                            else None,
             end_time=pdt2num(metadata['end_date'], time_units,
-                             metadata['calendar'], start_of_period=False),
+                             metadata['calendar'], start_of_period=False) if
+                             metadata['start_date'] else None,
             time_units=time_units, calendar=metadata['calendar'],
             version=version_string,
             data_submission=data_submission, online=file_online,

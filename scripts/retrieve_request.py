@@ -551,17 +551,24 @@ def main(args):
         all_files = data_req.datafile_set.all()
         time_units = all_files[0].time_units
         calendar = all_files[0].calendar
-        start_float = cf_units.date2num(
-            datetime.datetime(retrieval.start_year, 1, 1), time_units,
-            calendar
-        )
-        end_float = cf_units.date2num(
-            datetime.datetime(retrieval.end_year + 1, 1, 1), time_units,
-            calendar
-        )
-        data_files = all_files.filter(start_time__gte=start_float,
-                                      end_time__lt=end_float,
-                                      online=False)
+        start_float = None
+        if retrieval.start_year is not None and time_units and calendar:
+            start_float = cf_units.date2num(
+                datetime.datetime(retrieval.start_year, 1, 1), time_units,
+                calendar
+            )
+        end_float = None
+        if retrieval.end_year is not None and time_units and calendar:
+            end_float = cf_units.date2num(
+                datetime.datetime(retrieval.end_year + 1, 1, 1), time_units,
+                calendar
+            )
+
+        timeless_files = all_files.filter(start_time__isnull=True)
+
+        data_files = (all_files.exclude(start_time__isnull=True).
+                      filter(start_time__gte=start_float,
+                             end_time__lt=end_float, online=False))
 
         tape_urls = [qs['tape_url'] for qs in data_files.values('tape_url')]
 
@@ -569,11 +576,13 @@ def main(args):
         tape_urls.sort()
 
         for tape_url in tape_urls:
-            url_files = data_files.filter(tape_url=tape_url)
+            url_data_files = data_files.filter(tape_url=tape_url)
+            url_timeless_files = timeless_files.filter(tape_url=tape_url)
+            all_url_files = list(chain(url_data_files, url_timeless_files))
             if tape_url in tapes:
-                tapes[tape_url] = list(chain(tapes[tape_url], url_files))
+                tapes[tape_url] = list(chain(tapes[tape_url], all_url_files))
             else:
-                tapes[tape_url] = list(url_files)
+                tapes[tape_url] = all_url_files
 
     # lets get parallel to speed things up
     parallel_get_urls(tapes, args)
