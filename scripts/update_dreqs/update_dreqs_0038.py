@@ -25,14 +25,13 @@ DEFAULT_LOG_FORMAT = '%(levelname)s: %(message)s'
 logger = logging.getLogger(__name__)
 
 
-
 def parse_args():
     """
     Parse command-line arguments
     """
     parser = argparse.ArgumentParser(description='Calculate volumes')
-    parser.add_argument('-l', '--log-level', help='set logging level to one of '
-        'debug, info, warn (the default), or error')
+    parser.add_argument('-l', '--log-level', help='set logging level to one '
+        'of debug, info, warn (the default), or error')
     parser.add_argument('--version', action='version',
         version='%(prog)s {}'.format(__version__))
     args = parser.parse_args()
@@ -120,7 +119,6 @@ def main(args):
     if not total_size == model_size_check:
         logger.error('total size {} model sizes {}'.format(total_size,
                                                            model_size_check))
-    encoding = 'utf-8'
     with open('var_sizes.txt', 'w') as fh:
         fh.write('Report generated at {}\n\n'.format(
             datetime.datetime.utcnow().strftime('%Y-%m-%d %H:%M:00')))
@@ -155,7 +153,6 @@ def _filesizeformat(file_str):
     return '{} {}'.format(cmpts.group(1), cmpts.group(2))
 
 
-
 if __name__ == "__main__":
     cmd_args = parse_args()
 
@@ -165,7 +162,8 @@ if __name__ == "__main__":
             log_level = getattr(logging, cmd_args.log_level.upper())
         except AttributeError:
             logger.setLevel(logging.WARNING)
-            logger.error('log-level must be one of: debug, info, warn or error')
+            logger.error('log-level must be one of: debug, info, warn or '
+                         'error')
             sys.exit(1)
     else:
         log_level = DEFAULT_LOG_LEVEL
