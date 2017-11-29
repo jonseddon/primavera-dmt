@@ -283,7 +283,7 @@ def get_et_url(tape_url, data_files, args):
 
     logger.debug('Restoring to {}'.format(retrieval_dir))
 
-    cmd = 'et_get.py -v -l {} -f {} -r {} -t {}'.format(
+    cmd = 'et_get.py -v -l {} -f {} -r {} -t {} 2>&1 | tee -a /group_workspaces/jasmin2/primavera5/.et_logs/stdall.log'.format(
         _make_logfile_name(LOG_FILE_DIR), filelist_name, retrieval_dir,
         MAX_ET_GET_PROC)
 
