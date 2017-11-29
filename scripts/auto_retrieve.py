@@ -47,7 +47,7 @@ def run_retrieve_request(retrieval_id):
         return
 
     cmd = ('/home/users/jseddon/primavera/LIVE-prima-dm/scripts/'
-           'retrieve_request.py -l debug {}'.format(retrieval_id))
+           'retrieve_request.py -l debug -a /group_workspaces/jasmin2/primavera2/stream1 {}'.format(retrieval_id))
     try:
         subprocess.check_output(cmd, shell=True)
     except OSError as exc:
