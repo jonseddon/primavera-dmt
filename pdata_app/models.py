@@ -590,6 +590,98 @@ class DataFile(models.Model):
         verbose_name = "Data File"
 
 
+class ReplacedFile(models.Model):
+    """
+    An old DataFile that has been replaced by another DataFile
+    """
+    name = models.CharField(max_length=200, verbose_name="File name",
+                            null=False, blank=False)
+    incoming_directory = models.CharField(max_length=500,
+                                          verbose_name="Incoming directory",
+                                          null=False, blank=False)
+
+    # This is where the datafile is now
+    directory = models.CharField(max_length=500,
+                                 verbose_name="Current directory",
+                                 null=True, blank=True)
+    size = models.BigIntegerField(null=False, verbose_name="File size")
+
+    # This is the file's version
+    version = models.CharField(max_length=10, verbose_name='File Version',
+                               null=True, blank=True)
+
+    # Scientific metadata
+    project = models.ForeignKey(Project, null=False, on_delete=PROTECT)
+    institute = models.ForeignKey(Institute, null=False, on_delete=PROTECT,
+                                  verbose_name='Institute')
+    climate_model = models.ForeignKey(ClimateModel, null=False,
+                                      on_delete=PROTECT,
+                                      verbose_name='Climate Model')
+    activity_id = models.ForeignKey(ActivityId, null=False,
+                                    on_delete=PROTECT,
+                                    verbose_name='Activity ID')
+    experiment = models.ForeignKey(Experiment, null=False, on_delete=PROTECT,
+                                   verbose_name='Experiment')
+    variable_request = models.ForeignKey(VariableRequest, null=False,
+                                         on_delete=PROTECT)
+    data_request = models.ForeignKey(DataRequest, null=False,
+                                     on_delete=PROTECT)
+    frequency = models.CharField(max_length=20,
+                                 choices=FREQUENCY_VALUES.items(),
+        verbose_name="Time frequency", null=False, blank=False)
+    rip_code = models.CharField(max_length=20, verbose_name="Variant Label",
+                                null=False, blank=False)
+    grid = models.CharField(max_length=20, verbose_name='Grid Label',
+                            null=True, blank=True)
+
+    # DateTimes are allowed to be null/blank because some fields (such as
+    # orography) are time-independent
+    start_time = models.FloatField(verbose_name="Start time",
+                                   null=True, blank=True)
+    end_time = models.FloatField(verbose_name="End time",
+                                 null=True, blank=True)
+    time_units = models.CharField(verbose_name='Time units', max_length=50,
+                                  null=True, blank=True)
+    calendar = models.CharField(verbose_name='Calendar', max_length=20,
+                                null=True, blank=True,
+                                choices=CALENDARS.items())
+
+    data_submission = models.ForeignKey(DataSubmission,
+                                        null=False, blank=False,
+                                        on_delete=CASCADE)
+
+    # Tape status
+    online = models.BooleanField(default=True, verbose_name="Is the file "
+                                                            "online?",
+                                 null=False, blank=False)
+    tape_url = models.CharField(verbose_name="Tape URL", max_length=200,
+                                null=True, blank=True)
+
+    # Checksum
+    checksum_value = models.CharField(max_length=200, null=True, blank=True)
+    checksum_type = models.CharField(max_length=20,
+                                     choices=CHECKSUM_TYPES.items(),
+                                     null=True, blank=True)
+
+    def start_date_string(self):
+        """Return a string containing the start date"""
+        dto = cf_units.num2date(self.start_time, self.time_units,
+                                self.calendar)
+        return dto.strftime('%Y-%m-%d')
+
+    def end_date_string(self):
+        """Return a string containing the end date"""
+        dto = cf_units.num2date(self.end_time, self.time_units, self.calendar)
+        return dto.strftime('%Y-%m-%d')
+
+    def __unicode__(self):
+        return "%s (Directory: %s)" % (self.name, self.directory)
+
+    class Meta:
+        unique_together = ('name', 'directory')
+        verbose_name = "Replaced File"
+
+
 class DataIssue(models.Model):
     """
     A recorded issue with a DataFile
