@@ -10,7 +10,8 @@ from django.urls import reverse
 import django_tables2 as tables
 
 from .models import (DataRequest, DataSubmission, DataFile, ESGFDataset,
-                     CEDADataset, DataIssue, VariableRequest, RetrievalRequest)
+                     CEDADataset, DataIssue, VariableRequest, RetrievalRequest,
+                     ReplacedFile)
 
 from pdata_app.utils.common import get_request_size
 from vocabs.vocabs import ONLINE_STATUS
@@ -396,6 +397,40 @@ class RetrievalRequestTable(tables.Table):
 
         return format_html('<div class="truncate-ellipsis"><span>{}'
                            '</span></div>'.format(tape_urls_str))
+
+
+class ReplacedFileTable(tables.Table):
+    class Meta:
+        model = ReplacedFile
+        attrs = {'class': 'paleblue'}
+        exclude = ('id', 'project', 'start_time', 'end_time',
+                   'variable_request', 'data_request', 'data_submission',
+                   'frequency', 'time_units', 'calendar',
+                   'checksum_value', 'checksum_type')
+        sequence = ['name', 'version', 'tape_url', 'institute',
+                    'climate_model', 'experiment', 'mip_table', 'rip_code',
+                    'cmor_name', 'grid', 'size', 'checksum']
+
+    cmor_name = tables.Column(empty_values=(), verbose_name='CMOR Name',
+                              accessor='variable_request.cmor_name')
+    mip_table = tables.Column(empty_values=(), verbose_name='MIP Table',
+                              accessor='variable_request.table_name')
+    checksum = tables.Column(empty_values=(), verbose_name='Checksum',
+                             orderable=False)
+
+    def render_checksum(self, record):
+        if record.checksum_value and record.checksum_type:
+            return '{}: {}'.format(record.checksum_type,
+                                   record.checksum_value)
+        else:
+            return DEFAULT_VALUE
+
+    def render_size(self, value):
+        return filesizeformat(value)
+
+    def render_tape_url(self, record):
+        return format_html('<div class="truncate-ellipsis"><span>{}'
+                           '</span></div>'.format(record.tape_url))
 
 
 def _to_comma_sep(list_values):

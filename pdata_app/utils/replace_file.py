@@ -42,7 +42,6 @@ def replace_file(queryset):
             time_units=datafile.time_units,
             calendar=datafile.calendar,
             data_submission=datafile.data_submission,
-            online=datafile.online,
             tape_url=datafile.tape_url,
             checksum_value=checksum.checksum_value if checksum else None,
             checksum_type=checksum.checksum_type if checksum else None

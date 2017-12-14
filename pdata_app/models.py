@@ -597,10 +597,6 @@ class ReplacedFile(models.Model):
     name = models.CharField(max_length=200, verbose_name="File name",
                             null=False, blank=False)
 
-    # This is where the datafile is now
-    directory = models.CharField(max_length=500,
-                                 verbose_name="Current directory",
-                                 null=True, blank=True)
     size = models.BigIntegerField(null=False, verbose_name="File size")
 
     # This is the file's version
@@ -649,9 +645,6 @@ class ReplacedFile(models.Model):
                                         on_delete=CASCADE)
 
     # Tape status
-    online = models.BooleanField(default=True, verbose_name="Is the file "
-                                                            "online?",
-                                 null=False, blank=False)
     tape_url = models.CharField(verbose_name="Tape URL", max_length=200,
                                 null=True, blank=True)
 
