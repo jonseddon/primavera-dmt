@@ -596,9 +596,6 @@ class ReplacedFile(models.Model):
     """
     name = models.CharField(max_length=200, verbose_name="File name",
                             null=False, blank=False)
-    incoming_directory = models.CharField(max_length=500,
-                                          verbose_name="Incoming directory",
-                                          null=False, blank=False)
 
     # This is where the datafile is now
     directory = models.CharField(max_length=500,
@@ -628,7 +625,8 @@ class ReplacedFile(models.Model):
                                      on_delete=PROTECT)
     frequency = models.CharField(max_length=20,
                                  choices=FREQUENCY_VALUES.items(),
-        verbose_name="Time frequency", null=False, blank=False)
+                                 verbose_name="Time frequency",
+                                 null=False, blank=False)
     rip_code = models.CharField(max_length=20, verbose_name="Variant Label",
                                 null=False, blank=False)
     grid = models.CharField(max_length=20, verbose_name='Grid Label',
