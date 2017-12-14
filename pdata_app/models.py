@@ -596,6 +596,9 @@ class ReplacedFile(models.Model):
     """
     name = models.CharField(max_length=200, verbose_name="File name",
                             null=False, blank=False)
+    incoming_directory = models.CharField(max_length=500,
+                                          verbose_name="Incoming directory",
+                                          null=False, blank=False)
 
     size = models.BigIntegerField(null=False, verbose_name="File size")
 
@@ -669,6 +672,7 @@ class ReplacedFile(models.Model):
         return "%s (Directory: %s)" % (self.name, self.directory)
 
     class Meta:
+        unique_together = ('name', 'incoming_directory')
         verbose_name = "Replaced File"
 
 
