@@ -678,7 +678,6 @@ class ReplacedFile(models.Model):
         return "%s (Directory: %s)" % (self.name, self.directory)
 
     class Meta:
-        unique_together = ('name', 'directory')
         verbose_name = "Replaced File"
 
 
