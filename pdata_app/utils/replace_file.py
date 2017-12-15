@@ -25,6 +25,7 @@ def replace_file(queryset):
         checksum = datafile.checksum_set.first()
         replacement_file = ReplacedFile.objects.create(
             name=datafile.name,
+            incoming_directory=datafile.incoming_directory,
             size=datafile.size,
             version=datafile.version,
             project=datafile.project,

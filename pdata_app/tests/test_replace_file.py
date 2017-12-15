@@ -106,6 +106,13 @@ class TestReplaceFile(TestCase):
         old_file = ReplacedFile.objects.get(name='file_one.nc')
         self.assertEqual('et:1234', old_file.tape_url)
 
+    def test_incoming_directory_copied(self):
+        one_file = DataFile.objects.filter(name='file_one.nc')
+        replace_file(one_file)
+        old_file = ReplacedFile.objects.get(name='file_one.nc')
+        self.assertEqual('/gws/MOHC/MY-MODEL/incoming/v12345678',
+                         old_file.incoming_directory)
+
     def test_metadata_foreign_key_copied(self):
         one_file = DataFile.objects.filter(name='file_one.nc')
         replace_file(one_file)
