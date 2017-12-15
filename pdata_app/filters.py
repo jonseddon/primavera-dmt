@@ -245,6 +245,9 @@ class ReplacedFileFilter(django_filters.FilterSet):
     name = django_filters.CharFilter(name='name',
                                      lookup_expr='icontains')
 
+    incoming_directory = django_filters.CharFilter(name='incoming_directory',
+                                                   lookup_expr='icontains')
+
     version = django_filters.CharFilter(name='version',
                                         lookup_expr='icontains')
 

@@ -407,9 +407,10 @@ class ReplacedFileTable(tables.Table):
                    'variable_request', 'data_request', 'data_submission',
                    'frequency', 'time_units', 'calendar',
                    'checksum_value', 'checksum_type')
-        sequence = ['name', 'version', 'tape_url', 'institute',
-                    'climate_model', 'experiment', 'mip_table', 'rip_code',
-                    'cmor_name', 'grid', 'size', 'checksum']
+        sequence = ['name', 'incoming_directory', 'version', 'tape_url',
+                    'institute', 'climate_model', 'experiment', 'mip_table',
+                    'rip_code', 'cmor_name', 'grid', 'size', 'checksum',
+                    'activity_id']
 
     cmor_name = tables.Column(empty_values=(), verbose_name='CMOR Name',
                               accessor='variable_request.cmor_name')

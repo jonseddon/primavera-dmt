@@ -17,6 +17,10 @@
                     <input type="text" class="form-control" name="name" id="name" placeholder="Name" {% if request.GET.name %} value="{{ request.GET.name }}" {% endif %} autofocus>
                 </div>
                 <div class="form-group">
+                    <label class="sr-only" for="incoming_directory">Incoming Directory</label>
+                    <input type="text" class="form-control" name="incoming_directory" id="incoming_directory" placeholder="Incoming Directory" {% if request.GET.incoming_directory %} value="{{ request.GET.incoming_directory }}" {% endif %}>
+                </div>
+                <div class="form-group">
                     <label class="sr-only" for="version">Version</label>
                     <input type="text" class="form-control" name="version" id="version" placeholder="Version" {% if request.GET.version %} value="{{ request.GET.version }}" {% endif %}>
                 </div>
