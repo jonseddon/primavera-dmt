@@ -1,6 +1,7 @@
 import django_filters
 from .models import (DataRequest, DataSubmission, DataFile, ESGFDataset,
-                     CEDADataset, DataIssue, VariableRequest, RetrievalRequest)
+                     CEDADataset, DataIssue, VariableRequest, RetrievalRequest,
+                     ReplacedFile)
 
 
 class DataRequestFilter(django_filters.FilterSet):
@@ -235,3 +236,44 @@ class RetrievalRequestFilter(django_filters.FilterSet):
             return queryset.filter(date_complete__isnull=False,
                                    date_deleted__isnull=True)
         return queryset
+
+
+class ReplacedFileFilter(django_filters.FilterSet):
+    class Meta:
+        model = ReplacedFile
+
+    name = django_filters.CharFilter(name='name',
+                                     lookup_expr='icontains')
+
+    incoming_directory = django_filters.CharFilter(name='incoming_directory',
+                                                   lookup_expr='icontains')
+
+    version = django_filters.CharFilter(name='version',
+                                        lookup_expr='icontains')
+
+    tape_url = django_filters.CharFilter(name='tape_url',
+                                         lookup_expr='icontains')
+
+    data_submission = django_filters.NumberFilter(name='data_submission__id')
+
+    data_request = django_filters.NumberFilter(name='data_request__id')
+
+    grid = django_filters.CharFilter(name='grid', lookup_expr='icontains')
+
+    cmor_name = django_filters.CharFilter(name='variable_request__cmor_name',
+                                          lookup_expr='iexact')
+
+    mip_table = django_filters.CharFilter(name='variable_request__table_name',
+                                          lookup_expr='iexact')
+
+    institute = django_filters.CharFilter(name='institute__short_name',
+                                          lookup_expr='icontains')
+
+    climate_model = django_filters.CharFilter(name='climate_model__short_name',
+                                          lookup_expr='icontains')
+
+    experiment = django_filters.CharFilter(name='experiment__short_name',
+                                          lookup_expr='icontains')
+
+    rip_code = django_filters.CharFilter(name='rip_code',
+                                         lookup_expr='icontains')

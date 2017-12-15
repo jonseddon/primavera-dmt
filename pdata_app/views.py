@@ -17,16 +17,17 @@ from django.shortcuts import render, redirect
 
 from .models import (DataFile, DataSubmission, ESGFDataset, CEDADataset,
                      DataRequest, DataIssue, VariableRequest, RetrievalRequest,
-                     EmailQueue, Settings)
+                     EmailQueue, Settings, ReplacedFile)
 from .forms import (CreateSubmissionForm, PasswordChangeBootstrapForm,
                     UserBootstrapForm)
 from .tables import (DataRequestTable, DataFileTable, DataSubmissionTable,
                      ESGFDatasetTable, CEDADatasetTable, DataIssueTable,
                      VariableRequestQueryTable, DataReceivedTable,
-                     RetrievalRequestTable)
+                     RetrievalRequestTable, ReplacedFileTable)
 from .filters import (DataRequestFilter, DataFileFilter, DataSubmissionFilter,
                       ESGFDatasetFilter, CEDADatasetFilter, DataIssueFilter,
-                      VariableRequestQueryFilter, RetrievalRequestFilter)
+                      VariableRequestQueryFilter, RetrievalRequestFilter,
+                      ReplacedFileFilter)
 from .utils.common import get_request_size
 from .utils.table_views import PagedFilteredTableView, DataRequestsFilteredView
 from vocabs.vocabs import STATUS_VALUES
@@ -81,6 +82,11 @@ class DataFileList(PagedFilteredTableView):
     filter_class = DataFileFilter
     page_title = 'Data Files'
 
+class ReplacedFileList(PagedFilteredTableView):
+    model = ReplacedFile
+    table_class = ReplacedFileTable
+    filter_class = ReplacedFileFilter
+    page_title = 'Replaced Files'
 
 class DataSubmissionList(PagedFilteredTableView):
     model = DataSubmission

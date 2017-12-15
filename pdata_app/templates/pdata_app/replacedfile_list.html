@@ -1,0 +1,65 @@
+{% extends "pdata_app/base.html" %}
+{% load staticfiles %}
+{% load render_table from django_tables2 %}
+
+    {% block contents %}
+        <p>
+            These are the netCDF files that have been removed. Newer versions of these
+            files should exist and be available in the usual way. The files listed here
+            are no longer available for general use but are still held on tape. Please
+            ask if you need one of these files retrieving.
+        </p>
+
+        <p>
+            <form class="form-inline" action="{% url 'replaced_files' %}" method="get">
+                <div class="form-group">
+                    <label class="sr-only" for="name">Name</label>
+                    <input type="text" class="form-control" name="name" id="name" placeholder="Name" {% if request.GET.name %} value="{{ request.GET.name }}" {% endif %} autofocus>
+                </div>
+                <div class="form-group">
+                    <label class="sr-only" for="incoming_directory">Incoming Directory</label>
+                    <input type="text" class="form-control" name="incoming_directory" id="incoming_directory" placeholder="Incoming Directory" {% if request.GET.incoming_directory %} value="{{ request.GET.incoming_directory }}" {% endif %}>
+                </div>
+                <div class="form-group">
+                    <label class="sr-only" for="version">Version</label>
+                    <input type="text" class="form-control" name="version" id="version" placeholder="Version" {% if request.GET.version %} value="{{ request.GET.version }}" {% endif %}>
+                </div>
+                <div class="form-group">
+                    <label class="sr-only" for="tape_url">Tape URL</label>
+                    <input type="text" class="form-control" name="tape_url" id="tape_url" placeholder="Tape URL" {% if request.GET.tape_url %} value="{{ request.GET.tape_url }}" {% endif %}>
+                </div>
+                <div class="form-group">
+                    <label class="sr-only" for="institute">Institute</label>
+                    <input type="text" class="form-control" name="institute" id="institute" placeholder="Institute" {% if request.GET.institute %} value="{{ request.GET.institute }}" {% endif %}>
+                </div>
+                <div class="form-group">
+                    <label class="sr-only" for="climate_model">Climate Model</label>
+                    <input type="text" class="form-control" name="climate_model" id="climate_model" placeholder="Climate Model" {% if request.GET.climate_model %} value="{{ request.GET.climate_model }}" {% endif %}>
+                </div>
+                <div class="form-group">
+                    <label class="sr-only" for="experiment">Experiment</label>
+                    <input type="text" class="form-control" name="experiment" id="experiment" placeholder="Experiment" {% if request.GET.experiment %} value="{{ request.GET.experiment }}" {% endif %}>
+                </div>
+                <div class="form-group">
+                    <label class="sr-only" for="mip_table">MIP Table</label>
+                    <input type="text" class="form-control" name="mip_table" id="mip_table" placeholder="MIP Table" {% if request.GET.mip_table %} value="{{ request.GET.mip_table }}" {% endif %}>
+                </div>
+                <div class="form-group">
+                    <label class="sr-only" for="rip_code">Variant Label</label>
+                    <input type="text" class="form-control" name="rip_code" id="rip_code" placeholder="Variant Label" {% if request.GET.rip_code %} value="{{ request.GET.rip_code }}" {% endif %}>
+                </div>
+                <div class="form-group">
+                    <label class="sr-only" for="cmor_name">CMOR Name</label>
+                    <input type="text" class="form-control" name="cmor_name" id="cmor_name" placeholder="CMOR Name" {% if request.GET.cmor_name %} value="{{ request.GET.cmor_name }}" {% endif %}>
+                </div>
+                <div class="form-group">
+                    <label class="sr-only" for="grid">Grid Label</label>
+                    <input type="text" class="form-control" name="grid" id="grid" placeholder="Grid Label" {% if request.GET.grid %} value="{{ request.GET.grid }}" {% endif %}>
+                </div>
+                <a class="btn btn-default" href="{% url 'replaced_files' %}">Clear</a>
+                <input type="submit" class="btn btn-default" value="Filter" />
+            </form>
+        </p>
+
+        {% render_table table %}
+    {% endblock %}

@@ -43,6 +43,9 @@ urlpatterns = [
 
     url(r'^files/$', pdata_app.views.DataFileList.as_view(), name='data_files'),
 
+    url(r'^replaced_files/$', pdata_app.views.ReplacedFileList.as_view(),
+        name='replaced_files'),
+
     url(r'^submissions/$', pdata_app.views.DataSubmissionList.as_view(),
         name='data_submissions'),
 
