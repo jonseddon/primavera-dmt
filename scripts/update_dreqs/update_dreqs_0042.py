@@ -98,7 +98,7 @@ def main(args):
                     df.save()
 
             for directory in directories_found:
-                if not os.listdir(directory)
+                if not os.listdir(directory):
                     delete_dir(directory)
 
             replace_file(query_set)
