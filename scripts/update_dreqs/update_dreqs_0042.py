@@ -85,14 +85,15 @@ def main(args):
 
             directories_found = []
             for df in query_set:
-                try:
-                    os.remove(os.path.join(df.directory, df.name))
-                except OSError as exc:
-                    logger.error(str(exc))
-                    sys.exit(1)
-                else:
-                    if df.directory not in directories_found:
-                        directories_found.append(df.directory)
+                if df.online:
+                    try:
+                        os.remove(os.path.join(df.directory, df.name))
+                    except OSError as exc:
+                        logger.error(str(exc))
+                        sys.exit(1)
+                    else:
+                        if df.directory not in directories_found:
+                            directories_found.append(df.directory)
                     df.online = False
                     df.directory = None
                     df.save()
