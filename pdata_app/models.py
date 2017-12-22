@@ -16,7 +16,8 @@ from vocabs import (STATUS_VALUES, FREQUENCY_VALUES, ONLINE_STATUS,
 model_names = ['Project', 'Institute', 'ClimateModel', 'Experiment',
                'DataSubmission', 'DataFile', 'ESGFDataset', 'CEDADataset',
                'DataRequest', 'DataIssue', 'Checksum', 'Settings',
-               'VariableRequest', 'RetrievalRequest', 'EmailQueue']
+               'VariableRequest', 'RetrievalRequest', 'EmailQueue',
+               'ReplacedFile']
 __all__ = model_names
 
 

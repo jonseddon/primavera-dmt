@@ -4,75 +4,125 @@ from .models import (DataRequest, DataSubmission, DataFile, ESGFDataset,
                      ReplacedFile)
 
 
+def patched_label():
+    """
+    This is a monkey patch that is applied to
+    django_filters.filters.Filter.label that checks for the existence of
+    `model`.
+    """
+    def fget(self):
+        if self._label is None and hasattr(self, 'parent'):
+            model = self.parent._meta.model
+            if model:
+                self._label = label_for_filter(
+                    model, self.field_name, self.lookup_expr, self.exclude
+                )
+        return self._label
+
+    def fset(self, value):
+        self._label = value
+
+    return locals()
+
+
+# Monkey patch the failing function
+# Raise a warning when the library version is updated so that this code
+# can be removed.
+if django_filters.__version__ == '1.1.0':
+    django_filters.filters.Filter.label = patched_label
+else:
+    raise NotImplementedError('Only django_filters version 1.1.0 is'
+                              'currently supported.')
+
+
 class DataRequestFilter(django_filters.FilterSet):
     class Meta:
         model = DataRequest
         fields = ['project', 'institute', 'climate_model', 'experiment',
                   'variable_request', 'rip_code']
 
-    project = django_filters.CharFilter(name='project__short_name',
+    project = django_filters.CharFilter(field_name='project__short_name',
                                         lookup_expr='icontains')
 
-    institute = django_filters.CharFilter(name='institute__short_name',
+    institute = django_filters.CharFilter(field_name='institute__short_name',
                                           lookup_expr='icontains')
 
-    climate_model = django_filters.CharFilter(name='climate_model__short_name',
-                                              lookup_expr='icontains')
+    climate_model = django_filters.CharFilter(
+        field_name='climate_model__short_name',
+        lookup_expr='icontains'
+    )
 
-    experiment = django_filters.CharFilter(name='experiment__short_name',
+    experiment = django_filters.CharFilter(field_name='experiment__short_name',
                                            lookup_expr='icontains')
 
-    cmor_name = django_filters.CharFilter(name='variable_request__cmor_name',
-                                          lookup_expr='iexact')
+    cmor_name = django_filters.CharFilter(
+        field_name='variable_request__cmor_name',
+        lookup_expr='iexact'
+    )
 
-    mip_table = django_filters.CharFilter(name='variable_request__table_name',
-                                          lookup_expr='iexact')
+    mip_table = django_filters.CharFilter(
+        field_name='variable_request__table_name',
+        lookup_expr='iexact'
+    )
 
-    rip_code = django_filters.CharFilter(name='rip_code',
+    rip_code = django_filters.CharFilter(field_name='rip_code',
                                          lookup_expr='icontains')
 
 
 class DataFileFilter(django_filters.FilterSet):
     class Meta:
         model = DataFile
-        fields = ['name', 'directory', 'version', 'tape_url', 'grid']
+        fields = ['name', 'directory', 'version', 'tape_url',
+                  'data_submission', 'data_issue', 'data_request', 'grid',
+                  'variable_request', 'institute', 'climate_model',
+                  'experiment', 'rip_code']
 
-    name = django_filters.CharFilter(name='name',
+    name = django_filters.CharFilter(field_name='name',
                                      lookup_expr='icontains')
 
-    directory = django_filters.CharFilter(name='directory',
+    directory = django_filters.CharFilter(field_name='directory',
                                           lookup_expr='icontains')
 
-    version = django_filters.CharFilter(name='version',
+    version = django_filters.CharFilter(field_name='version',
                                         lookup_expr='icontains')
 
-    tape_url = django_filters.CharFilter(name='tape_url',
+    tape_url = django_filters.CharFilter(field_name='tape_url',
                                          lookup_expr='icontains')
 
-    data_submission = django_filters.NumberFilter(name='data_submission__id')
+    data_submission = django_filters.NumberFilter(
+        field_name='data_submission__id'
+    )
 
-    data_issue = django_filters.NumberFilter(name='dataissue__id')
+    data_issue = django_filters.NumberFilter(field_name='dataissue__id')
 
-    data_request = django_filters.NumberFilter(name='data_request__id')
+    data_request = django_filters.NumberFilter(field_name='data_request__id')
 
-    grid = django_filters.CharFilter(name='grid', lookup_expr='icontains')
+    grid = django_filters.CharFilter(field_name='grid',
+                                     lookup_expr='icontains')
 
-    cmor_name = django_filters.CharFilter(name='variable_request__cmor_name',
-                                          lookup_expr='iexact')
+    cmor_name = django_filters.CharFilter(
+        field_name='variable_request__cmor_name',
+        lookup_expr='iexact'
+    )
 
-    mip_table = django_filters.CharFilter(name='variable_request__table_name',
-                                          lookup_expr='iexact')
+    mip_table = django_filters.CharFilter(
+        field_name='variable_request__table_name',
+        lookup_expr='iexact'
+    )
 
-    institute = django_filters.CharFilter(name='institute__short_name',
+    institute = django_filters.CharFilter(field_name='institute__short_name',
                                           lookup_expr='icontains')
 
-    climate_model = django_filters.CharFilter(name='climate_model__short_name',
-                                          lookup_expr='icontains')
+    climate_model = django_filters.CharFilter(
+        field_name='climate_model__short_name',
+        lookup_expr='icontains')
 
-    experiment = django_filters.CharFilter(name='experiment__short_name',
-                                          lookup_expr='icontains')
+    experiment = django_filters.CharFilter(
+        field_name='experiment__short_name',
+        lookup_expr='icontains'
+    )
 
-    rip_code = django_filters.CharFilter(name='rip_code',
+    rip_code = django_filters.CharFilter(field_name='rip_code',
                                          lookup_expr='icontains')
 
 
@@ -81,19 +131,19 @@ class DataSubmissionFilter(django_filters.FilterSet):
         model = DataSubmission
         fields = ('status', 'directory', 'user')
 
-    status = django_filters.CharFilter(name='status',
-                                     lookup_expr='icontains')
+    status = django_filters.CharFilter(field_name='status',
+                                       lookup_expr='icontains')
 
-    directory = django_filters.CharFilter(name='directory',
+    directory = django_filters.CharFilter(field_name='directory',
                                           lookup_expr='icontains')
 
-    version = django_filters.CharFilter(name='datafile__version',
+    version = django_filters.CharFilter(field_name='datafile__version',
                                         lookup_expr='icontains')
 
-    tape_url = django_filters.CharFilter(name='datafile__tape_url',
-                                        lookup_expr='icontains')
+    tape_url = django_filters.CharFilter(field_name='datafile__tape_url',
+                                         lookup_expr='icontains')
 
-    user = django_filters.CharFilter(name = 'user__username',
+    user = django_filters.CharFilter(field_name='user__username',
                                      lookup_expr='icontains')
 
 
@@ -103,21 +153,25 @@ class ESGFDatasetFilter(django_filters.FilterSet):
         fields = ('drs_id', 'version', 'directory', 'thredds_urls',
                   'ceda_dataset', 'data_submission')
 
-    drs_id = django_filters.CharFilter(name='drs_id', lookup_expr='icontains')
+    drs_id = django_filters.CharFilter(field_name='drs_id',
+                                       lookup_expr='icontains')
 
-    version = django_filters.CharFilter(name='version', lookup_expr='icontains')
+    version = django_filters.CharFilter(field_name='version',
+                                        lookup_expr='icontains')
 
-    directory = django_filters.CharFilter(name='directory',
+    directory = django_filters.CharFilter(field_name='directory',
                                           lookup_expr='icontains')
 
-    thredds_url = django_filters.CharFilter(name='thredds_url',
+    thredds_url = django_filters.CharFilter(field_name='thredds_url',
                                             lookup_expr='icontains')
 
-    ceda_dataset = django_filters.CharFilter(name='ceda_dataset__directory',
-                                             lookup_expr='icontains')
+    ceda_dataset = django_filters.CharFilter(
+        field_name='ceda_dataset__directory',
+        lookup_expr='icontains'
+    )
 
     data_submission = django_filters.CharFilter(
-        name='data_submission__directory',
+        field_name='data_submission__directory',
         lookup_expr='icontains'
     )
 
@@ -127,13 +181,13 @@ class CEDADatasetFilter(django_filters.FilterSet):
         models = CEDADataset
         fields = ('catalogue_url', 'directory', 'doi')
 
-    catalogue_url = django_filters.CharFilter(name='catalogue_url',
+    catalogue_url = django_filters.CharFilter(field_name='catalogue_url',
                                               lookup_expr='icontains')
 
-    directory = django_filters.CharFilter(name='directory',
+    directory = django_filters.CharFilter(field_name='directory',
                                           lookup_expr='icontains')
 
-    doi = django_filters.CharFilter(name='doi', lookup_expr='icontains')
+    doi = django_filters.CharFilter(field_name='doi', lookup_expr='icontains')
 
 
 class DataIssueFilter(django_filters.FilterSet):
@@ -141,22 +195,23 @@ class DataIssueFilter(django_filters.FilterSet):
         models = DataIssue
         fields = ('issue', 'reporter', 'date_time', 'id', 'data_file')
 
-    id = django_filters.NumberFilter(name='id')
+    id = django_filters.NumberFilter(field_name='id')
 
-    issue = django_filters.CharFilter(name='issue', lookup_expr='icontains')
+    issue = django_filters.CharFilter(field_name='issue',
+                                      lookup_expr='icontains')
 
-    reporter = django_filters.CharFilter(name='reporter__username',
+    reporter = django_filters.CharFilter(field_name='reporter__username',
                                          lookup_expr='icontains')
 
-    date_time = django_filters.DateFromToRangeFilter(name='date_time')
+    date_time = django_filters.DateFromToRangeFilter(field_name='date_time')
 
-    data_file = django_filters.NumberFilter(name='data_file__id')
+    data_file = django_filters.NumberFilter(field_name='data_file__id')
 
     data_submission = django_filters.NumberFilter(
-        name='data_file__data_submission__id')
+        field_name='data_file__data_submission__id')
 
     data_request = django_filters.NumberFilter(
-        name='data_file__data_request__id')
+        field_name='data_file__data_request__id')
 
 
 class VariableRequestQueryFilter(django_filters.FilterSet):
@@ -167,71 +222,72 @@ class VariableRequestQueryFilter(django_filters.FilterSet):
                   'dimensions', 'cmor_name', 'modeling_realm', 'frequency',
                   'cell_measures', 'uid')
 
-    table_name = django_filters.CharFilter(name='table_name',
+    table_name = django_filters.CharFilter(field_name='table_name',
                                            lookup_expr='icontains')
 
-    long_name = django_filters.CharFilter(name='long_name',
+    long_name = django_filters.CharFilter(field_name='long_name',
                                           lookup_expr='icontains')
 
-    units = django_filters.CharFilter(name='units',
+    units = django_filters.CharFilter(field_name='units',
                                       lookup_expr='icontains')
 
-    var_name = django_filters.CharFilter(name='var_name',
+    var_name = django_filters.CharFilter(field_name='var_name',
                                          lookup_expr='icontains')
 
-    standard_name = django_filters.CharFilter(name='standard_name',
+    standard_name = django_filters.CharFilter(field_name='standard_name',
                                               lookup_expr='icontains')
 
-    cell_methods = django_filters.CharFilter(name='cell_methods',
+    cell_methods = django_filters.CharFilter(field_name='cell_methods',
                                              lookup_expr='icontains')
 
-    positive = django_filters.CharFilter(name='positive',
+    positive = django_filters.CharFilter(field_name='positive',
                                          lookup_expr='icontains')
 
-    variable_type = django_filters.CharFilter(name='variable_type',
+    variable_type = django_filters.CharFilter(field_name='variable_type',
                                               lookup_expr='icontains')
 
-    dimensions = django_filters.CharFilter(name='dimensions',
+    dimensions = django_filters.CharFilter(field_name='dimensions',
                                            lookup_expr='icontains')
 
-    cmor_name = django_filters.CharFilter(name='cmor_name',
+    cmor_name = django_filters.CharFilter(field_name='cmor_name',
                                           lookup_expr='iexact')
 
-    modeling_realm = django_filters.CharFilter(name='modeling_realm',
+    modeling_realm = django_filters.CharFilter(field_name='modeling_realm',
                                                lookup_expr='icontains')
 
-    frequency = django_filters.CharFilter(name='frequency',
+    frequency = django_filters.CharFilter(field_name='frequency',
                                           lookup_expr='icontains')
 
-    cell_measures = django_filters.CharFilter(name='cell_measures',
+    cell_measures = django_filters.CharFilter(field_name='cell_measures',
                                               lookup_expr='icontains')
 
-    uid = django_filters.CharFilter(name='uid',
+    uid = django_filters.CharFilter(field_name='uid',
                                     lookup_expr='icontains')
 
 
 class RetrievalRequestFilter(django_filters.FilterSet):
     class Meta:
         models = RetrievalRequest
-        fields = ('id', 'requester', 'date_created')
+        fields = ('id', 'requester', 'date_created', 'date_complete',
+                  'date_deleted')
 
-    id = django_filters.NumberFilter(name='id')
+    id = django_filters.NumberFilter(field_name='id')
 
-    requester = django_filters.CharFilter(name='requester__username',
+    requester = django_filters.CharFilter(field_name='requester__username',
                                           lookup_expr='icontains')
 
-    date_time = django_filters.DateFromToRangeFilter(name='date_created')
+    date_time = django_filters.DateFromToRangeFilter(field_name='date_created')
 
-    incomplete = django_filters.MethodFilter()
+    incomplete = django_filters.DateTimeFilter(method='filter_incomplete')
 
-    on_gws = django_filters.MethodFilter()
+    on_gws = django_filters.DateTimeFilter(method='filter_on_gws')
 
-    def filter_incomplete(self, queryset, value):
+    def filter_incomplete(self, queryset, name, value):
         if value:
             return queryset.filter(date_complete__isnull=True)
         return queryset
 
-    def filter_on_gws(self, queryset, value):
+    def filter_on_gws(self, queryset, name, value):
         if value:
             return queryset.filter(date_complete__isnull=False,
                                    date_deleted__isnull=True)
@@ -241,39 +297,52 @@ class RetrievalRequestFilter(django_filters.FilterSet):
 class ReplacedFileFilter(django_filters.FilterSet):
     class Meta:
         model = ReplacedFile
+        fields = ('name', 'incoming_directory', 'version', 'tape_url',
+                  'institute', 'climate_model', 'experiment', 'mip_table',
+                  'rip_code', 'cmor_name', 'grid')
 
-    name = django_filters.CharFilter(name='name',
+    name = django_filters.CharFilter(field_name='name',
                                      lookup_expr='icontains')
 
-    incoming_directory = django_filters.CharFilter(name='incoming_directory',
-                                                   lookup_expr='icontains')
+    incoming_directory = django_filters.CharFilter(
+        field_name='incoming_directory',
+        lookup_expr='icontains'
+    )
 
-    version = django_filters.CharFilter(name='version',
+    version = django_filters.CharFilter(field_name='version',
                                         lookup_expr='icontains')
 
-    tape_url = django_filters.CharFilter(name='tape_url',
+    tape_url = django_filters.CharFilter(field_name='tape_url',
                                          lookup_expr='icontains')
 
-    data_submission = django_filters.NumberFilter(name='data_submission__id')
+    data_submission = django_filters.NumberFilter(
+        field_name='data_submission__id'
+    )
 
-    data_request = django_filters.NumberFilter(name='data_request__id')
+    data_request = django_filters.NumberFilter(field_name='data_request__id')
 
-    grid = django_filters.CharFilter(name='grid', lookup_expr='icontains')
+    grid = django_filters.CharFilter(field_name='grid',
+                                     lookup_expr='icontains')
 
-    cmor_name = django_filters.CharFilter(name='variable_request__cmor_name',
-                                          lookup_expr='iexact')
+    cmor_name = django_filters.CharFilter(
+        field_name='variable_request__cmor_name',
+        lookup_expr='iexact'
+    )
 
-    mip_table = django_filters.CharFilter(name='variable_request__table_name',
-                                          lookup_expr='iexact')
+    mip_table = django_filters.CharFilter(
+        field_name='variable_request__table_name',
+        lookup_expr='iexact'
+    )
 
-    institute = django_filters.CharFilter(name='institute__short_name',
+    institute = django_filters.CharFilter(field_name='institute__short_name',
                                           lookup_expr='icontains')
 
-    climate_model = django_filters.CharFilter(name='climate_model__short_name',
-                                          lookup_expr='icontains')
+    climate_model = django_filters.CharFilter(
+        field_name='climate_model__short_name',
+        lookup_expr='icontains')
 
-    experiment = django_filters.CharFilter(name='experiment__short_name',
-                                          lookup_expr='icontains')
+    experiment = django_filters.CharFilter(field_name='experiment__short_name',
+                                           lookup_expr='icontains')
 
-    rip_code = django_filters.CharFilter(name='rip_code',
+    rip_code = django_filters.CharFilter(field_name='rip_code',
                                          lookup_expr='icontains')
