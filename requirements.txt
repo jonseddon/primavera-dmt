@@ -3,5 +3,5 @@ django-solo
 pytz
 psycopg2==2.6.1
 google-api-python-client
-django-tables2
+django-tables2==1.17.1
 django-filter==1.1.0
