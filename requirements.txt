@@ -1,4 +1,4 @@
-django==1.10
+django==1.11
 django-solo
 pytz
 psycopg2==2.6.1
