@@ -98,8 +98,10 @@ class VariableOccurrence(models.Model):
     class Meta:
         verbose_name = 'Variable Occurrence'
 
-    data_file = models.ForeignKey('Datafile', verbose_name='Data File')
-    variable = models.ForeignKey('Variable', verbose_name='Variable')
+    data_file = models.ForeignKey('Datafile', verbose_name='Data File',
+                                  on_delete=models.CASCADE)
+    variable = models.ForeignKey('Variable', verbose_name='Variable',
+                                 on_delete=models.CASCADE)
     max_val = models.FloatField(null=True, blank=True,
                                 verbose_name='Maximum Value')
     min_val = models.FloatField(null=True, blank=True,
@@ -144,8 +146,9 @@ class VariableAttributeLink(models.Model):
     class Meta:
         verbose_name = 'Variable-Attribute Link'
 
-    var_occurrence = models.ForeignKey('VariableOccurrence')
-    attribute = models.ForeignKey('Attribute')
+    var_occurrence = models.ForeignKey('VariableOccurrence',
+                                       on_delete=models.CASCADE)
+    attribute = models.ForeignKey('Attribute', on_delete=models.CASCADE)
 
     def __unicode__(self):
         outstr = "\n"
@@ -163,8 +166,8 @@ class DatafileAttributeLink(models.Model):
     class Meta:
         verbose_name = 'Data File-Attribute Link'
 
-    data_file = models.ForeignKey('Datafile')
-    attribute = models.ForeignKey('Attribute')
+    data_file = models.ForeignKey('Datafile', on_delete=models.CASCADE)
+    attribute = models.ForeignKey('Attribute', on_delete=models.CASCADE)
 
     def __unicode__(self):
         outstr = "\n"
@@ -184,7 +187,7 @@ class DatafileNote(models.Model):
     class Meta:
         verbose_name = 'Data File Note'
 
-    data_file = models.ForeignKey('Datafile')
+    data_file = models.ForeignKey('Datafile', on_delete=models.CASCADE)
     data_file_note = models.CharField(max_length=2000, null=False, blank=False)
     note_author = models.CharField(max_length=50, null=False, blank=False)
     note_datetime = models.DateTimeField(auto_now_add=True, null=False, blank=False)
@@ -207,7 +210,7 @@ class VariableNote(models.Model):
     class Meta:
         verbose_name = 'Variable Note'
 
-    variable = models.ForeignKey('Variable')
+    variable = models.ForeignKey('Variable', on_delete=models.CASCADE)
     variable_note = models.CharField(max_length=2000, null=False, blank=False)
     note_datetime = models.DateTimeField(auto_now_add=True, null=False, blank=False)
     note_author = models.CharField(max_length=50, null=False, blank=False)

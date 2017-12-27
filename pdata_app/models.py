@@ -83,7 +83,7 @@ class ClimateModel(models.Model):
     # DataRequest
 
     short_name = models.CharField(max_length=100, null=False,
-        blank=False, unique=True)
+                                  blank=False, unique=True)
     full_name = models.CharField(max_length=300, null=False, blank=False)
 
     def __unicode__(self):
@@ -102,7 +102,7 @@ class Experiment(models.Model):
     # DataRequest
 
     short_name = models.CharField(max_length=100, null=False,
-        blank=False, unique=True)
+                                  blank=False, unique=True)
     full_name = models.CharField(max_length=300, null=False, blank=False)
 
     def __unicode__(self):
@@ -337,7 +337,7 @@ class DataSubmission(DataFileAggregationBase):
                                  verbose_name='Current Directory',
                                  blank=True, null=True)
     user = models.ForeignKey(User, blank=False, null=False,
-                             verbose_name='User')
+                             verbose_name='User', on_delete=models.CASCADE)
     date_submitted = models.DateTimeField(auto_now_add=True,
                                           verbose_name='Date Submitted',
                                           null=False, blank=False)
@@ -688,7 +688,8 @@ class DataIssue(models.Model):
     issue = models.CharField(max_length=500, verbose_name="Issue Reported",
                              null=False, blank=False)
     reporter = models.ForeignKey(User, verbose_name="Reporter",
-                                 null=False, blank=False)
+                                 null=False, blank=False,
+                                 on_delete=models.CASCADE)
     date_time = models.DateTimeField(auto_now_add=True,
                                      verbose_name="Date and Time of Report",
                                      null=False, blank=False)
@@ -739,7 +740,8 @@ class RetrievalRequest(models.Model):
                                          null=True, blank=True)
 
     requester = models.ForeignKey(User, verbose_name='Request Creator',
-                                 null=False, blank=False)
+                                  null=False, blank=False,
+                                  on_delete=models.CASCADE)
 
     data_finished = models.BooleanField(default=False,
                                         verbose_name="Data Finished?",
@@ -756,7 +758,7 @@ class EmailQueue(models.Model):
     """
     A collection of emails that have been queued to send
     """
-    recipient = models.ForeignKey(User)
+    recipient = models.ForeignKey(User, on_delete=models.CASCADE)
 
     subject = models.CharField(max_length=400, blank=False)
 

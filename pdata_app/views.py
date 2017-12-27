@@ -10,7 +10,7 @@ from django.contrib.auth import (authenticate, login, logout,
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.forms import PasswordResetForm
 from django.contrib.auth.models import User
-from django.core.urlresolvers import reverse
+from django.urls import reverse
 from django.db.models import Max, Min, Sum
 from django.http import HttpResponseRedirect
 from django.shortcuts import render, redirect

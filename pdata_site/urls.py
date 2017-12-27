@@ -7,10 +7,9 @@ import pdata_app.views
 import et_indexer.views
 
 from django.contrib import admin
-admin.autodiscover()
 
 urlpatterns = [
-    url(r'^admin/', include(admin.site.urls)),
+    url(r'^admin/', admin.site.urls),
 
     url(r'^login/$', pdata_app.views.view_login, name='login'),
 
