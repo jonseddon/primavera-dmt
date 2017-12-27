@@ -42,6 +42,15 @@ class DataFileTable(tables.Table):
     num_dataissues = tables.Column(empty_values=(),
                                    verbose_name='# Data Issues',
                                    orderable=False)
+    climate_model = tables.Column(accessor='climate_model.short_name',
+                                  verbose_name='Climate Model')
+    institute = tables.Column(accessor='institute.short_name',
+                              verbose_name='Institute')
+    experiment = tables.Column(accessor='experiment.short_name',
+                               verbose_name='Experiment')
+    project = tables.Column(accessor='project.short_name',
+                               verbose_name='Project')
+
 
     def render_checksum(self, record):
         checksum = record.checksum_set.first()
@@ -89,6 +98,7 @@ class DataSubmissionTable(tables.Table):
     tape_urls = tables.Column(empty_values=(), verbose_name='Tape URLs',
                               orderable=False)
     file_versions = tables.Column(empty_values=(), orderable=False)
+    user = tables.Column(accessor='user.username', verbose_name='User')
 
     def render_date_submitted(self, value):
         return value.strftime('%Y-%m-%d %H:%M')
@@ -178,6 +188,14 @@ class DataRequestTable(tables.Table):
                               accessor='variable_request.cmor_name')
     mip_table = tables.Column(empty_values=(), verbose_name='MIP Table',
                               accessor='variable_request.table_name')
+    climate_model = tables.Column(accessor='climate_model.short_name',
+                                  verbose_name='Climate Model')
+    institute = tables.Column(accessor='institute.short_name',
+                              verbose_name='Institute')
+    experiment = tables.Column(accessor='experiment.short_name',
+                               verbose_name='Experiment')
+    project = tables.Column(accessor='project.short_name',
+                               verbose_name='Project')
 
     def render_request_start_time(self, record):
         return record.start_date_string()
@@ -212,6 +230,14 @@ class DataReceivedTable(DataRequestTable):
                                       verbose_name='Request Retrieval?')
     total_data_size = tables.Column(empty_values=(), orderable=False,
                                       verbose_name='Data Size')
+    climate_model = tables.Column(accessor='climate_model.short_name',
+                                  verbose_name='Climate Model')
+    institute = tables.Column(accessor='institute.short_name',
+                              verbose_name='Institute')
+    experiment = tables.Column(accessor='experiment.short_name',
+                               verbose_name='Experiment')
+    project = tables.Column(accessor='project.short_name',
+                               verbose_name='Project')
 
     def render_start_time(self, record):
         return record.start_time()
@@ -308,6 +334,8 @@ class DataIssueTable(tables.Table):
 
     num_files_affected = tables.Column(empty_values=(), orderable=False,
                                        verbose_name='Total # Files Affected')
+    reporter = tables.Column(accessor='reporter.username',
+                             verbose_name='Reporter')
 
     def render_date_time(self, value):
         return value.strftime('%Y-%m-%d %H:%M')
@@ -344,6 +372,8 @@ class RetrievalRequestTable(tables.Table):
         attrs = {'class': 'paleblue'}
         order_by = '-date_created'
 
+    requester = tables.Column(accessor='requester.username',
+                              verbose_name='Request Creator')
     data_reqs = tables.Column(empty_values=(), orderable=False,
                               verbose_name='Data Requests')
     req_size = tables.Column(empty_values=(), orderable=False,
@@ -418,6 +448,14 @@ class ReplacedFileTable(tables.Table):
                               accessor='variable_request.table_name')
     checksum = tables.Column(empty_values=(), verbose_name='Checksum',
                              orderable=False)
+    climate_model = tables.Column(accessor='climate_model.short_name',
+                                  verbose_name='Climate Model')
+    institute = tables.Column(accessor='institute.short_name',
+                              verbose_name='Institute')
+    experiment = tables.Column(accessor='experiment.short_name',
+                               verbose_name='Experiment')
+    activity_id = tables.Column(accessor='activity_id.short_name',
+                                verbose_name='Activity ID')
 
     def render_checksum(self, record):
         if record.checksum_value and record.checksum_type:
