@@ -60,6 +60,11 @@ class DataRequestFilter(django_filters.FilterSet):
         lookup_expr='iexact'
     )
 
+    var_name = django_filters.CharFilter(
+        field_name='variable_request__var_name',
+        lookup_expr='iexact'
+    )
+
     mip_table = django_filters.CharFilter(
         field_name='variable_request__table_name',
         lookup_expr='iexact'
