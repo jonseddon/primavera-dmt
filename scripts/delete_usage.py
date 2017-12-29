@@ -28,6 +28,45 @@ DEFAULT_LOG_FORMAT = '%(levelname)s: %(message)s'
 
 logger = logging.getLogger(__name__)
 
+def _date_filter_retrieval_files(retrieval_req, data_req):
+    """
+    Filter the files belonging to a data request in a retrieval
+    request and return only the files that fall between the retrieval's
+    start and end dates.
+
+    :param pdata_app.models.RetrievalRequest retrieval_req: The
+        retrieval request.
+    :param pdata_app.models.DataRequest data_req: The data request
+        that we're interested in that belongs to the retrieval.
+    :returns: A tuple of the QuerySet of the timeless and QuerySet of
+        timed files.
+    :rtype: tuple
+    """
+    all_files = data_req.datafile_set.filter(online=True,
+                                             directory__isnull=False)
+    time_units = all_files[0].time_units
+    calendar = all_files[0].calendar
+    start_float = None
+    if retrieval_req.start_year is not None and time_units and calendar:
+        start_float = cf_units.date2num(
+            datetime.datetime(retrieval_req.start_year, 1, 1), time_units,
+            calendar
+        )
+    end_float = None
+    if retrieval_req.end_year is not None and time_units and calendar:
+        end_float = cf_units.date2num(
+            datetime.datetime(retrieval_req.end_year + 1, 1, 1), time_units,
+            calendar
+        )
+
+    timeless_files = all_files.filter(start_time__isnull=True)
+
+    timed_files = (all_files.exclude(start_time__isnull=True).
+        filter(start_time__gte=start_float,
+               end_time__lt=end_float))
+
+    return timeless_files, timed_files
+
 
 def parse_args():
     """
@@ -58,28 +97,8 @@ def main(args):
     # drk = rrk.data_request.first()
 
     for data_req in rra.data_request.all():
-        all_files = data_req.datafile_set.filter(online=True,
-                                                 directory__isnull=False)
-        time_units = all_files[0].time_units
-        calendar = all_files[0].calendar
-        start_float = None
-        if rra.start_year is not None and time_units and calendar:
-            start_float = cf_units.date2num(
-                datetime.datetime(rra.start_year, 1, 1), time_units,
-                calendar
-            )
-        end_float = None
-        if rra.end_year is not None and time_units and calendar:
-            end_float = cf_units.date2num(
-                datetime.datetime(rra.end_year + 1, 1, 1), time_units,
-                calendar
-            )
-
-        timeless_files = all_files.filter(start_time__isnull=True)
-
-        timed_files = (all_files.exclude(start_time__isnull=True).
-            filter(start_time__gte=start_float,
-                   end_time__lt=end_float))
+        timeless_files, timed_files = _date_filter_retrieval_files(rra,
+                                                                   data_req)
 
         files_to_delete = QuerySet.union(timeless_files, timed_files)
 
@@ -87,28 +106,9 @@ def main(args):
             data_request=data_req, data_finished=False
         )
         for ret_req in other_retrievals:
-            ret_all_files = data_req.datafile_set.filter(online=True,
-                                                     directory__isnull=False)
-            time_units = ret_all_files[0].time_units
-            calendar = ret_all_files[0].calendar
-            ret_start_float = None
-            if ret_req.start_year is not None and time_units and calendar:
-                ret_start_float = cf_units.date2num(
-                    datetime.datetime(ret_req.start_year, 1, 1), time_units,
-                    calendar
-                )
-            ret_end_float = None
-            if ret_req.end_year is not None and time_units and calendar:
-                ret_end_float = cf_units.date2num(
-                    datetime.datetime(ret_req.end_year + 1, 1, 1), time_units,
-                    calendar
-                )
-
-            ret_timeless_files = ret_all_files.filter(start_time__isnull=True)
-
-            ret_timed_files = (ret_all_files.exclude(start_time__isnull=True).
-                filter(start_time__gte=ret_start_float,
-                       end_time__lt=ret_end_float))
+            ret_timeless_files, ret_timed_files = _date_filter_retrieval_files(
+                ret_req, data_req
+            )
 
             files_to_delete = (files_to_delete.difference(ret_timeless_files).
                 difference(ret_timed_files))
