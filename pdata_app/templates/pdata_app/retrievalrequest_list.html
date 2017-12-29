@@ -32,6 +32,11 @@
                         <input id="on_gws" type="checkbox" name="on_gws" value="1" {% if request.GET.on_gws %}checked{% endif %}> Retrievals online only
                     </label>
                 </div>
+                <div class="checkbox">
+                    <label>
+                        <input id="finished" type="checkbox" name="finished" value="1" {% if request.GET.finished %}checked{% endif %}> Data finished only
+                    </label>
+                </div>
                 <a class="btn btn-default" href="{% url 'retrieval_requests' %}">Clear</a>
                 <input type="submit" class="btn btn-default" value="Filter" />
             </form>
