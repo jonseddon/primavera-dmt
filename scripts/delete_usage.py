@@ -1,9 +1,10 @@
 #!/usr/bin/env python2.7
 """
-delete_request.py
+delete_usage.py
 
 This script is run by the admin to delete previously retrieved data from the
-file structure.
+file structure. All other retrievals are checked for files that are still
+required online.
 """
 import argparse
 import datetime
@@ -90,15 +91,14 @@ def main(args):
     """
     Main entry point
     """
-    rra = RetrievalRequest.objects.get(id=26)
-    rrk = RetrievalRequest.objects.get(id=30)
+    deletion_retrieval = RetrievalRequest.objects.get(id=args.retrieval_id)
+    # TODO add checks for retrieval from deelete_request.py
 
-    # dra = rra.data_request.first()
-    # drk = rrk.data_request.first()
-
-    for data_req in rra.data_request.all():
-        timeless_files, timed_files = _date_filter_retrieval_files(rra,
-                                                                   data_req)
+    for data_req in deletion_retrieval.data_request.all():
+        timeless_files, timed_files = _date_filter_retrieval_files(
+            deletion_retrieval,
+            data_req
+        )
 
         files_to_delete = QuerySet.union(timeless_files, timed_files)
 
@@ -112,8 +112,11 @@ def main(args):
 
             files_to_delete = (files_to_delete.difference(ret_timeless_files).
                 difference(ret_timed_files))
+            # TODO list the retrievals preventing full deletion.
 
         logger.debug('** {}'.format(files_to_delete.distinct().count()))
+
+    # TODO the actual deleting!!!!
 
 
 if __name__ == "__main__":
