@@ -269,7 +269,7 @@ class RetrievalRequestFilter(django_filters.FilterSet):
     class Meta:
         models = RetrievalRequest
         fields = ('id', 'requester', 'date_created', 'date_complete',
-                  'date_deleted', 'incomplete', 'on_gws')
+                  'date_deleted', 'incomplete', 'on_gws', 'finished')
 
     id = django_filters.NumberFilter(field_name='id')
 
@@ -282,6 +282,8 @@ class RetrievalRequestFilter(django_filters.FilterSet):
 
     on_gws = django_filters.NumberFilter(method='filter_on_gws')
 
+    finished = django_filters.NumberFilter(method='filter_finished')
+
     def filter_incomplete(self, queryset, name, value):
         if value:
             return queryset.filter(date_complete__isnull=True)
@@ -291,6 +293,11 @@ class RetrievalRequestFilter(django_filters.FilterSet):
         if value:
             return queryset.filter(date_complete__isnull=False,
                                    date_deleted__isnull=True)
+        return queryset
+
+    def filter_finished(self, queryset, name, value):
+        if value:
+            return queryset.filter(data_finished=True)
         return queryset
 
 
