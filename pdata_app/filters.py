@@ -60,6 +60,11 @@ class DataRequestFilter(django_filters.FilterSet):
         lookup_expr='iexact'
     )
 
+    var_name = django_filters.CharFilter(
+        field_name='variable_request__var_name',
+        lookup_expr='iexact'
+    )
+
     mip_table = django_filters.CharFilter(
         field_name='variable_request__table_name',
         lookup_expr='iexact'
@@ -269,7 +274,7 @@ class RetrievalRequestFilter(django_filters.FilterSet):
     class Meta:
         models = RetrievalRequest
         fields = ('id', 'requester', 'date_created', 'date_complete',
-                  'date_deleted')
+                  'date_deleted', 'incomplete', 'on_gws', 'finished')
 
     id = django_filters.NumberFilter(field_name='id')
 
@@ -278,9 +283,11 @@ class RetrievalRequestFilter(django_filters.FilterSet):
 
     date_time = django_filters.DateFromToRangeFilter(field_name='date_created')
 
-    incomplete = django_filters.DateTimeFilter(method='filter_incomplete')
+    incomplete = django_filters.NumberFilter(method='filter_incomplete')
 
-    on_gws = django_filters.DateTimeFilter(method='filter_on_gws')
+    on_gws = django_filters.NumberFilter(method='filter_on_gws')
+
+    finished = django_filters.NumberFilter(method='filter_finished')
 
     def filter_incomplete(self, queryset, name, value):
         if value:
@@ -291,6 +298,11 @@ class RetrievalRequestFilter(django_filters.FilterSet):
         if value:
             return queryset.filter(date_complete__isnull=False,
                                    date_deleted__isnull=True)
+        return queryset
+
+    def filter_finished(self, queryset, name, value):
+        if value:
+            return queryset.filter(data_finished=True)
         return queryset
 
 

@@ -41,6 +41,10 @@
                     <label class="sr-only" for="cmor_name">CMOR Name</label>
                     <input type="text" class="form-control" name="cmor_name" id="cmor_name" placeholder="CMOR Name" {% if request.GET.cmor_name %} value="{{ request.GET.cmor_name }}" {% endif %}>
                 </div>
+                <div class="form-group">
+                    <label class="sr-only" for="var_name">Variable Name</label>
+                    <input type="text" class="form-control" name="var_name" id="var_name" placeholder="Variable Name" {% if request.GET.var_name %} value="{{ request.GET.var_name }}" {% endif %}>
+                </div>
                 {% if get_outstanding_data %}
                 <a class="btn btn-default" href="{% url 'outstanding_data' %}">Clear</a>
                 {% elif get_received_data %}
