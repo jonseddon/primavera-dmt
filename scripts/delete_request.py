@@ -19,6 +19,7 @@ django.setup()
 from django.utils import timezone
 
 from pdata_app.models import RetrievalRequest
+from pdata_app.utils.common import delete_drs_dir
 from pdata_app.utils.dbapi import match_one
 
 
@@ -28,32 +29,6 @@ DEFAULT_LOG_LEVEL = logging.WARNING
 DEFAULT_LOG_FORMAT = '%(levelname)s: %(message)s'
 
 logger = logging.getLogger(__name__)
-
-# The possible values of mip_era at the top of the DRS structure. Directories
-# above these values are not deleted.
-MIP_ERAS = ('PRIMAVERA', 'CMIP6')
-
-
-def delete_dir(directory):
-    """
-    Delete the directory specified and any empty parent directories until one
-    of the MIP_ERAS values is found at the top of the DRS structure. It is
-    assumed that the directory has already been confirmed as being empty.
-
-    :param str directory: The directory to delete.
-    """
-    try:
-        os.rmdir(directory)
-    except OSError as exc:
-        logger.error('Unable to delete directory {}. {}.'.format(directory,
-                                                                 exc.strerror))
-        return
-
-    parent_dir = os.path.dirname(directory)
-    if (not os.listdir(parent_dir) and
-            not directory.endswith(MIP_ERAS)):
-        # parent is empty so delete it
-        delete_dir(parent_dir)
 
 
 def parse_args():
@@ -142,7 +117,7 @@ def main(args):
     # delete any empty directories
     for directory in directories_found:
         if not os.listdir(directory):
-            delete_dir(directory)
+            delete_drs_dir(directory)
 
     # set date_deleted in the db
     if not problems_encountered:

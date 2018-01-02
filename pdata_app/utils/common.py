@@ -2,6 +2,7 @@
 common.py - several functions that are used throughout the pdata_app
 """
 import datetime
+import logging
 import os
 import random
 import re
@@ -18,6 +19,8 @@ PAUSE_FILES = {
     'moose:':
         '/group_workspaces/jasmin2/primavera5/.tape_pause/pause_moose',
 }
+
+logger = logging.getLogger(__name__)
 
 
 def safe_strftime(dt, format):
@@ -374,3 +377,28 @@ def get_request_size(retrieval_request, online=False, offline=False):
         request_sizes.append(timeless_size + timed_size)
 
     return sum(request_sizes)
+
+
+def delete_drs_dir(directory, mip_eras=('PRIMAVERA', 'CMIP6')):
+    """
+    Delete the directory specified and any empty parent directories until
+    one of the mip_eras values is found at the top of the DRS structure.
+    It is assumed that the directory has already been confirmed as being
+    empty.
+
+    :param str directory: The directory to delete.
+    :param tuple mip_eras: The possible values of mip_era at the top of the
+        DRS structure. Directories above these values are not deleted.
+    """
+    try:
+        os.rmdir(directory)
+    except OSError as exc:
+        logger.error('Unable to delete directory {}. {}.'.format(directory,
+                                                                 exc.strerror))
+        return
+
+    parent_dir = os.path.dirname(directory)
+    if (not os.listdir(parent_dir) and
+            not directory.endswith(mip_eras)):
+        # parent is empty so delete it
+        delete_drs_dir(parent_dir)

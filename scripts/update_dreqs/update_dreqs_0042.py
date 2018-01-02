@@ -28,7 +28,7 @@ import django
 django.setup()
 from pdata_app.utils.replace_file import replace_file
 from pdata_app.models import DataFile, ReplacedFile
-from scripts.delete_request import MIP_ERAS, delete_dir
+from pdata_app.utils.common import delete_drs_dir
 
 __version__ = '0.1.0b1'
 
@@ -100,7 +100,7 @@ def main(args):
 
             for directory in directories_found:
                 if not os.listdir(directory):
-                    delete_dir(directory)
+                    delete_drs_dir(directory)
 
             replace_file(query_set)
 
