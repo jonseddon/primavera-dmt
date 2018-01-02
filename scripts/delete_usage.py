@@ -163,9 +163,9 @@ def main(args):
             else:
                 if data_file.directory not in directories_found:
                     directories_found.append(data_file.directory)
-                    data_file.online = False
-                    data_file.directory = None
-                    data_file.save()
+                data_file.online = False
+                data_file.directory = None
+                data_file.save()
 
     # delete any empty directories
     for directory in directories_found:
