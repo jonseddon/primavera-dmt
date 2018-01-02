@@ -86,6 +86,8 @@ def parse_args():
         'to carry out.', type=int)
     parser.add_argument('-l', '--log-level', help='set logging level to one of '
         'debug, info, warn (the default), or error')
+    parser.add_argument('-n', '--dryrun', help="see how many files can be "
+       "deleted but don't delete any.", action='store_true')
     parser.add_argument('--version', action='version',
         version='%(prog)s {}'.format(__version__))
     args = parser.parse_args()
@@ -109,7 +111,7 @@ def main(args):
     if deletion_retrieval.date_deleted:
         logger.error('Retrieval {} was already deleted, at {}.'.
                      format(deletion_retrieval.id,
-                            deletion_retrieval.date_complete.strftime(
+                            deletion_retrieval.date_deleted.strftime(
                                 '%Y-%m-%d %H:%M')))
         sys.exit(1)
 
@@ -152,34 +154,40 @@ def main(args):
                 data_req, ret_req.start_year, ret_req.end_year))
 
         # do the deleting
-        logger.debug('{} {} files will be deleted.'.format(data_req,
-            files_to_delete.distinct().count()))
-        for data_file in files_to_delete:
-            try:
-                os.remove(os.path.join(data_file.directory, data_file.name))
-            except OSError as exc:
-                logger.error(str(exc))
-                problems_encountered = True
-            else:
-                if data_file.directory not in directories_found:
-                    directories_found.append(data_file.directory)
-                data_file.online = False
-                data_file.directory = None
-                data_file.save()
+        if args.dryrun:
+            logger.debug('{} {} files can be deleted.'.format(data_req,
+                files_to_delete.distinct().count()))
+        else:
+            logger.debug('{} {} files will be deleted.'.format(data_req,
+                files_to_delete.distinct().count()))
+            for data_file in files_to_delete:
+                try:
+                    os.remove(os.path.join(data_file.directory,
+                                           data_file.name))
+                except OSError as exc:
+                    logger.error(str(exc))
+                    problems_encountered = True
+                else:
+                    if data_file.directory not in directories_found:
+                        directories_found.append(data_file.directory)
+                    data_file.online = False
+                    data_file.directory = None
+                    data_file.save()
 
-    # delete any empty directories
-    for directory in directories_found:
-        if not os.listdir(directory):
-            delete_drs_dir(directory)
+    if not args.dryrun:
+        # delete any empty directories
+        for directory in directories_found:
+            if not os.listdir(directory):
+                delete_drs_dir(directory)
 
-    # set date_deleted in the db
-    if not problems_encountered:
-        deletion_retrieval.date_deleted = timezone.now()
-        deletion_retrieval.save()
-    else:
-        logger.error('Errors were encountered and so retrieval {} has not '
-                     'been marked as deleted. All possible files have been '
-                     'deleted.'.format(args.retrieval_id))
+        # set date_deleted in the db
+        if not problems_encountered:
+            deletion_retrieval.date_deleted = timezone.now()
+            deletion_retrieval.save()
+        else:
+            logger.error('Errors were encountered and so retrieval {} has not '
+                         'been marked as deleted. All possible files have been '
+                         'deleted.'.format(args.retrieval_id))
 
     logger.debug('Completed delete_usage.py for retrieval {}'.format(
         args.retrieval_id))
