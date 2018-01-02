@@ -20,6 +20,7 @@ django.setup()
 from django.db.models.query import QuerySet
 
 from pdata_app.models import RetrievalRequest
+from pdata_app.utils.dbapi import match_one
 
 
 __version__ = '0.1.0b1'
@@ -91,8 +92,23 @@ def main(args):
     """
     Main entry point
     """
-    deletion_retrieval = RetrievalRequest.objects.get(id=args.retrieval_id)
-    # TODO add checks for retrieval from deelete_request.py
+    deletion_retrieval = match_one(RetrievalRequest, id=args.retrieval_id)
+    if not deletion_retrieval:
+        logger.error('Unable to find retrieval id {}'.format(
+            args.retrieval_id))
+        sys.exit(1)
+
+    if deletion_retrieval.date_deleted:
+        logger.error('Retrieval {} was already deleted, at {}.'.
+                     format(deletion_retrieval.id,
+                            deletion_retrieval.date_complete.strftime(
+                                '%Y-%m-%d %H:%M')))
+        sys.exit(1)
+
+    if not deletion_retrieval.data_finished:
+        logger.error('Retrieval {} is not marked as finished.'.
+                     format(deletion_retrieval.id))
+        sys.exit(1)
 
     for data_req in deletion_retrieval.data_request.all():
         timeless_files, timed_files = _date_filter_retrieval_files(
