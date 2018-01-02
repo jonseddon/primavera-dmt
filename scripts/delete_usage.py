@@ -8,7 +8,6 @@ required online.
 """
 import argparse
 import datetime
-from itertools import chain
 import logging.config
 import os
 import sys
@@ -18,8 +17,10 @@ import cf_units
 import django
 django.setup()
 from django.db.models.query import QuerySet
+from django.utils import timezone
 
 from pdata_app.models import RetrievalRequest
+from pdata_app.utils.common import delete_drs_dir
 from pdata_app.utils.dbapi import match_one
 
 
@@ -96,6 +97,9 @@ def main(args):
     """
     Main entry point
     """
+    logger.debug('Starting delete_usage.py for retrieval {}'.format(
+        args.retrieval_id))
+
     deletion_retrieval = match_one(RetrievalRequest, id=args.retrieval_id)
     if not deletion_retrieval:
         logger.error('Unable to find retrieval id {}'.format(
@@ -113,6 +117,9 @@ def main(args):
         logger.error('Retrieval {} is not marked as finished.'.
                      format(deletion_retrieval.id))
         sys.exit(1)
+
+    problems_encountered = False
+    directories_found = []
 
     # loop through all of the data requests in this retrieval
     for data_req in deletion_retrieval.data_request.all():
@@ -134,8 +141,7 @@ def main(args):
         # loop through the retrieval requests that still need this data request
         for ret_req in other_retrievals:
             ret_timeless_files, ret_timed_files = _date_filter_retrieval_files(
-                ret_req, data_req
-            )
+                ret_req, data_req)
 
             # remove from the list of files to delete the ones that we have
             # just found are still needed
@@ -145,9 +151,38 @@ def main(args):
             logger.debug("{} {} to {} won't be deleted".format(
                 data_req, ret_req.start_year, ret_req.end_year))
 
-        # TODO the actual deleting!!!!
+        # do the deleting
         logger.debug('{} {} files will be deleted.'.format(data_req,
-                                    files_to_delete.distinct().count()))
+            files_to_delete.distinct().count()))
+        for data_file in files_to_delete:
+            try:
+                os.remove(os.path.join(data_file.directory, data_file.name))
+            except OSError as exc:
+                logger.error(str(exc))
+                problems_encountered = True
+            else:
+                if data_file.directory not in directories_found:
+                    directories_found.append(data_file.directory)
+                    data_file.online = False
+                    data_file.directory = None
+                    data_file.save()
+
+    # delete any empty directories
+    for directory in directories_found:
+        if not os.listdir(directory):
+            delete_drs_dir(directory)
+
+    # set date_deleted in the db
+    if not problems_encountered:
+        deletion_retrieval.date_deleted = timezone.now()
+        deletion_retrieval.save()
+    else:
+        logger.error('Errors were encountered and so retrieval {} has not '
+                     'been marked as deleted. All possible files have been '
+                     'deleted.'.format(args.retrieval_id))
+
+    logger.debug('Completed delete_usage.py for retrieval {}'.format(
+        args.retrieval_id))
 
 
 if __name__ == "__main__":
