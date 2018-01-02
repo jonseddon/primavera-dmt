@@ -46,6 +46,10 @@ def _date_filter_retrieval_files(retrieval_req, data_req):
     """
     all_files = data_req.datafile_set.filter(online=True,
                                              directory__isnull=False)
+    if not all_files:
+        logger.warning('No online files with a directory found for data '
+                       'request {}'.format(data_req))
+        return None, None
     time_units = all_files[0].time_units
     calendar = all_files[0].calendar
     start_float = None
@@ -110,29 +114,40 @@ def main(args):
                      format(deletion_retrieval.id))
         sys.exit(1)
 
+    # loop through all of the data requests in this retrieval
     for data_req in deletion_retrieval.data_request.all():
         timeless_files, timed_files = _date_filter_retrieval_files(
             deletion_retrieval,
             data_req
         )
+        if timeless_files is None and timed_files is None:
+            continue
 
+        # this is all of the files to delete from this data request of this
+        # retrieval request
         files_to_delete = QuerySet.union(timeless_files, timed_files)
 
+        # find any other retrieval requests that still need this data
         other_retrievals = RetrievalRequest.objects.filter(
             data_request=data_req, data_finished=False
         )
+        # loop through the retrieval requests that still need this data request
         for ret_req in other_retrievals:
             ret_timeless_files, ret_timed_files = _date_filter_retrieval_files(
                 ret_req, data_req
             )
 
+            # remove from the list of files to delete the ones that we have
+            # just found are still needed
             files_to_delete = (files_to_delete.difference(ret_timeless_files).
                 difference(ret_timed_files))
-            # TODO list the retrievals preventing full deletion.
+            # list the parts of the data request that are still required
+            logger.debug("{} {} to {} won't be deleted".format(
+                data_req, ret_req.start_year, ret_req.end_year))
 
-        logger.debug('** {}'.format(files_to_delete.distinct().count()))
-
-    # TODO the actual deleting!!!!
+        # TODO the actual deleting!!!!
+        logger.debug('{} {} files will be deleted.'.format(data_req,
+                                    files_to_delete.distinct().count()))
 
 
 if __name__ == "__main__":
