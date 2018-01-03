@@ -88,6 +88,9 @@ def parse_args():
         'debug, info, warn (the default), or error')
     parser.add_argument('-n', '--dryrun', help="see how many files can be "
        "deleted but don't delete any.", action='store_true')
+    parser.add_argument('-f', '--force', help="Force the deletion of all "
+       "files from this  retrieval even if they are still required by other "
+       "retrievals.", action='store_true')
     parser.add_argument('--version', action='version',
         version='%(prog)s {}'.format(__version__))
     args = parser.parse_args()
@@ -136,22 +139,25 @@ def main(args):
         # retrieval request
         files_to_delete = QuerySet.union(timeless_files, timed_files)
 
-        # find any other retrieval requests that still need this data
-        other_retrievals = RetrievalRequest.objects.filter(
-            data_request=data_req, data_finished=False
-        )
-        # loop through the retrieval requests that still need this data request
-        for ret_req in other_retrievals:
-            ret_timeless_files, ret_timed_files = _date_filter_retrieval_files(
-                ret_req, data_req)
+        if not args.force:
+            # find any other retrieval requests that still need this data
+            other_retrievals = RetrievalRequest.objects.filter(
+                data_request=data_req, data_finished=False
+            )
+            # loop through the retrieval requests that still need this data
+            # request
+            for ret_req in other_retrievals:
+                ret_timeless_files, ret_timed_files = (
+                    _date_filter_retrieval_files(ret_req, data_req)
+                )
 
-            # remove from the list of files to delete the ones that we have
-            # just found are still needed
-            files_to_delete = (files_to_delete.difference(ret_timeless_files).
-                difference(ret_timed_files))
-            # list the parts of the data request that are still required
-            logger.debug("{} {} to {} won't be deleted".format(
-                data_req, ret_req.start_year, ret_req.end_year))
+                # remove from the list of files to delete the ones that we have
+                # just found are still needed
+                files_to_delete = (files_to_delete.
+                    difference(ret_timeless_files).difference(ret_timed_files))
+                # list the parts of the data request that are still required
+                logger.debug("{} {} to {} won't be deleted".format(
+                    data_req, ret_req.start_year, ret_req.end_year))
 
         # do the deleting
         if args.dryrun:
