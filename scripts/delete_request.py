@@ -3,11 +3,11 @@
 delete_request.py
 
 This script is run by the admin to delete previously retrieved data from the
-file structure.
+file structure. All other retrievals are checked for files that are still
+required online.
 """
 import argparse
 import datetime
-from itertools import chain
 import logging.config
 import os
 import sys
@@ -16,44 +16,63 @@ import cf_units
 
 import django
 django.setup()
+from django.db.models.query import QuerySet
 from django.utils import timezone
 
 from pdata_app.models import RetrievalRequest
+from pdata_app.utils.common import delete_drs_dir
 from pdata_app.utils.dbapi import match_one
 
 
-__version__ = '0.1.0b1'
+__version__ = '0.2.0b1'
 
 DEFAULT_LOG_LEVEL = logging.WARNING
 DEFAULT_LOG_FORMAT = '%(levelname)s: %(message)s'
 
 logger = logging.getLogger(__name__)
 
-# The possible values of mip_era at the top of the DRS structure. Directories
-# above these values are not deleted.
-MIP_ERAS = ('PRIMAVERA', 'CMIP6')
-
-
-def delete_dir(directory):
+def _date_filter_retrieval_files(retrieval_req, data_req):
     """
-    Delete the directory specified and any empty parent directories until one
-    of the MIP_ERAS values is found at the top of the DRS structure. It is
-    assumed that the directory has already been confirmed as being empty.
+    Filter the files belonging to a data request in a retrieval
+    request and return only the files that fall between the retrieval's
+    start and end dates.
 
-    :param str directory: The directory to delete.
+    :param pdata_app.models.RetrievalRequest retrieval_req: The
+        retrieval request.
+    :param pdata_app.models.DataRequest data_req: The data request
+        that we're interested in that belongs to the retrieval.
+    :returns: A tuple of the QuerySet of the timeless and QuerySet of
+        timed files.
+    :rtype: tuple
     """
-    try:
-        os.rmdir(directory)
-    except OSError as exc:
-        logger.error('Unable to delete directory {}. {}.'.format(directory,
-                                                                 exc.strerror))
-        return
+    all_files = data_req.datafile_set.filter(online=True,
+                                             directory__isnull=False)
+    if not all_files:
+        logger.warning('No online files with a directory found for data '
+                       'request {}'.format(data_req))
+        return None, None
+    time_units = all_files[0].time_units
+    calendar = all_files[0].calendar
+    start_float = None
+    if retrieval_req.start_year is not None and time_units and calendar:
+        start_float = cf_units.date2num(
+            datetime.datetime(retrieval_req.start_year, 1, 1), time_units,
+            calendar
+        )
+    end_float = None
+    if retrieval_req.end_year is not None and time_units and calendar:
+        end_float = cf_units.date2num(
+            datetime.datetime(retrieval_req.end_year + 1, 1, 1), time_units,
+            calendar
+        )
 
-    parent_dir = os.path.dirname(directory)
-    if (not os.listdir(parent_dir) and
-            not directory.endswith(MIP_ERAS)):
-        # parent is empty so delete it
-        delete_dir(parent_dir)
+    timeless_files = all_files.filter(start_time__isnull=True)
+
+    timed_files = (all_files.exclude(start_time__isnull=True).
+        filter(start_time__gte=start_float,
+               end_time__lt=end_float))
+
+    return timeless_files, timed_files
 
 
 def parse_args():
@@ -67,6 +86,11 @@ def parse_args():
         'to carry out.', type=int)
     parser.add_argument('-l', '--log-level', help='set logging level to one of '
         'debug, info, warn (the default), or error')
+    parser.add_argument('-n', '--dryrun', help="see how many files can be "
+       "deleted but don't delete any.", action='store_true')
+    parser.add_argument('-f', '--force', help="Force the deletion of all "
+       "files from this  retrieval even if they are still required by other "
+       "retrievals.", action='store_true')
     parser.add_argument('--version', action='version',
         version='%(prog)s {}'.format(__version__))
     args = parser.parse_args()
@@ -78,82 +102,101 @@ def main(args):
     """
     Main entry point
     """
-    logger.debug('Starting delete_request.py')
+    logger.debug('Starting delete_usage.py for retrieval {}'.format(
+        args.retrieval_id))
 
-    # check retrieval
-    retrieval = match_one(RetrievalRequest, id=args.retrieval_id)
-    if not retrieval:
+    deletion_retrieval = match_one(RetrievalRequest, id=args.retrieval_id)
+    if not deletion_retrieval:
         logger.error('Unable to find retrieval id {}'.format(
             args.retrieval_id))
         sys.exit(1)
 
-    if retrieval.date_deleted:
+    if deletion_retrieval.date_deleted:
         logger.error('Retrieval {} was already deleted, at {}.'.
-                     format(retrieval.id,
-                            retrieval.date_complete.strftime('%Y-%m-%d %H:%M')))
+                     format(deletion_retrieval.id,
+                            deletion_retrieval.date_deleted.strftime(
+                                '%Y-%m-%d %H:%M')))
         sys.exit(1)
 
-    if not retrieval.data_finished:
+    if not deletion_retrieval.data_finished:
         logger.error('Retrieval {} is not marked as finished.'.
-                     format(retrieval.id))
+                     format(deletion_retrieval.id))
         sys.exit(1)
 
     problems_encountered = False
     directories_found = []
 
-    # delete each file
-    for data_req in retrieval.data_request.all():
-        all_files = data_req.datafile_set.filter(online=True,
-                                                 directory__isnull=False)
-        time_units = all_files[0].time_units
-        calendar = all_files[0].calendar
-        start_float = None
-        if retrieval.start_year is not None and time_units and calendar:
-            start_float = cf_units.date2num(
-                datetime.datetime(retrieval.start_year, 1, 1), time_units,
-                calendar
+    # loop through all of the data requests in this retrieval
+    for data_req in deletion_retrieval.data_request.all():
+        timeless_files, timed_files = _date_filter_retrieval_files(
+            deletion_retrieval,
+            data_req
+        )
+        if timeless_files is None and timed_files is None:
+            continue
+
+        # this is all of the files to delete from this data request of this
+        # retrieval request
+        files_to_delete = QuerySet.union(timeless_files, timed_files)
+
+        if not args.force:
+            # find any other retrieval requests that still need this data
+            other_retrievals = RetrievalRequest.objects.filter(
+                data_request=data_req, data_finished=False
             )
-        end_float = None
-        if retrieval.end_year is not None and time_units and calendar:
-            end_float = cf_units.date2num(
-                datetime.datetime(retrieval.end_year + 1, 1, 1), time_units,
-                calendar
-            )
+            # loop through the retrieval requests that still need this data
+            # request
+            for ret_req in other_retrievals:
+                ret_timeless_files, ret_timed_files = (
+                    _date_filter_retrieval_files(ret_req, data_req)
+                )
 
-        timeless_files = all_files.filter(start_time__isnull=True)
+                # remove from the list of files to delete the ones that we have
+                # just found are still needed
+                files_to_delete = (files_to_delete.
+                    difference(ret_timeless_files).difference(ret_timed_files))
+                # list the parts of the data request that are still required
+                logger.debug("{} {} to {} won't be deleted".format(
+                    data_req, ret_req.start_year, ret_req.end_year))
 
-        timed_files = (all_files.exclude(start_time__isnull=True).
-                       filter(start_time__gte=start_float,
-                             end_time__lt=end_float))
+        # do the deleting
+        if args.dryrun:
+            logger.debug('{} {} files can be deleted.'.format(data_req,
+                files_to_delete.distinct().count()))
+        else:
+            logger.debug('{} {} files will be deleted.'.format(data_req,
+                files_to_delete.distinct().count()))
+            for data_file in files_to_delete:
+                try:
+                    os.remove(os.path.join(data_file.directory,
+                                           data_file.name))
+                except OSError as exc:
+                    logger.error(str(exc))
+                    problems_encountered = True
+                else:
+                    if data_file.directory not in directories_found:
+                        directories_found.append(data_file.directory)
+                    data_file.online = False
+                    data_file.directory = None
+                    data_file.save()
 
-        for data_file in chain(timeless_files, timed_files):
-            try:
-                os.remove(os.path.join(data_file.directory, data_file.name))
-            except OSError as exc:
-                logger.error(str(exc))
-                problems_encountered = True
-            else:
-                if data_file.directory not in directories_found:
-                    directories_found.append(data_file.directory)
-                data_file.online = False
-                data_file.directory = None
-                data_file.save()
+    if not args.dryrun:
+        # delete any empty directories
+        for directory in directories_found:
+            if not os.listdir(directory):
+                delete_drs_dir(directory)
 
-    # delete any empty directories
-    for directory in directories_found:
-        if not os.listdir(directory):
-            delete_dir(directory)
+        # set date_deleted in the db
+        if not problems_encountered:
+            deletion_retrieval.date_deleted = timezone.now()
+            deletion_retrieval.save()
+        else:
+            logger.error('Errors were encountered and so retrieval {} has not '
+                         'been marked as deleted. All possible files have been '
+                         'deleted.'.format(args.retrieval_id))
 
-    # set date_deleted in the db
-    if not problems_encountered:
-        retrieval.date_deleted = timezone.now()
-        retrieval.save()
-    else:
-        logger.error('Errors were encountered and so retrieval {} has not '
-                     'been marked as deleted. All possible files have been '
-                     'deleted.'.format(retrieval.id))
-
-    logger.debug('Completed delete_request.py')
+    logger.debug('Completed delete_usage.py for retrieval {}'.format(
+        args.retrieval_id))
 
 
 if __name__ == "__main__":

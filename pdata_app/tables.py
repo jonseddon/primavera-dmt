@@ -279,14 +279,11 @@ class DataReceivedTable(DataRequestTable):
         return _to_comma_sep(file_versions)
 
     def render_retrieval_request(self, record):
-        if record.online_status() != ONLINE_STATUS.online:
-            return format_html(
-                '<div class="checkbox" style="text-align:center;'
-                'vertical-align:middle"><label><input type="checkbox" '
-                'name="request_data_req_{}"></label></div>'.format(record.id)
-            )
-        else:
-            return format_html('&nbsp;')
+        return format_html(
+            '<div class="checkbox" style="text-align:center;'
+            'vertical-align:middle"><label><input type="checkbox" '
+            'name="request_data_req_{}"></label></div>'.format(record.id)
+        )
 
     def render_total_data_size(self, record):
         return filesizeformat(
