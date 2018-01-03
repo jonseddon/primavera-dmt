@@ -1,6 +1,6 @@
 #!/usr/bin/env python2.7
 """
-delete_usage.py
+delete_request.py
 
 This script is run by the admin to delete previously retrieved data from the
 file structure. All other retrievals are checked for files that are still
