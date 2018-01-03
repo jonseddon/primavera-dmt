@@ -24,7 +24,7 @@ from pdata_app.utils.common import delete_drs_dir
 from pdata_app.utils.dbapi import match_one
 
 
-__version__ = '0.1.0b1'
+__version__ = '0.2.0b1'
 
 DEFAULT_LOG_LEVEL = logging.WARNING
 DEFAULT_LOG_FORMAT = '%(levelname)s: %(message)s'
