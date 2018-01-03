@@ -1,5 +1,5 @@
 """
-test_validate_data_submission.py - unit tests for validate_data_submission.py
+test_validate_data_submission.py - unit tests for retrieve_request.py
 """
 import datetime
 import mock
@@ -19,8 +19,7 @@ from pdata_app.models import (Project, Institute, ClimateModel, ActivityId,
 from vocabs.vocabs import (CALENDARS, FREQUENCY_VALUES, STATUS_VALUES,
                            VARIABLE_TYPES)
 
-from scripts.retrieve_request import main
-
+from scripts.retrieve_request import main, get_tape_url
 
 class TestIntegrationTests(TestCase):
     """Integration tests run through the unittest framework and mock"""
@@ -56,6 +55,14 @@ class TestIntegrationTests(TestCase):
 
         patch = mock.patch('scripts.retrieve_request._email_user_success')
         self.mock_email = patch.start()
+        self.addCleanup(patch.stop)
+
+        patch = mock.patch('scripts.retrieve_request.os.remove')
+        self.mock_remove = patch.start()
+        self.addCleanup(patch.stop)
+
+        patch = mock.patch('scripts.retrieve_request.shutil.rmtree')
+        self.mock_rmtree = patch.start()
         self.addCleanup(patch.stop)
 
         # create the necessary DB objects
@@ -106,6 +113,7 @@ class TestIntegrationTests(TestCase):
             time_units='days since 1950-01-01', calendar=CALENDARS['360_day'],
             grid='gn', version='v12345678', tape_url='et:1234',
             data_submission=dsub)
+        self.df1 = df1
         df2 = get_or_create( DataFile, name='file_two.nc',
             incoming_directory=incoming_directory, directory=None, size=1,
             project=proj, climate_model=climate_model, experiment=experiment,
@@ -115,6 +123,7 @@ class TestIntegrationTests(TestCase):
             time_units='days since 1950-01-01', calendar=CALENDARS['360_day'],
             grid='gn', version='v12345678', tape_url='et:5678',
             data_submission=dsub)
+        self.df2 = df2
         df3 = get_or_create( DataFile, name='file_three.nc',
             incoming_directory=incoming_directory, directory=None, size=1,
             project=proj, climate_model=climate_model, experiment=experiment,
@@ -124,6 +133,7 @@ class TestIntegrationTests(TestCase):
             time_units='days since 1950-01-01', calendar=CALENDARS['360_day'],
             grid='gn', version='v12345678', tape_url='et:8765',
             data_submission=dsub)
+        self.df3 = df3
 
     def test_simplest(self):
         ret_req = get_or_create(RetrievalRequest, requester=self.user,
@@ -145,14 +155,14 @@ class TestIntegrationTests(TestCase):
         ]
 
         ns = ArgparseNamespace()
-        main(ns)
+        get_tape_url('et:1234', [self.df1], ns)
 
         df = match_one(DataFile, name='file_one.nc')
         self.assertIsNotNone(df)
 
         self.mock_rename.assert_called_once_with(
-            '/group_workspaces/jasmin2/primavera5/.et_retrievals/et_all_files/gws/'
-            'MOHC/MY-MODEL/incoming/v12345678/file_one.nc',
+            '/group_workspaces/jasmin2/primavera5/.et_retrievals/ret_0001/'
+            'batch_01234/gws/MOHC/MY-MODEL/incoming/v12345678/file_one.nc',
             u'/group_workspaces/jasmin2/primavera5/stream1/CMIP6/HighResMIP/'
             u'MOHC/MY-MODEL/experiment/r1i1p1f1/my-table/my-var/gn/v12345678/'
             u'file_one.nc'
@@ -183,17 +193,21 @@ class TestIntegrationTests(TestCase):
             True,  # if not os.path.exists(drs_dir):
             False,  # if os.path.exists(dest_file_path):
             # second tape_url
+            False,  # if os.path.exists(retrieval_dir):
             True,   # if not os.path.exists(extracted_file_path):
             True,   # if not os.path.exists(drs_dir):
             False,  # if os.path.exists(dest_file_path):
             # third tape_url
+            False,  # if os.path.exists(retrieval_dir):
             True,  # if not os.path.exists(extracted_file_path):
             True,  # if not os.path.exists(drs_dir):
             False  # if os.path.exists(dest_file_path):
         ]
 
         ns = ArgparseNamespace()
-        main(ns)
+        get_tape_url('et:1234', [self.df1], ns)
+        get_tape_url('et:5678', [self.df2], ns)
+        get_tape_url('et:8765', [self.df3], ns)
 
         self.assertEqual(self.mock_rename.call_count, 3)
 
@@ -267,11 +281,11 @@ class TestIntegrationTests(TestCase):
         ]
 
         ns = ArgparseNamespace()
-        main(ns)
+        get_tape_url('et:1234', [self.df1], ns)
 
         self.mock_rename.assert_called_once_with(
-            '/group_workspaces/jasmin2/primavera3/.et_retrievals/et_all_files/'
-            'gws/MOHC/MY-MODEL/incoming/v12345678/file_one.nc',
+            '/group_workspaces/jasmin2/primavera3/.et_retrievals/ret_0001/'
+            'batch_01234/gws/MOHC/MY-MODEL/incoming/v12345678/file_one.nc',
             u'/group_workspaces/jasmin2/primavera3/spare_dir/CMIP6/HighResMIP/'
             u'MOHC/MY-MODEL/experiment/r1i1p1f1/my-table/my-var/gn/'
             u'v12345678/file_one.nc'
