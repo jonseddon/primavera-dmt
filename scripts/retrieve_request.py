@@ -223,9 +223,9 @@ def get_moose_url(tape_url, data_files, args):
                 _check_file_checksum(data_file,
                                      os.path.join(drs_dir, data_file.name))
             except ChecksumError:
-                # warning message has already been displayed and so take no
-                # further action
-                pass
+                # warning message has already been displayed and so move on
+                # to next file
+                continue
 
         # create symbolic link from main directory if storing data in an
         # alternative directory
@@ -357,9 +357,9 @@ def copy_et_files_into_drs(data_files, retrieval_dir, args):
             try:
                 _check_file_checksum(data_file, dest_file_path)
             except ChecksumError:
-                # warning message has already been displayed and so take no
-                # further action
-                pass
+                # warning message has already been displayed and so move on
+                # to next file
+                continue
 
         # create symbolic link from main directory if storing data in an
         # alternative directory
@@ -489,6 +489,35 @@ def _email_user_success(retrieval):
     )
 
 
+def _email_admin_failure(retrieval):
+    """
+    Send an email to the admin user advising them that the retrieval failed.
+
+    :param pdata_app.models.RetrievalRequest retrieval: the retrieval object
+    """
+    contact_user_id = Settings.get_solo().contact_user_id
+    contact_user = User.objects.get(username=contact_user_id)
+
+    msg = (
+        'Dear {},\n'
+        '\n'
+        'Retrieval request number {} failed.\n'
+        '\n'
+        'Thanks,\n'
+        '\n'
+        '{}'.format(contact_user.first_name, retrieval.id,
+                    contact_user.first_name)
+    )
+
+    _email = EmailQueue.objects.create(
+        recipient=contact_user,
+        subject=('[PRIMAVERA_DMT] Retrieval Request {} Failed'.
+                 format(retrieval.id)),
+        message=msg
+    )
+
+
+
 def _remove_data_license_files(dir_path):
     """
     Delete any Met Office Data License files from the directory specified.
@@ -589,15 +618,26 @@ def main(args):
     # get a fresh DB connection after exiting from parallel operation
     django.db.connections.close_all()
 
-    # set date_complete in the db
-    retrieval.date_complete = timezone.now()
-    retrieval.save()
+    # check that all files were restored
+    offline_files = data_req.datafile_set.filter(online=False)
+    missed_timeless_files = offline_files.filter(start_time__isnull=True)
+    missed_data_files = (offline_files.exclude(start_time__isnull=True).
+        filter(start_time__gte=start_float, end_time__lt=end_float))
 
-    # send an email to advise the user that their data's been restored
-    _email_user_success(retrieval)
+    if missed_timeless_files or missed_data_files:
+        _email_admin_failure(retrieval)
+        logger.error('Failed retrieve_request.py for retrieval {}'.
+                     format(args.retrieval_id))
+    else:
+        # set date_complete in the db
+        retrieval.date_complete = timezone.now()
+        retrieval.save()
 
-    logger.debug('Completed retrieve_request.py for retrieval {}'.
-                 format(args.retrieval_id))
+        # send an email to advise the user that their data's been restored
+        _email_user_success(retrieval)
+
+        logger.debug('Completed retrieve_request.py for retrieval {}'.
+                     format(args.retrieval_id))
 
 
 if __name__ == "__main__":
