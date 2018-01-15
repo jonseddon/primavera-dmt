@@ -18,7 +18,7 @@ import django
 django.setup()
 
 from django.template.defaultfilters import filesizeformat
-from pdata_app.models import RetrievalRequest
+from pdata_app.models import RetrievalRequest, Settings
 from pdata_app.utils.common import get_request_size, PAUSE_FILES
 
 __version__ = '0.1.0b1'
@@ -30,6 +30,12 @@ logger = logging.getLogger(__name__)
 
 ONE_HOUR = 60 * 60
 TWO_TEBIBYTES = 2 * 2 ** 40
+
+# The institution_ids that should be retrieved from MASS
+MASS_INSTITUTIONS = ['MOHC', 'NERC']
+
+# The top-level directory to write output data to
+STREAM1_DIR = Settings.get_solo().current_stream1_dir
 
 
 def run_retrieve_request(retrieval_id):
@@ -48,7 +54,8 @@ def run_retrieve_request(retrieval_id):
         return
 
     cmd = ('/home/users/jseddon/primavera/LIVE-prima-dm/scripts/'
-           'retrieve_request.py -l debug -a /group_workspaces/jasmin2/primavera2/stream1 {}'.format(retrieval_id))
+           'retrieve_request.py -l debug -a {} {}'.format(STREAM1_DIR,
+                                                          retrieval_id))
     try:
         subprocess.check_output(cmd, shell=True)
     except OSError as exc:
@@ -102,9 +109,9 @@ def main(args):
                                  format(PAUSE_FILES['moose:']))
                     break
                 if (ret_req.data_request.filter
-                        (institute__short_name='MOHC').count() and
-                        not ret_req.data_request.exclude
-                        (institute__short_name='MOHC').count()):
+                        (institute__short_name__in=MASS_INSTITUTIONS).count()
+                        and not ret_req.data_request.exclude
+                        (institute__short_name__in=MASS_INSTITUTIONS).count()):
                     run_retrieve_request(ret_req.id)
             elif args.et:
                 # however, if pausing the system jump to the wait
@@ -113,9 +120,9 @@ def main(args):
                                  format(PAUSE_FILES['et:']))
                     break
                 if (ret_req.data_request.exclude
-                        (institute__short_name='MOHC').count() and
-                        not ret_req.data_request.filter
-                        (institute__short_name='MOHC').count()):
+                        (institute__short_name__in=MASS_INSTITUTIONS).count()
+                        and not ret_req.data_request.filter
+                        (institute__short_name__in=MASS_INSTITUTIONS).count()):
                     run_retrieve_request(ret_req.id)
             else:
                 raise NotImplementedError('Unknown tape system specified.')

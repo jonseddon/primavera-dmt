@@ -137,7 +137,7 @@ class TestIntegrationTests(TestCase):
 
     def test_simplest(self):
         ret_req = get_or_create(RetrievalRequest, requester=self.user,
-                                start_year=1000, end_year=3000)
+                                start_year=1000, end_year=3000, id=999999)
         ret_req.data_request.add(self.dreq1)
         ret_req.save()
 
@@ -161,7 +161,7 @@ class TestIntegrationTests(TestCase):
         self.assertIsNotNone(df)
 
         self.mock_rename.assert_called_once_with(
-            '/group_workspaces/jasmin2/primavera5/.et_retrievals/ret_0001/'
+            '/group_workspaces/jasmin2/primavera5/.et_retrievals/ret_999999/'
             'batch_01234/gws/MOHC/MY-MODEL/incoming/v12345678/file_one.nc',
             u'/group_workspaces/jasmin2/primavera5/stream1/CMIP6/HighResMIP/'
             u'MOHC/MY-MODEL/experiment/r1i1p1f1/my-table/my-var/gn/v12345678/'
@@ -262,7 +262,7 @@ class TestIntegrationTests(TestCase):
 
     def test_alternative_dir(self):
         ret_req = get_or_create(RetrievalRequest, requester=self.user,
-                                start_year=1000, end_year=3000)
+                                start_year=1000, end_year=3000, id=999999)
         ret_req.data_request.add(self.dreq1)
         ret_req.save()
 
@@ -284,7 +284,7 @@ class TestIntegrationTests(TestCase):
         get_tape_url('et:1234', [self.df1], ns)
 
         self.mock_rename.assert_called_once_with(
-            '/group_workspaces/jasmin2/primavera3/.et_retrievals/ret_0001/'
+            '/group_workspaces/jasmin2/primavera3/.et_retrievals/ret_999999/'
             'batch_01234/gws/MOHC/MY-MODEL/incoming/v12345678/file_one.nc',
             u'/group_workspaces/jasmin2/primavera3/spare_dir/CMIP6/HighResMIP/'
             u'MOHC/MY-MODEL/experiment/r1i1p1f1/my-table/my-var/gn/'
