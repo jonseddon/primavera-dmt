@@ -23,6 +23,9 @@ DEFAULT_LOG_FORMAT = '%(levelname)s: %(message)s'
 
 logger = logging.getLogger(__name__)
 
+# The institution_ids that should be retrieved from MASS
+MASS_INSTITUTIONS = ['MOHC', 'NERC']
+
 
 def _email_user_split(orig_retrieval, new_retrieval):
     """
@@ -40,8 +43,8 @@ def _email_user_split(orig_retrieval, new_retrieval):
         'Thank you for your recent data retrieval request.\n'
         '\n'
         'Due to temporary restrictions on the tape servers at JASMIN '
-        'Your request has been split into two separate requests, so that the '
-        'Met Office data is in a request of its own.\n'
+        'Your request has been split into two separate requests, so that '
+        'Met Office and NERC data are in a request of their own.\n'
         '\n'
         'Therefore your data will not be fully restored until you have '
         'received emails to say that requests {} and {} have both been '
@@ -88,9 +91,10 @@ def main(args):
     for ret_req in ret_reqs:
         # find retrieval requests with both MASS and non-MASS data
         if (ret_req.data_request.
-                    filter(institute__short_name='MOHC').count() and
-             ret_req.data_request.
-                    exclude(institute__short_name='MOHC').count()):
+                    filter(institute__short_name__in=MASS_INSTITUTIONS).count()
+                and ret_req.data_request.
+                    exclude(institute__short_name__in=MASS_INSTITUTIONS).
+                        count()):
             logger.debug('Splitting retrieve request {}'.format(ret_req.id))
             original_id = ret_req.id
             # copy the retrieval request
@@ -102,7 +106,7 @@ def main(args):
 
             # add the MASS data requests to the new request
             for data_req in orig_req.data_request.filter(
-                    institute__short_name='MOHC'):
+                    institute__short_name__in=MASS_INSTITUTIONS):
                 ret_req.data_request.add(data_req)
                 ret_req.save()
 
