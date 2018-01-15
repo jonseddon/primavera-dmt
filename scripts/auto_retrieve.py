@@ -31,6 +31,9 @@ logger = logging.getLogger(__name__)
 ONE_HOUR = 60 * 60
 TWO_TEBIBYTES = 2 * 2 ** 40
 
+# The institution_ids that should be retrieved from MASS
+MASS_INSTITUTIONS = ['MOHC', 'NERC']
+
 
 def run_retrieve_request(retrieval_id):
     """
@@ -102,9 +105,9 @@ def main(args):
                                  format(PAUSE_FILES['moose:']))
                     break
                 if (ret_req.data_request.filter
-                        (institute__short_name='MOHC').count() and
-                        not ret_req.data_request.exclude
-                        (institute__short_name='MOHC').count()):
+                        (institute__short_name__in=MASS_INSTITUTIONS).count()
+                        and not ret_req.data_request.exclude
+                        (institute__short_name__in=MASS_INSTITUTIONS).count()):
                     run_retrieve_request(ret_req.id)
             elif args.et:
                 # however, if pausing the system jump to the wait
@@ -113,9 +116,9 @@ def main(args):
                                  format(PAUSE_FILES['et:']))
                     break
                 if (ret_req.data_request.exclude
-                        (institute__short_name='MOHC').count() and
-                        not ret_req.data_request.filter
-                        (institute__short_name='MOHC').count()):
+                        (institute__short_name__in=MASS_INSTITUTIONS).count()
+                        and not ret_req.data_request.filter
+                        (institute__short_name__in=MASS_INSTITUTIONS).count()):
                     run_retrieve_request(ret_req.id)
             else:
                 raise NotImplementedError('Unknown tape system specified.')
