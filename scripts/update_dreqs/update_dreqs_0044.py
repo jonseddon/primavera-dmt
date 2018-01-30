@@ -25,7 +25,7 @@ from cf_units import date2num, CALENDAR_GREGORIAN
 
 import django
 django.setup()
-from pdata_app.utils.replace_file import replace_file
+from pdata_app.utils.replace_file import replace_files
 from pdata_app.models import DataFile, ReplacedFile
 from pdata_app.utils.common import delete_drs_dir
 
@@ -101,7 +101,7 @@ def main(args):
                 if not os.listdir(directory):
                     delete_drs_dir(directory)
 
-            replace_file(query_set)
+            replace_files(query_set)
 
 
 if __name__ == "__main__":

@@ -18,7 +18,7 @@ import django
 django.setup()
 from django.db.models import Count
 from pdata_app.models import DataFile
-from pdata_app.utils.replace_file import replace_file
+from pdata_app.utils.replace_file import replace_files
 
 
 
@@ -70,7 +70,7 @@ def main(args):
             msg = "Didn't find exactly one file for {}".format(dup_file)
             raise ValueError(msg)
         logger.debug('{:03} {}'.format(i, delete_file.first().name))
-        replace_file(delete_file)
+        replace_files(delete_file)
 
 
 if __name__ == "__main__":
