@@ -7,7 +7,7 @@ from pdata_app.models import DataFile, ReplacedFile
 logger = logging.getLogger(__name__)
 
 
-def replace_file(queryset):
+def replace_files(queryset):
     """
     Move DataFile entries from `queryset` to a ReplacedFile type
 

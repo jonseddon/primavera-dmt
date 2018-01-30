@@ -8,7 +8,7 @@ from pdata_app.models import (ActivityId, Checksum, ClimateModel, DataFile,
                               Institute, Project, ReplacedFile, Settings,
                               VariableRequest)
 from pdata_app.utils.dbapi import get_or_create
-from pdata_app.utils.replace_file import replace_file
+from pdata_app.utils.replace_file import replace_files
 from vocabs.vocabs import (CALENDARS, FREQUENCY_VALUES, STATUS_VALUES,
                            VARIABLE_TYPES)
 
@@ -87,7 +87,7 @@ class TestReplaceFile(TestCase):
 
         one_file = DataFile.objects.filter(name='file_one.nc')
 
-        replace_file(one_file)
+        replace_files(one_file)
         self.assertEqual(2, DataFile.objects.count())
         self.assertEqual(1, ReplacedFile.objects.count())
 
@@ -96,32 +96,32 @@ class TestReplaceFile(TestCase):
 
         one_file = DataFile.objects.all()
 
-        replace_file(one_file)
+        replace_files(one_file)
         self.assertEqual(0, DataFile.objects.count())
         self.assertEqual(3, ReplacedFile.objects.count())
 
     def test_metadata_item_copied(self):
         one_file = DataFile.objects.filter(name='file_one.nc')
-        replace_file(one_file)
+        replace_files(one_file)
         old_file = ReplacedFile.objects.get(name='file_one.nc')
         self.assertEqual('et:1234', old_file.tape_url)
 
     def test_incoming_directory_copied(self):
         one_file = DataFile.objects.filter(name='file_one.nc')
-        replace_file(one_file)
+        replace_files(one_file)
         old_file = ReplacedFile.objects.get(name='file_one.nc')
         self.assertEqual('/gws/MOHC/MY-MODEL/incoming/v12345678',
                          old_file.incoming_directory)
 
     def test_metadata_foreign_key_copied(self):
         one_file = DataFile.objects.filter(name='file_one.nc')
-        replace_file(one_file)
+        replace_files(one_file)
         old_file = ReplacedFile.objects.get(name='file_one.nc')
         self.assertEqual('MY-MODEL', old_file.climate_model.short_name)
 
     def test_other_models_not_moved(self):
         climate_model = ClimateModel.objects.first()
-        self.assertRaises(TypeError, replace_file, climate_model)
+        self.assertRaises(TypeError, replace_files, climate_model)
 
     def test_checksum_copied(self):
         first_file = DataFile.objects.get(name='file_one.nc')
@@ -130,7 +130,7 @@ class TestReplaceFile(TestCase):
                                            data_file=first_file)
 
         one_file = DataFile.objects.filter(name='file_one.nc')
-        replace_file(one_file)
+        replace_files(one_file)
 
         old_file = ReplacedFile.objects.get(name='file_one.nc')
         self.assertEqual('1234', old_file.checksum_value)
