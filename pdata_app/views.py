@@ -261,7 +261,6 @@ def retrieval_years(request):
             if components:
                 data_req_ids.append(int(components.group(1)))
         # get a string representation of each id
-        # TODO what if id doesn't exist?
         data_req_strs = [str(DataRequest.objects.filter(id=req).first())
                          for req in data_req_ids]
 
@@ -318,7 +317,6 @@ def retrieval_years(request):
                        'earliest_year': earliest_year,
                        'end_year': end_year})
     else:
-        # TODO do something intelligent
         return render(request, 'pdata_app/retrieval_request_error.html',
                       {'request': request,
                        'page_title': 'Retrieval Request'})
@@ -338,8 +336,7 @@ def confirm_retrieval(request):
         # get the size of each data request
         request_sizes = []
         for req in data_req_ids:
-            all_files = (DataRequest.objects.get(id=req).datafile_set.
-                         filter(online=False))
+            all_files = DataRequest.objects.get(id=req).datafile_set.all()
             time_units = all_files[0].time_units
             calendar = all_files[0].calendar
             start_float = cf_units.date2num(
@@ -349,13 +346,15 @@ def confirm_retrieval(request):
                 datetime.datetime(int(end_year) + 1, 1, 1), time_units, calendar
             ) if end_year is not None and time_units and calendar else None
 
-            timeless_files = all_files.filter(start_time__isnull=True)
+            offline_files = (DataRequest.objects.get(id=req).datafile_set.
+                filter(online=False))
+            timeless_files = offline_files.filter(start_time__isnull=True)
             timeless_size = timeless_files.aggregate(Sum('size'))['size__sum']
             if timeless_size is None:
                 timeless_size = 0
 
             if start_float is not None and end_float is not None:
-                timed_files = (all_files.exclude(start_time__isnull=True).
+                timed_files = (offline_files.exclude(start_time__isnull=True).
                               filter(start_time__gte=start_float,
                                      end_time__lt=end_float))
                 timed_size = timed_files.aggregate(Sum('size'))['size__sum']
@@ -378,7 +377,6 @@ def confirm_retrieval(request):
                        'data_request_ids': data_req_str,
                        'request_size': request_size})
     else:
-        # TODO do something intelligent
         return render(request, 'pdata_app/retrieval_request_error.html',
                       {'request': request,
                        'page_title': 'Retrieval Request'})
@@ -439,7 +437,6 @@ def confirm_mark_finished(request):
                 ret_req_ids.append(int(components.group(1)))
 
         # get a summary of each return request
-        # TODO what if id doesn't exist?
         ret_req_summaries = []
         for req in ret_req_ids:
             summary = {}
@@ -460,7 +457,6 @@ def confirm_mark_finished(request):
                        'total_size':sum([summary['size']
                                          for summary in ret_req_summaries])})
     else:
-        # TODO do something intelligent
         return render(request, 'pdata_app/mark_finished_error.html',
                       {'request': request,
                        'page_title': 'Retrieval Request'})
