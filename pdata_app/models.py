@@ -691,7 +691,7 @@ class DataIssue(models.Model):
     NOTE: Aggregation is used to associate a DataIssue with an ESGFDataset,
     CEDADataset or DataSubmission
     """
-    issue = models.CharField(max_length=500, verbose_name="Issue Reported",
+    issue = models.CharField(max_length=4000, verbose_name="Issue Reported",
                              null=False, blank=False)
     reporter = models.ForeignKey(User, verbose_name="Reporter",
                                  null=False, blank=False,
