@@ -80,7 +80,7 @@ def _checksum(checksum_method, file_path):
         # shell=True is not a security risk here. The input has previously been
         # checked and this is only called if file_path has been confirmed as
         # being a valid file
-        ret_val = check_output('{} {}'.format(checksum_method, file_path),
+        ret_val = check_output("{} '{}'".format(checksum_method, file_path),
                                 shell=True)
         # split on white space and return the first part
         checksum = ret_val.split()[0]
@@ -206,7 +206,7 @@ def list_files(directory, suffix='.nc'):
     for filename in dir_files:
         file_path = os.path.join(directory, filename)
         if os.path.isdir(file_path):
-            nc_files.extend(list_files(file_path))
+            nc_files.extend(list_files(file_path, suffix))
         elif file_path.endswith(suffix):
             nc_files.append(file_path)
 
@@ -261,7 +261,8 @@ def standardise_time_unit(time_float, time_unit, standard_unit, calendar):
     :returns: A floating point representation of the old time in
         `standard_unit`
     """
-    if time_float is None:
+    if (time_float is None or time_unit is None or
+            standard_unit is None or calendar is None):
         return None
 
     if time_unit == standard_unit:

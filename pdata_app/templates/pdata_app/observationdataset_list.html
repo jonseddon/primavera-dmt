@@ -1,0 +1,51 @@
+{% extends "pdata_app/base.html" %}
+{% load staticfiles %}
+{% load render_table from django_tables2 %}
+
+    {% block contents %}
+        <p>
+            To request that new observations are made available at JASMIN please
+            add their details to the <a href="http://proj.badc.rl.ac.uk/primavera-private/wiki/WP9/Observations/RequestedObservations">
+            observations request wiki page</a> and email Jon Seddon to advise
+            him of the request.
+        </p>
+
+        <p>
+            If you spot any incorrect metadata below, or know the value for any
+            missing item below then please email Jon Seddon.
+
+        <p>
+            These are the observation sets in the PRIMAVERA group workspaces at
+            JASMIN that we know about...
+        </p>
+
+        <p>
+            <form class="form-inline" action="{% url 'obs_sets' %}" method="get">
+                <div class="form-group">
+                    <label class="sr-only" for="name">Name</label>
+                    <input type="text" class="form-control" name="name" id="name" placeholder="Name" {% if request.GET.name %} value="{{ request.GET.name }}" {% endif %} autofocus>
+                </div>
+                <div class="form-group">
+                    <label class="sr-only" for="version">Version</label>
+                    <input type="text" class="form-control" name="version" id="version" placeholder="Version" {% if request.GET.version %} value="{{ request.GET.version }}" {% endif %}>
+                </div>
+                <div class="form-group">
+                    <label class="sr-only" for="variables">Variables</label>
+                    <input type="text" class="form-control" name="variables" id="variables" placeholder="Variables" {% if request.GET.variables %} value="{{ request.GET.variables }}" {% endif %}>
+                </div>
+                <div class="form-group">
+                    <label class="sr-only" for="url">URL</label>
+                    <input type="text" class="form-control" name="url" id="url" placeholder="URL" {% if request.GET.url %} value="{{ request.GET.url }}" {% endif %}>
+                </div>
+                <div class="form-group">
+                    <label class="sr-only" for="summary">Other Information</label>
+                    <input type="text" class="form-control" name="summary" id="summary" placeholder="Other Information" {% if request.GET.summary %} value="{{ request.GET.summary }}" {% endif %}>
+                </div>
+                <a class="btn btn-default" href="{% url 'obs_sets' %}">Clear</a>
+                <input type="submit" class="btn btn-default" value="Filter" />
+            </form>
+        </p>
+
+        {% render_table table %}
+
+    {% endblock %}

@@ -1,4 +1,4 @@
-from django.conf.urls import include, url
+from django.conf.urls import url
 from django.contrib.auth import views as auth_views
 from django.contrib.staticfiles.urls import staticfiles_urlpatterns
 
@@ -93,6 +93,12 @@ urlpatterns = [
 
     url(r'^mark_finished/$', pdata_app.views.mark_finished,
         name='mark_finished'),
+
+    url(r'^observation_sets/$',
+        pdata_app.views.ObservationDatasetList.as_view(), name='obs_sets'),
+
+    url(r'^observation_files/$',
+        pdata_app.views.ObservationFileList.as_view(), name='obs_files'),
 
     url(r'^et_indexer/$', et_indexer.views.view_home, name='et_indexer'),
 
