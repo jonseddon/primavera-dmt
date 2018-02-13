@@ -25,7 +25,7 @@ HTML_FILE = 'update_dreqs.html'
 
 def _ouput_headers(fh):
     txt = """<html>
-<head></head>
+<head><title>update_dreqs</title></head>
 <body>
 <table border="1" cellpadding="10">\n
 """
