@@ -1,7 +1,8 @@
+from django.db.models import Q
 import django_filters
 from .models import (DataRequest, DataSubmission, DataFile, ESGFDataset,
                      CEDADataset, DataIssue, VariableRequest, RetrievalRequest,
-                     ReplacedFile)
+                     ReplacedFile, ObservationDataset, ObservationFile)
 
 
 def patched_label():
@@ -358,3 +359,51 @@ class ReplacedFileFilter(django_filters.FilterSet):
 
     rip_code = django_filters.CharFilter(field_name='rip_code',
                                          lookup_expr='icontains')
+
+
+class ObservationDatasetFilter(django_filters.FilterSet):
+    class Meta:
+        model = ObservationDataset
+        fields = ('name', 'version', 'url', 'summary', 'variables')
+
+    name = django_filters.CharFilter(field_name='name',
+                                     lookup_expr='icontains')
+
+    version = django_filters.CharFilter(field_name='version',
+                                        lookup_expr='icontains')
+
+    url = django_filters.CharFilter(field_name='url',
+                                    lookup_expr='icontains')
+
+    summary = django_filters.CharFilter(field_name='summary',
+                                        lookup_expr='icontains')
+
+    variables = django_filters.CharFilter(method='variables_filter')
+
+    def variables_filter(self, queryset, name, value):
+        return queryset.filter(
+            Q(observationfile__standard_name__icontains=value) |
+            Q(observationfile__long_name__icontains=value) |
+            Q(observationfile__var_name__icontains=value)
+        )
+
+
+class ObservationFileFilter(django_filters.FilterSet):
+    class Meta:
+        model = ObservationFile
+        fields = ('name', 'obs_set_name', 'directory', 'obs_set',
+                  'variable_name')
+
+    name = django_filters.CharFilter(field_name='name',
+                                     lookup_expr='icontains')
+
+    obs_set_name = django_filters.CharFilter(field_name='obs_set__name',
+                                             lookup_expr='icontains')
+
+    directory = django_filters.CharFilter(field_name='directory',
+                                          lookup_expr='icontains')
+
+    obs_set = django_filters.NumberFilter(field_name='obs_set__id')
+
+    variable_name = django_filters.CharFilter(field_name='variable_name',
+                                              lookup_expr='icontains')

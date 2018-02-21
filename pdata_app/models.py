@@ -9,15 +9,15 @@ from solo.models import SingletonModel
 from django.db.models import PROTECT, SET_NULL, CASCADE
 from django.core.exceptions import ValidationError
 
-from pdata_app.utils.common import standardise_time_unit
+from pdata_app.utils.common import standardise_time_unit, safe_strftime
 from vocabs import (STATUS_VALUES, FREQUENCY_VALUES, ONLINE_STATUS,
     CHECKSUM_TYPES, VARIABLE_TYPES, CALENDARS)
 
 model_names = ['Project', 'Institute', 'ClimateModel', 'Experiment',
-               'DataSubmission', 'DataFile', 'ESGFDataset', 'CEDADataset',
-               'DataRequest', 'DataIssue', 'Checksum', 'Settings',
-               'VariableRequest', 'RetrievalRequest', 'EmailQueue',
-               'ReplacedFile']
+               'ActivityId', 'DataSubmission', 'DataFile', 'ESGFDataset',
+               'CEDADataset', 'DataRequest', 'DataIssue', 'Checksum',
+               'Settings', 'VariableRequest', 'RetrievalRequest', 'EmailQueue',
+               'ReplacedFile', 'ObservationDataset', 'ObservationFile']
 __all__ = model_names
 
 
@@ -774,3 +774,266 @@ class EmailQueue(models.Model):
 
     def __unicode__(self):
         return '{} {}'.format(self.recipient.email, self.subject)
+
+
+class ObservationDataset(models.Model):
+    """
+    A collection of observation files.
+    """
+    class Meta:
+        unique_together = ('name', 'version')
+        verbose_name = 'Observations Dataset'
+
+    name = models.CharField(max_length=200,
+                            verbose_name='Name',
+                            null=True, blank=True)
+    version = models.CharField(max_length=200, verbose_name='Version',
+                               null=True, blank=True)
+
+    url = models.URLField(verbose_name='URL', null=True, blank=True)
+    summary = models.CharField(max_length=4000, verbose_name='Summary',
+                               null=True, blank=True)
+    date_downloaded = models.DateTimeField(verbose_name='Date downloaded',
+                                           null=True, blank=True)
+
+    doi = models.CharField(max_length=200, verbose_name='DOI',
+                           null=True, blank=True)
+
+    reference = models.CharField(max_length=4000, verbose_name='Reference',
+                                 null=True, blank=True)
+
+    license = models.URLField(verbose_name='License', null=True, blank=True)
+
+    # The following cached fields can be calculated from the foreign key
+    # relationships. Howevere due to the number of observation files this
+    # can be slow. Instead a script is run by a cron job to periodically
+    # save the information here to speed page load.
+    cached_variables = models.CharField(max_length=1000,
+                                        verbose_name='Variables',
+                                        null=True, blank=True)
+    cached_start_time = models.DateTimeField(verbose_name='Start Time',
+                                             null=True, blank=True)
+    cached_end_time = models.DateTimeField(verbose_name='End Time',
+                                           null=True, blank=True)
+    cached_num_files = models.IntegerField(verbose_name='# Data Files',
+                                           null=True, blank=True)
+    cached_directories = models.CharField(max_length=200,
+                                          verbose_name='Directory',
+                                          null=True, blank=True)
+
+    def _file_aggregation(self, field_name):
+        records = [getattr(obs_file, field_name)
+                   for obs_file in self.obs_files]
+        # Return unique sorted set of records
+        unique_records = sorted(set(records))
+        if None in unique_records:
+            unique_records.remove(None)
+        if unique_records == []:
+            return None
+        else:
+            return unique_records
+
+    @property
+    def obs_files(self):
+        return self.observationfile_set.all()
+
+    @property
+    def variables(self):
+        var_strings = self._file_aggregation('variable')
+
+        if var_strings:
+            all_vars = [indi_var.strip() for var_string in var_strings
+                        for indi_var in var_string.split(',')]
+            return sorted(list(set(all_vars)))
+        else:
+            return None
+
+    @property
+    def incoming_directories(self):
+        return self._file_aggregation('incoming_directory')
+
+    @property
+    def directories(self):
+        return self._file_aggregation('directory')
+
+    @property
+    def tape_urls(self):
+        return self._file_aggregation('tape_url')
+
+    @property
+    def frequencies(self):
+        return self._file_aggregation('frequency')
+
+    @property
+    def units(self):
+        return self._file_aggregation('units')
+
+    @property
+    def start_time(self):
+        std_units = Settings.get_solo().standard_time_units
+
+        start_times = self.obs_files.values_list('start_time', 'time_units',
+                                                 'calendar')
+
+        if not start_times:
+            return None
+
+        std_times = [
+            (standardise_time_unit(time, unit, std_units, cal), cal)
+            for time, unit, cal in start_times
+        ]
+
+        none_values_removed = [(std_time, cal)
+                               for std_time, cal in std_times
+                               if std_time is not None]
+
+        if not none_values_removed:
+            return None
+
+        earliest_time, calendar = min(none_values_removed, key=lambda x: x[0])
+
+        earliest_obj = cf_units.num2date(earliest_time, std_units, calendar)
+
+        return earliest_obj
+
+    @property
+    def end_time(self):
+        std_units = Settings.get_solo().standard_time_units
+
+        end_times = self.obs_files.values_list('end_time', 'time_units',
+                                               'calendar')
+
+        if not end_times:
+            return None
+
+        std_times = [
+            (standardise_time_unit(time, unit, std_units, cal), cal)
+            for time, unit, cal in end_times
+        ]
+
+        none_values_removed = [(std_time, cal)
+                               for std_time, cal in std_times
+                               if std_time is not None]
+
+        if not none_values_removed:
+            return None
+
+        latest_time, calendar = max(none_values_removed, key=lambda x: x[0])
+
+        latest_obj = cf_units.num2date(latest_time, std_units, calendar)
+
+        return latest_obj
+
+    @property
+    def online_status(self):
+        """
+        Checks aggregation of online status of all DataFiles.
+        Returns one of:
+            ONLINE_STATUS.online
+            ONLINE_STATUS.offline
+            ONLINE_STATUS.partial
+        """
+        files_online = self.obs_files.filter(online=True).count()
+        files_offline = self.obs_files.filter(online=False).count()
+
+        if files_offline:
+            if files_online:
+                return ONLINE_STATUS.partial
+            else:
+                return ONLINE_STATUS.offline
+        else:
+            return ONLINE_STATUS.online
+
+    def __unicode__(self):
+        if self.version:
+            return '{} ver {}'.format(self.name, self.version)
+        else:
+            return '{}'.format(self.name)
+
+
+class ObservationFile(models.Model):
+    """
+    A single file containing observations or a reanalysis.
+    """
+    class Meta:
+        unique_together = ('name', 'incoming_directory')
+        verbose_name = 'Observations File'
+
+    name = models.CharField(max_length=200, verbose_name='File name',
+                            null=False, blank=False)
+
+    incoming_directory = models.CharField(max_length=500,
+                                          verbose_name='Incoming directory',
+                                          null=False, blank=False)
+    directory = models.CharField(max_length=200, verbose_name='Directory',
+                                 null=True, blank=True)
+    tape_url = models.CharField(verbose_name="Tape URL", max_length=200,
+                                null=True, blank=True)
+    online = models.BooleanField(default=True, null=False, blank=False,
+                                 verbose_name='Is the file online?')
+    size = models.BigIntegerField(null=False, verbose_name='File size')
+
+    checksum_value = models.CharField(max_length=200, null=True, blank=True)
+    checksum_type = models.CharField(max_length=20,
+                                     choices=CHECKSUM_TYPES.items(),
+                                     null=True, blank=True)
+
+    # DateTimes are allowed to be null/blank because some fields (such as
+    # orography) are time-independent
+    start_time = models.FloatField(verbose_name="Start time",
+                                   null=True, blank=True)
+    end_time = models.FloatField(verbose_name="End time",
+                                 null=True, blank=True)
+    time_units = models.CharField(verbose_name='Time units', max_length=50,
+                                  null=True, blank=True)
+    calendar = models.CharField(verbose_name='Calendar', max_length=20,
+                                null=True, blank=True,
+                                choices=CALENDARS.items())
+    frequency = models.CharField(max_length=200, null=True, blank=True,
+                                 verbose_name='Frequency')
+
+    # Details of the variables in the file
+    standard_name = models.CharField(max_length=500, null=True, blank=True,
+                                     verbose_name='Standard name')
+    long_name = models.CharField(max_length=500, null=True, blank=True,
+                                 verbose_name='Long name')
+    var_name = models.CharField(max_length=200, null=True, blank=True,
+                                verbose_name='Var name')
+    units = models.CharField(max_length=200, null=True, blank=True,
+                             verbose_name='Units')
+
+    @property
+    def variable(self):
+        if self.standard_name:
+            return self.standard_name
+        elif self.long_name:
+            return self.long_name
+        elif self.var_name:
+            return self.var_name
+        else:
+            return None
+
+    @property
+    def start_string(self):
+        if self.start_time is not None and self.time_units and self.calendar:
+            return safe_strftime(
+                cf_units.num2date(self.start_time, self.time_units,
+                                     self.calendar), '%Y-%m-%d')
+        else:
+            return None
+
+    @property
+    def end_string(self):
+        if self.end_time is not None and self.time_units and self.calendar:
+            return safe_strftime(
+                cf_units.num2date(self.end_time, self.time_units,
+                                     self.calendar), '%Y-%m-%d')
+        else:
+            return None
+
+    # Foreign Key Relationships
+    obs_set = models.ForeignKey(ObservationDataset, null=False, blank=False,
+                                on_delete=CASCADE, verbose_name='Obs Set')
+
+    def __unicode__(self):
+        return '{} (Directory: {})'.format(self.name, self.incoming_directory)

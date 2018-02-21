@@ -1,7 +1,7 @@
+# -*- coding: utf-8 -*-
 import datetime
+import os
 from urllib import urlencode
-
-import cf_units
 
 from django.db.models import Count, Sum
 from django.template.defaultfilters import filesizeformat
@@ -11,12 +11,11 @@ import django_tables2 as tables
 
 from .models import (DataRequest, DataSubmission, DataFile, ESGFDataset,
                      CEDADataset, DataIssue, VariableRequest, RetrievalRequest,
-                     ReplacedFile)
+                     ReplacedFile, ObservationDataset, ObservationFile)
 
 from pdata_app.utils.common import get_request_size
-from vocabs.vocabs import ONLINE_STATUS
 
-DEFAULT_VALUE = '--'
+DEFAULT_VALUE = u'—'
 
 
 class DataFileTable(tables.Table):
@@ -30,7 +29,7 @@ class DataFileTable(tables.Table):
                    'esgf_download_url', 'esgf_opendap_url', 'data_request')
         sequence = ['name', 'directory', 'version', 'online', 'num_dataissues',
                     'tape_url', 'institute', 'climate_model', 'experiment',
-                    'mip_table', 'rip_code','cmor_name', 'grid', 'size',
+                    'mip_table', 'rip_code', 'cmor_name', 'grid', 'size',
                     'checksum']
 
     cmor_name = tables.Column(empty_values=(), verbose_name='CMOR Name',
@@ -49,8 +48,7 @@ class DataFileTable(tables.Table):
     experiment = tables.Column(accessor='experiment.short_name',
                                verbose_name='Experiment')
     project = tables.Column(accessor='project.short_name',
-                               verbose_name='Project')
-
+                            verbose_name='Project')
 
     def render_checksum(self, record):
         checksum = record.checksum_set.first()
@@ -195,7 +193,7 @@ class DataRequestTable(tables.Table):
     experiment = tables.Column(accessor='experiment.short_name',
                                verbose_name='Experiment')
     project = tables.Column(accessor='project.short_name',
-                               verbose_name='Project')
+                            verbose_name='Project')
 
     def render_request_start_time(self, record):
         return record.start_date_string()
@@ -229,7 +227,7 @@ class DataReceivedTable(DataRequestTable):
     retrieval_request = tables.Column(empty_values=(), orderable=False,
                                       verbose_name='Request Retrieval?')
     total_data_size = tables.Column(empty_values=(), orderable=False,
-                                      verbose_name='Data Size')
+                                    verbose_name='Data Size')
     climate_model = tables.Column(accessor='climate_model.short_name',
                                   verbose_name='Climate Model')
     institute = tables.Column(accessor='institute.short_name',
@@ -237,7 +235,7 @@ class DataReceivedTable(DataRequestTable):
     experiment = tables.Column(accessor='experiment.short_name',
                                verbose_name='Experiment')
     project = tables.Column(accessor='project.short_name',
-                               verbose_name='Project')
+                            verbose_name='Project')
 
     def render_start_time(self, record):
         return record.start_time()
@@ -374,7 +372,7 @@ class RetrievalRequestTable(tables.Table):
     data_reqs = tables.Column(empty_values=(), orderable=False,
                               verbose_name='Data Requests')
     req_size = tables.Column(empty_values=(), orderable=False,
-                              verbose_name='Request Size')
+                             verbose_name='Request Size')
     retrieval_size = tables.Column(empty_values=(), orderable=False,
                                    verbose_name='Retrieval Size')
     tape_urls = tables.Column(empty_values=(), orderable=False,
@@ -467,6 +465,85 @@ class ReplacedFileTable(tables.Table):
     def render_tape_url(self, record):
         return format_html('<div class="truncate-ellipsis"><span>{}'
                            '</span></div>'.format(record.tape_url))
+
+
+class ObservationDatasetTable(tables.Table):
+    class Meta:
+        model = ObservationDataset
+        attrs = {'class': 'paleblue'}
+        exclude = ('id', 'url')
+        sequence = ['name', 'version', 'cached_variables', 'cached_start_time',
+                    'cached_end_time', 'cached_num_files',
+                    'cached_directories', 'summary', 'doi', 'reference',
+                    'license', 'date_downloaded']
+        order_by = ('name', 'version')
+
+    cached_start_time = tables.DateTimeColumn(format='Y-m-d')
+    cached_end_time = tables.DateTimeColumn(format='Y-m-d')
+    summary = tables.Column(verbose_name='Other Information')
+
+    def render_name(self, record):
+        if record.url:
+            return format_html('<a href="{}">{}</a>'.format(record.url,
+                                                            record.name))
+        else:
+            return record.name
+
+    def render_cached_num_files(self, record):
+        url_query = urlencode({'obs_set': record.id,
+                               'obs_set_string': str(record)})
+        return format_html('<a href="{}?{}">{}</a>'.format(
+            reverse('obs_files'),
+            url_query,
+            record.cached_num_files
+        ))
+
+    def render_date_downloaded(self, value):
+        if isinstance(value, datetime.datetime):
+            return value.strftime('%Y-%m-%d')
+        else:
+            return DEFAULT_VALUE
+
+    def render_doi(self, value):
+        return format_html('<a href="https://dx.doi.org/{}">{}</a>'.
+                           format(value, value))
+
+
+class ObservationFileTable(tables.Table):
+    class Meta:
+        model = ObservationFile
+        attrs = {'class': 'paleblue'}
+        exclude = ('id', 'incoming_directory', 'time_units', 'calendar',
+                   'standard_name', 'long_name', 'var_name',
+                   'checksum_value', 'checksum_type')
+        sequence = ['name', 'variable_name', 'obs_set', 'start_time',
+                    'end_time', 'frequency', 'units', 'directory', 'online',
+                    'size', 'checksum', 'tape_url']
+        order_by = 'name'
+
+    obs_set = tables.Column(order_by=('obs_set.name', 'obs_set.version'))
+    online = tables.BooleanColumn(verbose_name='Online?')
+    variable_name = tables.Column(verbose_name='Variable')
+    size = tables.Column(order_by='size')
+    checksum = tables.Column(empty_values=(), verbose_name='Checksum',
+                             orderable=False)
+
+    def render_size(self, value):
+        return filesizeformat(value)
+
+    def render_start_time(self, record):
+        return record.start_string
+
+    def render_end_time(self, record):
+        return record.end_string
+
+    def render_checksum(self, record):
+        if record.checksum_type and record.checksum_value:
+            return '{}: {}'.format(record.checksum_type, record.checksum_value)
+        elif record.checksum_value:
+            return '{}'.format(record.checksum_value)
+        else:
+            return DEFAULT_VALUE
 
 
 def _to_comma_sep(list_values):

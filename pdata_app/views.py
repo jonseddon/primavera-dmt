@@ -11,23 +11,26 @@ from django.contrib.auth.decorators import login_required
 from django.contrib.auth.forms import PasswordResetForm
 from django.contrib.auth.models import User
 from django.urls import reverse
-from django.db.models import Max, Min, Sum
+from django.db.models import Max, Min, Sum, Case, When
 from django.http import HttpResponseRedirect
 from django.shortcuts import render, redirect
 
 from .models import (DataFile, DataSubmission, ESGFDataset, CEDADataset,
                      DataRequest, DataIssue, VariableRequest, RetrievalRequest,
-                     EmailQueue, Settings, ReplacedFile)
+                     EmailQueue, Settings, ReplacedFile, ObservationDataset,
+                     ObservationFile)
 from .forms import (CreateSubmissionForm, PasswordChangeBootstrapForm,
                     UserBootstrapForm)
 from .tables import (DataRequestTable, DataFileTable, DataSubmissionTable,
                      ESGFDatasetTable, CEDADatasetTable, DataIssueTable,
                      VariableRequestQueryTable, DataReceivedTable,
-                     RetrievalRequestTable, ReplacedFileTable)
+                     RetrievalRequestTable, ReplacedFileTable,
+                     ObservationDatasetTable, ObservationFileTable)
 from .filters import (DataRequestFilter, DataFileFilter, DataSubmissionFilter,
                       ESGFDatasetFilter, CEDADatasetFilter, DataIssueFilter,
                       VariableRequestQueryFilter, RetrievalRequestFilter,
-                      ReplacedFileFilter)
+                      ReplacedFileFilter, ObservationDatasetFilter,
+                      ObservationFileFilter)
 from .utils.common import get_request_size
 from .utils.table_views import PagedFilteredTableView, DataRequestsFilteredView
 from vocabs.vocabs import STATUS_VALUES
@@ -82,11 +85,13 @@ class DataFileList(PagedFilteredTableView):
     filter_class = DataFileFilter
     page_title = 'Data Files'
 
+
 class ReplacedFileList(PagedFilteredTableView):
     model = ReplacedFile
     table_class = ReplacedFileTable
     filter_class = ReplacedFileFilter
     page_title = 'Replaced Files'
+
 
 class DataSubmissionList(PagedFilteredTableView):
     model = DataSubmission
@@ -121,6 +126,32 @@ class RetrievalRequestList(PagedFilteredTableView):
     table_class = RetrievalRequestTable
     filter_class = RetrievalRequestFilter
     page_title = 'Retrieval Requests'
+
+
+class ObservationDatasetList(PagedFilteredTableView):
+    model = ObservationDataset
+    table_class = ObservationDatasetTable
+    filter_class = ObservationDatasetFilter
+    page_title = 'Observation Sets'
+
+
+class ObservationFileList(PagedFilteredTableView):
+    model = ObservationFile
+    table_class = ObservationFileTable
+    filter_class = ObservationFileFilter
+    page_title = 'Observation Files'
+
+    def get_queryset(self, **kwargs):
+        qs = super(PagedFilteredTableView, self).get_queryset()
+        qs = qs.annotate(
+            variable_name=Case(
+                When(standard_name__isnull=False, then='standard_name'),
+                When(long_name__isnull=False, then='long_name'),
+                When(var_name__isnull=False, then='var_name')
+            )
+        )
+        self.filter = self.filter_class(self.request.GET, queryset=qs)
+        return self.filter.qs.distinct()
 
 
 def view_login(request):
