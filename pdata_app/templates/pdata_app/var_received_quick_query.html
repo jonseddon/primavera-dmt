@@ -1,0 +1,48 @@
+{% extends "pdata_app/base.html" %}
+{% load staticfiles %}
+
+    {% block contents %}
+        <p>Query the data that has been received:</p>
+
+        <p>
+            <form class="form-inline" action="{% url 'received_data' %}" method="get">
+                <div class="form-group">
+                    <label class="sr-only" for="project">Project</label>
+                    <input type="text" class="form-control" name="project" id="project" placeholder="Project" {% if request.GET.project %} value="{{ request.GET.project }}" {% endif %} autofocus>
+                </div>
+                <div class="form-group">
+                    <label class="sr-only" for="institute">Institute</label>
+                    <input type="text" class="form-control" name="institute" id="institute" placeholder="Institute" {% if request.GET.institute %} value="{{ request.GET.institute }}" {% endif %}>
+                </div>
+                <div class="form-group">
+                    <label class="sr-only" for="climate_model">Climate Model</label>
+                    <input type="text" class="form-control" name="climate_model" id="climate_model" placeholder="Climate Model" {% if request.GET.climate_model %} value="{{ request.GET.climate_model }}" {% endif %}>
+                </div>
+                <div class="form-group">
+                    <label class="sr-only" for="experiment">Project</label>
+                    <input type="text" class="form-control" name="experiment" id="experiment" placeholder="Experiment" {% if request.GET.experiment %} value="{{ request.GET.experiment }}" {% endif %}>
+                </div>
+                <div class="form-group">
+                    <label class="sr-only" for="mip_table">MIP Table</label>
+                    <input type="text" class="form-control" name="mip_table" id="mip_table" placeholder="MIP Table" {% if request.GET.mip_table %} value="{{ request.GET.mip_table }}" {% endif %}>
+                </div>
+                <div class="form-group">
+                    <label class="sr-only" for="rip_code">Variant Label</label>
+                    <input type="text" class="form-control" name="rip_code" id="rip_code" placeholder="Variant Label" {% if request.GET.rip_code %} value="{{ request.GET.rip_code }}" {% endif %}>
+                </div>
+                <div class="form-group">
+                    <label class="sr-only" for="cmor_name">CMOR Name</label>
+                    <input type="text" class="form-control" name="cmor_name" id="cmor_name" placeholder="CMOR Name" {% if request.GET.cmor_name %} value="{{ request.GET.cmor_name }}" {% endif %}>
+                </div>
+                <div class="form-group">
+                    <label class="sr-only" for="var_name">Variable Name</label>
+                    <input type="text" class="form-control" name="var_name" id="var_name" placeholder="Variable Name" {% if request.GET.var_name %} value="{{ request.GET.var_name }}" {% endif %}>
+                </div>
+                <a class="btn btn-default" href="{% url 'received_data_quick_query' %}">Clear</a>
+                <input type="submit" class="btn btn-default" value="Filter" />
+            </form>
+        </p>
+
+
+
+    {% endblock %}

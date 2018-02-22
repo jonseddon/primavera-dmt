@@ -65,6 +65,10 @@ urlpatterns = [
         pdata_app.views.ReceivedDataRequestList.as_view(),
         name='received_data'),
 
+    url(r'^received_data_quick_query/$',
+        pdata_app.views.view_received_quick_query,
+        name='received_data_quick_query'),
+
     url(r'^data_issues/$', pdata_app.views.DataIssueList.as_view(),
         name='data_issues'),
 
