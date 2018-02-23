@@ -1,16 +1,20 @@
 #!/usr/bin/env python2.7
 """
-index_updates.py
+update_dreqs_0055.py
 
-This file adds an issue to any ECMWF-IFS-LR coupled files received so far
-describing the coupling issue that was found with them.
+This file adds an issue to any CMCC files from version v20170706 or v20170927
+for highresSST-present for pr, prc, prsn.
 """
 import argparse
-import glob
-import importlib
 import logging.config
-import os
 import sys
+
+
+import django
+django.setup()
+from django.contrib.auth.models import User
+
+from pdata_app.models import DataFile, DataIssue
 
 
 __version__ = '0.1.0b1'
@@ -21,32 +25,11 @@ DEFAULT_LOG_FORMAT = '%(levelname)s: %(message)s'
 logger = logging.getLogger(__name__)
 
 
-HTML_FILE = 'update_dreqs.html'
-
-def _ouput_headers(fh):
-    txt = """<html>
-<head><title>update_dreqs</title></head>
-<body>
-<table border="1" cellpadding="10">\n
-"""
-    fh.write(txt)
-
-
-def _ouput_footers(fh):
-    txt = """
-</table>
-</body>
-</html>
-"""
-    fh.write(txt)
-
-
 def parse_args():
     """
     Parse command-line arguments
     """
-    parser = argparse.ArgumentParser(description='Index the docstrings of the '
-                                                 'update_dreqs_nnnn.py scripts')
+    parser = argparse.ArgumentParser(description='Add additional data requests')
     parser.add_argument('-l', '--log-level', help='set logging level to one of '
         'debug, info, warn (the default), or error')
     parser.add_argument('--version', action='version',
@@ -60,21 +43,22 @@ def main(args):
     """
     Main entry point
     """
-    update_dir = os.path.dirname(__file__)
-    update_files = glob.glob(os.path.join(update_dir, 'update_dreqs_*.py'))
-    update_files.sort()
+    jon = User.objects.get(username='jseddon')
+    issue_txt = (
+        'The units in this data are actually m s-1 and need to be multiplied '
+        'by 1000 to convert to kg m-2 s-1. These files will be replaced with '
+        'this correction applied as soon as possible.'
+    )
+    cmcc_issue = DataIssue.objects.create(issue=issue_txt, reporter=jon)
+    affected_files = DataFile.objects.filter(
+        climate_model__short_name__in=['CMCC-CM2-HR4', 'CMCC-CM2-VHR4'],
+        experiment__short_name='highresSST-present',
+        version__in=['v20170706', 'v20170927'],
+        variable_request__cmor_name__in=['pr', 'prc', 'prsn']
+    )
+    logger.debug('{} affected files found'.format(affected_files.count()))
 
-    with open(os.path.join(update_dir, HTML_FILE), 'w') as fh:
-        _ouput_headers(fh)
-        for update_file in update_files:
-            import_string = os.path.basename(update_file.rstrip('.py'))
-            doc_string = importlib.import_module(import_string).__doc__
-            file_name = os.path.basename(update_file)
-            description = '\n'.join(doc_string.split('\n')[2:])
-            fh.write('<tr><td>{}</td><td>{}</td></tr>\n'.format(file_name,
-                                                                description))
-        _ouput_footers(fh)
-
+    cmcc_issue.data_file.add(*affected_files)
 
 
 if __name__ == "__main__":
