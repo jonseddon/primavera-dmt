@@ -274,7 +274,7 @@ def standardise_time_unit(time_float, time_unit, standard_unit, calendar):
     return corrected_time
 
 
-def check_same_gws(path1, path2):
+def is_same_gws(path1, path2):
     """
     Check that two paths both start with the same group workspace name.
 

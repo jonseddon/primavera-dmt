@@ -15,7 +15,7 @@ import django
 django.setup()
 
 from pdata_app.models import Settings, DataSubmission
-from pdata_app.utils.common import check_same_gws
+from pdata_app.utils.common import is_same_gws
 
 
 __version__ = '0.1.0b1'
@@ -123,7 +123,7 @@ def main(args):
 
         # link if on same GWS, or else copy
         this_file_error = False
-        if check_same_gws(existing_path, drs_path):
+        if is_same_gws(existing_path, drs_path):
             try:
                 os.link(existing_path, drs_path)
             except OSError as exc:

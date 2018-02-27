@@ -21,7 +21,7 @@ django.setup()
 
 from pdata_app.models import DataFile, Settings
 from pdata_app.utils.common import (ilist_files, construct_drs_path,
-                                    check_same_gws)
+                                    is_same_gws)
 
 DEFAULT_LOG_LEVEL = logging.WARNING
 DEFAULT_LOG_FORMAT = '%(levelname)s: %(message)s'
@@ -47,7 +47,7 @@ def scan_database():
             data_file.directory = None
             data_file.save()
 
-        if not check_same_gws(data_file.directory, BASE_OUTPUT_DIR):
+        if not is_same_gws(data_file.directory, BASE_OUTPUT_DIR):
             sym_link_path = os.path.join(BASE_OUTPUT_DIR,
                                          construct_drs_path(data_file),
                                          data_file.name)
