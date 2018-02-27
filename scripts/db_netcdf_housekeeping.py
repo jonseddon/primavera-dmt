@@ -82,18 +82,19 @@ def scan_file_structure(directory):
             # This will return false for broken symbolic links
             if not os.path.exists(nc_file):
                 os.remove(nc_file)
-                db_path = os.path.join(db_file.directory, db_file.name)
-                if os.path.exists(db_path):
-                    logger.warning('Replacing broken link for file {}'.
-                                   format(db_file.name))
-                    os.symlink(os.path.join(db_file.directory, db_file.name),
-                               nc_file)
+                if db_file.directory:
+                    db_path = os.path.join(db_file.directory, db_file.name)
+                    if os.path.exists(db_path):
+                        logger.warning('Replacing broken link for file {}'.
+                                       format(db_file.name))
+                        os.symlink(os.path.join(db_file.directory,
+                                                db_file.name),
+                                   nc_file)
                 else:
                     logger.warning('Removing broken link for file{}'.
                                    format(db_file.name))
                     if db_file.online:
                         db_file.online = False
-                        db_file.directory = None
                         db_file.save()
                         continue
 
