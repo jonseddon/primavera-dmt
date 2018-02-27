@@ -46,6 +46,7 @@ def scan_database():
             data_file.online = False
             data_file.directory = None
             data_file.save()
+            continue
 
         if not is_same_gws(data_file.directory, BASE_OUTPUT_DIR):
             sym_link_path = os.path.join(BASE_OUTPUT_DIR,
