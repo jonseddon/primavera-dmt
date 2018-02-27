@@ -91,13 +91,14 @@ def scan_file_structure(directory):
                                                 db_file.name),
                                    nc_file)
                 else:
-                    logger.warning('Removing broken link for file{}'.
+                    logger.warning('Removing broken link for file {}'.
                                    format(db_file.name))
                     if db_file.online:
                         db_file.online = False
                         db_file.save()
                         continue
 
+            db_file.refresh_from_db()
             if not db_file.online:
                 logger.warning('File status changed to online: {}'.
                                format(nc_file))
