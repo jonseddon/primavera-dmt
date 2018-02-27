@@ -18,10 +18,10 @@ import sys
 
 import django
 django.setup()
-import django.core.exceptions
 
-from pdata_app.models import DataSubmission, DataFile, Settings
-from pdata_app.utils.common import ilist_files
+from pdata_app.models import DataFile, Settings
+from pdata_app.utils.common import (ilist_files, construct_drs_path,
+                                    check_same_gws)
 
 DEFAULT_LOG_LEVEL = logging.WARNING
 DEFAULT_LOG_FORMAT = '%(levelname)s: %(message)s'
@@ -47,6 +47,15 @@ def scan_database():
             data_file.directory = None
             data_file.save()
 
+        if not check_same_gws(data_file.directory, BASE_OUTPUT_DIR):
+            sym_link_path = os.path.join(BASE_OUTPUT_DIR,
+                                         construct_drs_path(data_file),
+                                         data_file.name)
+            if not os.path.exists(sym_link_path):
+                os.symlink(full_path, sym_link_path)
+                logger.warning('Created symlink for file {} from {}'.
+                               format(data_file.name, sym_link_path))
+
     logger.debug('Completed database scan.')
 
 
@@ -70,45 +79,40 @@ def scan_file_structure(directory):
         else:
             db_file = db_files.first()
 
+            # This will return false for broken symbolic links
+            if not os.path.exists(nc_file):
+                os.remove(nc_file)
+                db_path = os.path.join(db_file.directory, db_file.name)
+                if os.path.exists(db_path):
+                    logger.warning('Replacing broken link for file {}'.
+                                   format(db_file.name))
+                    os.symlink(os.path.join(db_file.directory, db_file.name),
+                               nc_file)
+                else:
+                    logger.warning('Removing broken link for file{}'.
+                                   format(db_file.name))
+                    if db_file.online:
+                        db_file.online = False
+                        db_file.directory = None
+                        db_file.save()
+                        continue
+
             if not db_file.online:
                 logger.warning('File status changed to online: {}'.
                                format(nc_file))
                 db_file.online = True
                 db_file.save()
 
-            if db_file.directory != os.path.dirname(nc_file):
-                nc_dir_name = os.path.dirname(nc_file)
+            actual_path = os.path.realpath(nc_file)
+            actual_dir = os.path.dirname(actual_path)
+            if db_file.directory != actual_dir:
                 logger.warning('Directory for file {} changed from {} to {}'.
                                format(nc_file_name, db_file.directory,
-                                      nc_dir_name))
-                db_file.directory = nc_dir_name
+                                      actual_dir))
+                db_file.directory = actual_dir
                 db_file.save()
 
     logger.debug('Completed file structure scan.')
-
-
-def _get_submission_object(submission_dir):
-    """
-    :param str submission_dir: The path of the submission's top level
-    directory.
-    :returns: The object corresponding to the submission.
-    :rtype: pdata_app.models.DataSubmission
-    """
-    try:
-        data_sub = DataSubmission.objects.get(
-            incoming_directory=submission_dir)
-    except django.core.exceptions.MultipleObjectsReturned:
-        msg = 'Multiple DataSubmissions found for directory: {}'.format(
-            submission_dir)
-        logger.error(msg)
-        raise ValueError(msg)
-    except django.core.exceptions.ObjectDoesNotExist:
-        msg = ('No DataSubmissions have been found in the database for '
-               'directory: {}.'.format(submission_dir))
-        logger.error(msg)
-        raise ValueError(msg)
-
-    return data_sub
 
 
 def parse_args():
@@ -118,14 +122,10 @@ def parse_args():
     parser = argparse.ArgumentParser(description="Scan the database and file "
                                                  "structure to make sure that "
                                                  "the two are synchronised.")
-    parser.add_argument('-d', '--no-database', help='Do not scan the database, '
-                                                    'only scan the file '
-                                                    'structure.',
+    parser.add_argument('-d', '--no-database', help='Do not scan the database.',
                         action='store_true')
     parser.add_argument('-f', '--no-file-structure', help='Do not scan the '
-                                                          'file structure, '
-                                                          'only scan the '
-                                                          'database.',
+                                                          'file structure.',
                         action='store_true')
     parser.add_argument('-t', '--top-level', help='The top-level directory to '
                                                   'scan (default: %(default)s)',
@@ -144,11 +144,11 @@ def main(args):
     """
     logger.debug('Starting db_netcdf_housekeeping')
 
-    if not args.no_database:
-        scan_database()
-
     if not args.no_file_structure:
         scan_file_structure(args.top_level)
+
+    if not args.no_database:
+        scan_database()
 
     logger.debug('Completed db_netcdf_housekeeping')
 
