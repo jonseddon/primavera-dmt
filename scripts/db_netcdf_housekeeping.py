@@ -96,7 +96,7 @@ def scan_file_structure(directory):
                     if db_file.online:
                         db_file.online = False
                         db_file.save()
-                        continue
+                    continue
 
             db_file.refresh_from_db()
             if not db_file.online:
