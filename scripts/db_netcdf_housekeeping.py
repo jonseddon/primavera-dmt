@@ -49,10 +49,13 @@ def scan_database():
             continue
 
         if not is_same_gws(data_file.directory, BASE_OUTPUT_DIR):
-            sym_link_path = os.path.join(BASE_OUTPUT_DIR,
-                                         construct_drs_path(data_file),
+            sym_link_dir = os.path.join(BASE_OUTPUT_DIR,
+                                         construct_drs_path(data_file))
+            sym_link_path = os.path.join(sym_link_dir,
                                          data_file.name)
             if not os.path.exists(sym_link_path):
+                if not os.path.exists(sym_link_dir):
+                    os.makedirs(sym_link_dir)
                 os.symlink(full_path, sym_link_path)
                 logger.warning('Created symlink for file {} from {}'.
                                format(data_file.name, sym_link_path))
