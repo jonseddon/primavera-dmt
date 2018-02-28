@@ -11,7 +11,7 @@ from pdata_app import models
 from pdata_app.utils.common import (make_partial_date_time,
                                     standardise_time_unit,
                                     calc_last_day_in_month, pdt2num,
-                                    check_same_gws, get_request_size)
+                                    is_same_gws, get_request_size)
 from pdata_app.utils import dbapi
 from vocabs.vocabs import STATUS_VALUES, FREQUENCY_VALUES, VARIABLE_TYPES
 
@@ -143,25 +143,25 @@ class TestStandardiseTimeUnit(TestCase):
                                                 time_unit, '360_day'))
 
 
-class TestCheckSameGws(TestCase):
+class TestIsSameGws(TestCase):
     def test_same(self):
         path1 = '/group_workspaces/jasmin2/primavera1/some/dir'
         path2 = '/group_workspaces/jasmin2/primavera1/another/dir'
 
-        self.assertTrue(check_same_gws(path1, path2))
+        self.assertTrue(is_same_gws(path1, path2))
 
     def test_diff(self):
         path1 = '/group_workspaces/jasmin2/primavera1/some/dir'
         path2 = '/group_workspaces/jasmin2/primavera2/some/dir'
 
-        self.assertFalse(check_same_gws(path1, path2))
+        self.assertFalse(is_same_gws(path1, path2))
 
     def test_bad_path(self):
         path1 = 'primavera1/some/dir'
         path2 = '/group_workspaces/jasmin2/primavera2/some/dir'
 
         self.assertRaisesRegexp(RuntimeError, 'Cannot determine group '
-            'workspace name from primavera1/some/dir', check_same_gws,
+            'workspace name from primavera1/some/dir', is_same_gws,
                                 path1, path2)
 
     def test_slightly_bad_path(self):
@@ -170,7 +170,7 @@ class TestCheckSameGws(TestCase):
 
         self.assertRaisesRegexp(RuntimeError, 'Cannot determine group '
             'workspace name from /group_workspaces/jasmin1/primavera1/some/dir',
-                                check_same_gws, path1, path2)
+                                is_same_gws, path1, path2)
 
 
 class TestGetRequestSize(TestCase):
