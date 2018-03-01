@@ -3,7 +3,7 @@
 update_dreqs_0056.py
 
 This file adds an issue to any MPI files from version v20171003
-for hist-1950 and control-1950 for both resolutions.
+for hist-1950, control-1950 and spinup-1950 for both resolutions.
 """
 import argparse
 import logging.config
@@ -49,7 +49,7 @@ def main(args):
         'a much improved performance in the North Atlantic. The new '
         'simulations will be uploaded to JASMIN by summer-2018.'
     )
-    # mpi_issue = DataIssue.objects.create(issue=issue_txt, reporter=jon)
+    mpi_issue = DataIssue.objects.create(issue=issue_txt, reporter=jon)
     affected_files = DataFile.objects.filter(
         data_request__institute__short_name='MPI-M',
         experiment__short_name__in=['control-1950', 'hist-1950',
@@ -58,7 +58,7 @@ def main(args):
     )
     logger.debug('{} affected files found'.format(affected_files.count()))
 
-    # mpi_issue.data_file.add(*affected_files)
+    mpi_issue.data_file.add(*affected_files)
 
 
 if __name__ == "__main__":
