@@ -37,7 +37,7 @@ def make_dict():
                           for experiment_id in Experiment.objects.all()],
         'data_requests': [
             data_request for data_request in
-            DataRequest.objects.filter(datafile__isnull=False)
+            DataRequest.objects.filter(datafile__isnull=False).distinct()
         ]
     }
 
