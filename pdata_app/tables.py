@@ -64,7 +64,7 @@ class DataFileTable(tables.Table):
                                'data_file_string': '{} ({})'.format(
                                    record.name,
                                    record.directory)})
-        return format_html('<a href="{}?{}">{}</a>'.format(
+        return format_html(u'<a href="{}?{}">{}</a>'.format(
             reverse('data_issues'),
             url_query,
             num_dataissues
@@ -115,7 +115,7 @@ class DataSubmissionTable(tables.Table):
             url_query = urlencode({'data_submission': record.id,
                                    'data_submission_string': '{}'.format(
                                        record.directory)})
-            return format_html('<a href="{}?{}">{}</a>'.format(
+            return format_html(u'<a href="{}?{}">{}</a>'.format(
                 reverse('data_files'),
                 url_query,
                 num_datafiles
@@ -130,7 +130,7 @@ class DataSubmissionTable(tables.Table):
             url_query = urlencode({'data_submission': record.id,
                                    'data_submission_string': '{}'.format(
                                        record.directory)})
-            return format_html('<a href="{}?{}">{}</a>'.format(
+            return format_html(u'<a href="{}?{}">{}</a>'.format(
                 reverse('data_issues'),
                 url_query,
                 num_dataissues
@@ -161,7 +161,7 @@ class DataSubmissionTable(tables.Table):
             return DEFAULT_VALUE
         else:
             tape_urls = record.get_tape_urls()
-            return format_html('<div class="truncate-ellipsis"><span>{}'
+            return format_html(u'<div class="truncate-ellipsis"><span>{}'
                                '</span></div>'.
                                format(_to_comma_sep(tape_urls)))
 
@@ -250,7 +250,7 @@ class DataReceivedTable(DataRequestTable):
         num_datafiles = record.datafile_set.count()
         url_query = urlencode({'data_request': record.id,
                                'data_request_string': '{}'.format(record)})
-        return format_html('<a href="{}?{}">{}</a>'.format(
+        return format_html(u'<a href="{}?{}">{}</a>'.format(
             reverse('data_files'),
             url_query,
             num_datafiles
@@ -261,7 +261,7 @@ class DataReceivedTable(DataRequestTable):
             Count('dataissue', distinct=True))['dataissue__count']
         url_query = urlencode({'data_request': record.id,
                                'data_request_string': '{}'.format(record)})
-        return format_html('<a href="{}?{}">{}</a>'.format(
+        return format_html(u'<a href="{}?{}">{}</a>'.format(
             reverse('data_issues'),
             url_query,
             num_dataissues
@@ -269,7 +269,7 @@ class DataReceivedTable(DataRequestTable):
 
     def render_tape_urls(self, record):
         tape_urls = record.get_tape_urls()
-        return format_html('<div class="truncate-ellipsis"><span>{}'
+        return format_html(u'<div class="truncate-ellipsis"><span>{}'
                            '</span></div>'.format(_to_comma_sep(tape_urls)))
 
     def render_file_versions(self, record):
@@ -278,7 +278,7 @@ class DataReceivedTable(DataRequestTable):
 
     def render_retrieval_request(self, record):
         return format_html(
-            '<div class="checkbox" style="text-align:center;'
+            u'<div class="checkbox" style="text-align:center;'
             'vertical-align:middle"><label><input type="checkbox" '
             'name="request_data_req_{}"></label></div>'.format(record.id)
         )
@@ -296,13 +296,13 @@ class ESGFDatasetTable(tables.Table):
 
     def render_ceda_dataset(self, value):
         url_query = urlencode({'directory':  value.directory})
-        return format_html('<a href="{}?{}">{}</a>',
+        return format_html(u'<a href="{}?{}">{}</a>',
                            reverse('ceda_datasets'),
                            url_query, value.directory)
 
     def render_data_submission(self, value):
         url_query = urlencode({'directory':  value.directory})
-        return format_html('<a href="{}?{}">{}</a>',
+        return format_html(u'<a href="{}?{}">{}</a>',
                            reverse('data_submissions'),
                            url_query, value.directory)
 
@@ -316,7 +316,7 @@ class CEDADatasetTable(tables.Table):
     def render_doi(self, value):
         if 'doi:' in value:
             doi_url = value.replace('doi:', 'https://doi.org/')
-            url_html = '<a href="{url}">{url}</a>'.format(url=doi_url)
+            url_html = u'<a href="{url}">{url}</a>'.format(url=doi_url)
             return format_html(url_html)
         else:
             return value
@@ -344,7 +344,7 @@ class DataIssueTable(tables.Table):
                                    record.issue[:100],
                                    '...' if len(record.issue) > 100 else ''
                                )})
-        return format_html('<a href="{}?{}">{}</a>',
+        return format_html(u'<a href="{}?{}">{}</a>',
                            reverse('data_files'),
                            url_query, num_files_affected)
 
@@ -420,7 +420,7 @@ class RetrievalRequestTable(tables.Table):
 
         tape_urls_str = ', '.join([tu for tu in tape_urls if tu is not None])
 
-        return format_html('<div class="truncate-ellipsis"><span>{}'
+        return format_html(u'<div class="truncate-ellipsis"><span>{}'
                            '</span></div>'.format(tape_urls_str))
 
 
@@ -463,7 +463,7 @@ class ReplacedFileTable(tables.Table):
         return filesizeformat(value)
 
     def render_tape_url(self, record):
-        return format_html('<div class="truncate-ellipsis"><span>{}'
+        return format_html(u'<div class="truncate-ellipsis"><span>{}'
                            '</span></div>'.format(record.tape_url))
 
 
@@ -484,7 +484,7 @@ class ObservationDatasetTable(tables.Table):
 
     def render_name(self, record):
         if record.url:
-            return format_html('<a href="{}">{}</a>'.format(record.url,
+            return format_html(u'<a href="{}">{}</a>'.format(record.url,
                                                             record.name))
         else:
             return record.name
@@ -492,7 +492,7 @@ class ObservationDatasetTable(tables.Table):
     def render_cached_num_files(self, record):
         url_query = urlencode({'obs_set': record.id,
                                'obs_set_string': str(record)})
-        return format_html('<a href="{}?{}">{}</a>'.format(
+        return format_html(u'<a href="{}?{}">{}</a>'.format(
             reverse('obs_files'),
             url_query,
             record.cached_num_files
@@ -505,7 +505,7 @@ class ObservationDatasetTable(tables.Table):
             return DEFAULT_VALUE
 
     def render_doi(self, value):
-        return format_html('<a href="https://dx.doi.org/{}">{}</a>'.
+        return format_html(u'<a href="https://dx.doi.org/{}">{}</a>'.
                            format(value, value))
 
 
