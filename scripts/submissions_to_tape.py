@@ -19,42 +19,16 @@ import sys
 import django
 django.setup()
 import django.core.exceptions
-from django.db.models import Count
 from django.template.defaultfilters import pluralize
 
 from pdata_app.models import DataSubmission
 from pdata_app.utils.common import get_temp_filename
 
-from vocabs.vocabs import STATUS_VALUES
 
 DEFAULT_LOG_LEVEL = logging.WARNING
 DEFAULT_LOG_FORMAT = '%(levelname)s: %(message)s'
 
 logger = logging.getLogger(__name__)
-
-
-def _get_submission_object(submission_dir):
-    """
-    :param str submission_dir: The path of the submission's top level
-    directory.
-    :returns: The object corresponding to the submission.
-    :rtype: pdata_app.models.DataSubmission
-    """
-    try:
-        data_sub = DataSubmission.objects.get(
-            incoming_directory=submission_dir)
-    except django.core.exceptions.MultipleObjectsReturned:
-        msg = 'Multiple DataSubmissions found for directory: {}'.format(
-            submission_dir)
-        logger.error(msg)
-        raise ValueError(msg)
-    except django.core.exceptions.ObjectDoesNotExist:
-        msg = ('No DataSubmissions have been found in the database for '
-               'directory: {}.'.format(submission_dir))
-        logger.error(msg)
-        raise ValueError(msg)
-
-    return data_sub
 
 
 def _run_command(command):
@@ -79,16 +53,11 @@ def _run_command(command):
     return cmd_out.rstrip().split('\n')
 
 
-def submission_to_tape(directory, overwrite=False):
+def submission_to_tape(data_sub, overwrite=False):
     """
     Main entry point
     """
-    logger.debug('Starting submission: {}'.format(directory))
-
-    try:
-        data_sub = _get_submission_object(directory)
-    except ValueError:
-        sys.exit(1)
+    logger.debug('Starting submission: {}'.format(data_sub.incoming_directory))
 
     if data_sub.get_tape_urls() and not overwrite:
         msg = ('Data submission has already been written to tape. Re-run this '
@@ -141,6 +110,9 @@ def parse_args():
     parser = argparse.ArgumentParser(description="Move any data submissions "
                                                  "that haven't already been, "
                                                  "to elastic tape")
+    parser.add_argument('incoming_directory', help='the incoming directory '
+                                                   'of the submission to '
+                                                   'write to tape')
     parser.add_argument('-o', '--overwrite', help='write the submission to '
                                                   'elastic tape, even if the '
                                                   'submission has already '
@@ -158,15 +130,17 @@ def main(args):
     """
     Main entry point
     """
-    status_to_process = STATUS_VALUES['VALIDATED']
+    try:
+        submission = DataSubmission.objects.get(
+            incoming_directory=args.incoming_directory
+        )
+    except django.core.exceptions.ObjectDoesNotExist:
+        msg = ('Submission with incoming directory {} could not be found.'.
+            format(args.incoming_directory))
+        logger.error(msg)
+        sys.exit(1)
 
-    # find all data submissions that have been validated and contain no
-    # datafiles that have a tape_url
-    submissions = (DataSubmission.objects.annotate(Count('datafile__tape_url')).
-        filter(status=status_to_process, datafile__tape_url__count=0))
-
-    for submission in submissions:
-        submission_to_tape(submission.incoming_directory, args.overwrite)
+    submission_to_tape(submission, args.overwrite)
 
 
 if __name__ == '__main__':
