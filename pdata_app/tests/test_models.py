@@ -341,7 +341,7 @@ class TestDataSubmission(TestCase):
 
     def test_unicode(self):
         data_sub = models.DataSubmission.objects.first()
-        self.assertEqual(unicode(data_sub), u'Data Submission: /other/dir')
+        self.assertEqual(unicode(data_sub), u'Data Submission: /some/dir')
 
 
 class TestCEDADataset(TestCase):
