@@ -52,6 +52,10 @@ def _object_to_default(obj):
         return {'__class__': obj.__class__.__name__,
                 '__module__': obj.__module__,
                 '__kwargs__': {'short_name': obj.short_name}}
+        if isinstance(obj, Institute):
+            return {'__class__': 'Institution',
+                    '__module__': obj.__module__,
+                    '__kwargs__': {'short_name': obj.short_name}}
     elif isinstance(obj, DataRequest):
         return {'__class__': obj.__class__.__name__,
                 '__module__': obj.__module__,
