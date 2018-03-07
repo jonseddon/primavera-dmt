@@ -14,7 +14,7 @@ import sys
 import django
 django.setup()
 
-from pdata_app.models import (ClimateModel, Experiment, DataRequest)
+from pdata_app.models import (Institute, ClimateModel, Experiment, DataRequest)
 
 __version__ = '0.1.0b'
 
@@ -35,6 +35,8 @@ def make_dict():
         'source_id': [source_id for source_id in ClimateModel.objects.all()],
         'experiment_id': [experiment_id
                           for experiment_id in Experiment.objects.all()],
+        'institution_id': [institution_id
+                           for institution_id in Institute.objects.all()],
         'data_requests': [
             data_request for data_request in
             DataRequest.objects.filter(datafile__isnull=False).distinct()
