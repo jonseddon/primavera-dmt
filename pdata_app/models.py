@@ -349,7 +349,7 @@ class DataSubmission(DataFileAggregationBase):
                                           null=False, blank=False)
 
     def __unicode__(self):
-        return "Data Submission: %s" % self.directory
+        return "Data Submission: %s" % self.incoming_directory
 
     class Meta:
         unique_together = ('incoming_directory',)
