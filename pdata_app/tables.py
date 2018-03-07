@@ -114,7 +114,7 @@ class DataSubmissionTable(tables.Table):
             num_datafiles = record.datafile_set.count()
             url_query = urlencode({'data_submission': record.id,
                                    'data_submission_string': '{}'.format(
-                                       record.directory)})
+                                       record.incoming_directory)})
             return format_html(u'<a href="{}?{}">{}</a>'.format(
                 reverse('data_files'),
                 url_query,
@@ -129,7 +129,7 @@ class DataSubmissionTable(tables.Table):
                 Count('dataissue', distinct=True))['dataissue__count']
             url_query = urlencode({'data_submission': record.id,
                                    'data_submission_string': '{}'.format(
-                                       record.directory)})
+                                       record.incoming_directory)})
             return format_html(u'<a href="{}?{}">{}</a>'.format(
                 reverse('data_issues'),
                 url_query,
