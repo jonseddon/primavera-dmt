@@ -97,10 +97,9 @@ class TestInsert(TestCase):
         self.assertEqual(models.Institute.objects.count(), 2)
 
     def test_raises_exception(self):
-        _e = dbapi.insert(models.ESGFDataset, drs_id='a', version='2',
-            directory='c')
-        self.assertRaises(IntegrityError, dbapi.insert, models.ESGFDataset,
-            drs_id='a', version='2', directory='d')
+        _e = dbapi.insert(models.ObservationDataset, name='A', version='1')
+        self.assertRaises(IntegrityError, dbapi.insert,
+                          models.ObservationDataset, name='A', version='1')
 
 
 class TestMatchOne(TestCase):

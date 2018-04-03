@@ -13,6 +13,17 @@ STATUS_VALUES = CodeList(
 )
 
 
+ESGF_STATUSES = CodeList(
+    (('CREATED', 'CREATED'),
+     ('SUBMITTED', 'SUBMITTED'),
+     ('AT_CEDA', 'AT_CEDA'),
+     ('PUBLISHED', 'PUBLISHED'),
+     ('REJECTED', 'REJECTED'),
+     ('NEEDS_FIX', 'NEEDS_FIX'),
+     ('FILES_MISSING', 'FILES_MISSING'))
+)
+
+
 FREQUENCY_VALUES = CodeList(
         (('ann', 'ann'),
          ('mon', 'mon'),

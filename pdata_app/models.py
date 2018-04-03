@@ -10,8 +10,8 @@ from django.db.models import PROTECT, SET_NULL, CASCADE
 from django.core.exceptions import ValidationError
 
 from pdata_app.utils.common import standardise_time_unit, safe_strftime
-from vocabs import (STATUS_VALUES, FREQUENCY_VALUES, ONLINE_STATUS,
-    CHECKSUM_TYPES, VARIABLE_TYPES, CALENDARS)
+from vocabs import (STATUS_VALUES, ESGF_STATUSES, FREQUENCY_VALUES,
+                    ONLINE_STATUS, CHECKSUM_TYPES, VARIABLE_TYPES, CALENDARS)
 
 model_names = ['Project', 'Institute', 'ClimateModel', 'Experiment',
                'ActivityId', 'DataSubmission', 'DataFile', 'ESGFDataset',
@@ -415,19 +415,23 @@ class ESGFDataset(DataFileAggregationBase):
     # start_time
     # end_time
 
+    status = models.CharField(max_length=20, choices=ESGF_STATUSES.items(),
+                              verbose_name='Status',
+                              default=ESGF_STATUSES.CREATED,
+                              blank=False, null=False)
     drs_id = models.CharField(max_length=500, verbose_name='DRS Dataset Identifier', blank=False, null=False)
     version = models.CharField(max_length=20, verbose_name='Version', blank=False, null=False)
-    directory = models.CharField(max_length=500, verbose_name='Directory', blank=False, null=False)
-
+    directory = models.CharField(max_length=500, verbose_name='Directory', blank=True, null=True)
     thredds_url = models.URLField(verbose_name="THREDDS Download URL", blank=True, null=True)
 
     # Each ESGF Dataset will be part of one CEDADataset
     ceda_dataset = models.ForeignKey(CEDADataset, blank=True, null=True,
         on_delete=SET_NULL, verbose_name='CEDA Dataset')
 
-    # Each ESGF Dataset will be part of one submission
-    data_submission = models.ForeignKey(DataSubmission, blank=True, null=True,
-        on_delete=SET_NULL, verbose_name='Data Submission')
+    # Each ESGF Dataset will match exactly one DataRequest
+    data_request = models.OneToOneField('DataRequest', blank=False, null=False,
+                                        on_delete=CASCADE,
+                                        verbose_name='Data Request')
 
     def get_full_id(self):
         """
@@ -437,15 +441,15 @@ class ESGFDataset(DataFileAggregationBase):
 
     def clean(self, *args, **kwargs):
         if not re.match(r"^v\d+$", self.version):
-            raise ValidationError('Version must begin with letter "v" followed '
-                                  'by a number (date).')
+            raise ValidationError('Version must begin with letter "v" '
+                                  'followed by a number (date).')
 
-        if not self.directory.startswith("/"):
-            raise ValidationError('Directory must begin with "/" because it is '
-                                  'a full directory path.')
-
-        if self.directory.endswith("/"):
-            self.directory = self.directory.rstrip("/")
+        if self.directory:
+            if not self.directory.startswith("/"):
+                raise ValidationError('Directory must begin with "/" because '
+                                      'it is a full directory path.')
+            if self.directory.endswith("/"):
+                self.directory = self.directory.rstrip("/")
 
         super(ESGFDataset, self).save(*args, **kwargs)
 

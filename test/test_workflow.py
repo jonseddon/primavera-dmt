@@ -239,7 +239,7 @@ class TestWorkflows(PdataBaseTest):
         # Create an ESGF data set
         esgf_ds = get_or_create(ESGFDataset, drs_id='a.b.c.d', version='v20160720',
             directory='/some/dir', ceda_dataset=ceda_ds,
-            data_submission=data_submission)
+            data_request=DataRequest.objects.first())
 
         # Update each file
         for df in data_submission.get_data_files():
@@ -253,7 +253,7 @@ class TestWorkflows(PdataBaseTest):
             df = DataFile.objects.filter(name=dfile_name).first()
             self.assertEqual(df.esgf_dataset.get_full_id(), 'a.b.c.d.v20160720')
             self.assertEqual(df.esgf_download_url, 'http://esgf.ceda.ac.uk/browse/badc/cmip5/' + df.name)
-            self.assertEqual(df.esgf_dataset.data_submission.directory, './test_data/submission')
+
 
 def _make_data_submission():
     """
