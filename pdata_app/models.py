@@ -401,7 +401,7 @@ class ESGFDataset(DataFileAggregationBase):
         * get_full_id: Returns full DRS Id made up of drsId version as: `self.drs_id`.`self.version`.
     """
     class Meta:
-        unique_together = ('drs_id', 'version')
+        unique_together = ('data_request', 'version')
         verbose_name = "ESGF Dataset"
 
     # RFK relationships:
@@ -420,7 +420,6 @@ class ESGFDataset(DataFileAggregationBase):
                               verbose_name='Status',
                               default=ESGF_STATUSES.CREATED,
                               blank=False, null=False)
-    drs_id = models.CharField(max_length=500, verbose_name='DRS Dataset Identifier', blank=False, null=False)
     version = models.CharField(max_length=20, verbose_name='Version', blank=False, null=False)
     directory = models.CharField(max_length=500, verbose_name='Directory', blank=True, null=True)
     thredds_url = models.URLField(verbose_name="THREDDS Download URL", blank=True, null=True)
@@ -430,9 +429,32 @@ class ESGFDataset(DataFileAggregationBase):
         on_delete=SET_NULL, verbose_name='CEDA Dataset')
 
     # Each ESGF Dataset will match exactly one DataRequest
-    data_request = models.OneToOneField('DataRequest', blank=False, null=False,
+    data_request = models.ForeignKey('DataRequest', blank=False, null=False,
                                         on_delete=CASCADE,
                                         verbose_name='Data Request')
+
+    @property
+    def drs_id(self):
+        """
+        Generate the DRS id from the data request.
+
+        :returns: the DRS id
+        :rtype: str
+        """
+        if self.data_request.datafile_set.count() == 0:
+            raise ValueError('ESGFDataSet from {} has no DataFiles.'.format(
+                self.data_request
+            ))
+
+        components = [
+            self.data_request.project.short_name,
+            self.data_request.datafile_set.
+                values('activity_id__short_name').
+                first()['activity_id__short_name'],
+            self.data_request.institute.short_name,
+            self.data_request.climate_model.short_name
+        ]
+        return '.'.join(components)
 
     def get_full_id(self):
         """
