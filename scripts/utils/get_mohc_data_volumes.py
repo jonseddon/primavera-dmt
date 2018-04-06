@@ -102,7 +102,12 @@ def main(args):
                  'from the historic or present runs.\n')
         fh.write("PRIMAVERA is the additional PRIMAVERA specific variables "
                  "that will be submitted to the ESGF mip_era "
-                 "of PRIMAVERA rather than CMIP6.")
+                 "of PRIMAVERA rather than CMIP6.\n")
+        fh.write("Several variables could not be generated so far but "
+                 "may be generated in the future. In the very worst case "
+                 "this would be a 33% increase in data volume but will "
+                 "not be that bad as the model did not output the data "
+                 "for all of these.\n")
 
 
 
