@@ -49,11 +49,9 @@ def main(args):
     Main entry point
     """
     task_name_list = [
-        'CNRM-CERFACS_CNRM-CM6-1-HR_highresSST-present_Amon_tas',
-        'CNRM-CERFACS_CNRM-CM6-1-HR_highresSST-present_Amon_ps',
-        'CNRM-CERFACS_CNRM-CM6-1_highresSST-present_Amon_tas',
-        'CNRM-CERFACS_CNRM-CM6-1_highresSST-present_Amon_ps',
-        'CNRM-CERFACS_CNRM-CM6-1_highresSST-present_Amon_pr',
+        'HadGEM3-GC31-LM_highresSST-present_Amon_psl',
+        'HadGEM3-GC31-LM_highresSST-present_Amon_ts',
+        'HadGEM3-GC31-LM_highresSST-present_Amon_tas',
     ]
 
     with open(args.json_file, 'w') as fh:
