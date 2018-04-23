@@ -63,8 +63,8 @@ def _extract_file_metadata(file_path):
 
         if key == "time_range":
             start_time, end_time = value.split("-")
-            data["start_time"] = cf_units.netcdftime.date2num(_date_from_string(start_time), TIME_UNITS, CALENDAR)
-            data["end_time"] = cf_units.netcdftime.date2num(_date_from_string(end_time), TIME_UNITS, CALENDAR)
+            data["start_time"] = cf_units.date2num(_date_from_string(start_time), TIME_UNITS, CALENDAR)
+            data["end_time"] = cf_units.date2num(_date_from_string(end_time), TIME_UNITS, CALENDAR)
             data["time_units"] = TIME_UNITS
             data["calendar"] = CALENDAR
         else:
