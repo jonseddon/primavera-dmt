@@ -294,16 +294,12 @@ class ESGFDatasetTable(tables.Table):
         attrs = {'class': 'paleblue'}
         exclude = ('id',)
 
+    data_request = tables.Column(orderable=False)
+
     def render_ceda_dataset(self, value):
         url_query = urlencode({'directory':  value.directory})
         return format_html('<a href="{}?{}">{}</a>',
                            reverse('ceda_datasets'),
-                           url_query, value.directory)
-
-    def render_data_submission(self, value):
-        url_query = urlencode({'directory':  value.directory})
-        return format_html('<a href="{}?{}">{}</a>',
-                           reverse('data_submissions'),
                            url_query, value.directory)
 
 

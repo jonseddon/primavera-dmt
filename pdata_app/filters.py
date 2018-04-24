@@ -156,10 +156,10 @@ class DataSubmissionFilter(django_filters.FilterSet):
 class ESGFDatasetFilter(django_filters.FilterSet):
     class Meta:
         models = ESGFDataset
-        fields = ('drs_id', 'version', 'directory', 'thredds_urls',
-                  'ceda_dataset', 'data_submission')
+        fields = ('status', 'version', 'directory', 'thredds_urls',
+                  'ceda_dataset')
 
-    drs_id = django_filters.CharFilter(field_name='drs_id',
+    status = django_filters.CharFilter(field_name='status',
                                        lookup_expr='icontains')
 
     version = django_filters.CharFilter(field_name='version',
@@ -176,8 +176,28 @@ class ESGFDatasetFilter(django_filters.FilterSet):
         lookup_expr='icontains'
     )
 
-    data_submission = django_filters.CharFilter(
-        field_name='data_submission__directory',
+    institute = django_filters.CharFilter(
+        field_name='data_request__institute__short_name',
+        lookup_expr='icontains'
+    )
+
+    climate_model = django_filters.CharFilter(
+        field_name='data_request__climate_model__short_name',
+        lookup_expr='icontains'
+    )
+
+    experiment = django_filters.CharFilter(
+        field_name='data_request__experiment__short_name',
+        lookup_expr='icontains'
+    )
+
+    mip_table = django_filters.CharFilter(
+        field_name='data_request__variable_request__table_name',
+        lookup_expr='icontains'
+    )
+
+    cmor_name = django_filters.CharFilter(
+        field_name='data_request__variable_request__cmor_name',
         lookup_expr='icontains'
     )
 
