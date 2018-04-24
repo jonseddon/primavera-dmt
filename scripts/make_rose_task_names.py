@@ -67,7 +67,7 @@ def main(args):
                      format(len(existing_tasks)))
 
     hadgem3_gc31_lm_amip_amon = DataRequest.objects.filter(
-        climate_model__short_name='HadGEM3-GC31-LM',
+        climate_model__short_name='HadGEM3-GC31-MM',
         experiment__short_name='highresSST-present',
         variable_request__table_name='Amon',
         datafile__isnull=False
