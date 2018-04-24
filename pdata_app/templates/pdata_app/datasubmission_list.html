@@ -9,11 +9,11 @@
             <form class="form-inline" action="{% url 'data_submissions' %}" method="get">
                 <div class="form-group">
                     <label class="sr-only" for="directory">Directory</label>
-                    <input type="text" class="form-control" name="directory" id="directory" placeholder="Directory" {% if request.GET.directory %} value="{{ request.GET.directory }}" {% endif %}>
+                    <input type="text" class="form-control" name="directory" id="directory" placeholder="Directory" {% if request.GET.directory %} value="{{ request.GET.directory }}" {% endif %} autofocus>
                 </div>
                 <div class="form-group">
                     <label class="sr-only" for="status">Status</label>
-                    <input type="text" class="form-control" name="status" id="status" placeholder="Status" {% if request.GET.status %} value="{{ request.GET.status }}" {% endif %} autofocus>
+                    <input type="text" class="form-control" name="status" id="status" placeholder="Status" {% if request.GET.status %} value="{{ request.GET.status }}" {% endif %}>
                 </div>
                 <div class="form-group">
                     <label class="sr-only" for="user">User</label>
