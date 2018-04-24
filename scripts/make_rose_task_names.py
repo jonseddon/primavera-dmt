@@ -7,8 +7,10 @@ should be run by the rose suite that performs submissions to the CREPP
 system.
 """
 import argparse
+import datetime
 import json
 import logging.config
+import os
 import sys
 
 import django
@@ -47,15 +49,53 @@ def parse_args():
 def main(args):
     """
     Main entry point
+
+    Task names in the output JSON file are in the form:
+
+    <climate_model>_<experiment>_<table>_<variable>
+
+    e.g.:
+
+    HadGEM3-GC31-LM_highresSST-present_Amon_psl
     """
+    existing_tasks = []
+    if os.path.exists(args.json_file):
+        with open(args.json_file) as fh:
+            existing_tasks = json.load(fh)
+
+        logger.debug('{} existing tasks loaded from file'.
+                     format(len(existing_tasks)))
+
+    hadgem3_gc31_lm_amip_amon = DataRequest.objects.filter(
+        climate_model__short_name='HadGEM3-GC31-LM',
+        experiment__short_name='highresSST-present',
+        variable_request__table_name='Amon',
+        datafile__isnull=False
+    ).distinct()
+
+    all_tasks = hadgem3_gc31_lm_amip_amon
     task_name_list = [
-        'HadGEM3-GC31-LM_highresSST-present_Amon_psl',
-        'HadGEM3-GC31-LM_highresSST-present_Amon_ts',
-        'HadGEM3-GC31-LM_highresSST-present_Amon_tas',
+        '{}_{}_{}_{}'.format(dr.climate_model.short_name,
+                             dr.experiment.short_name,
+                             dr.variable_request.table_name,
+                             dr.variable_request.cmor_name)
+        for dr in all_tasks
     ]
+    logger.debug('{} tasks in total'.format(len(all_tasks)))
 
     with open(args.json_file, 'w') as fh:
         json.dump(task_name_list, fh, indent=4)
+
+    if existing_tasks:
+        new_tasks_list = list(set(task_name_list) - set(existing_tasks))
+
+        new_tasks_file = args.json_file.replace('.json', '_new.json')
+        if os.path.exists(new_tasks_file):
+            suffix = datetime.datetime.utcnow().strftime('%Y%m%d%H%M')
+            os.rename(new_tasks_file, new_tasks_file + '.' + suffix)
+        with open(new_tasks_file, 'w') as fh:
+            json.dump(new_tasks_list, fh, indent=4)
+        logger.debug('{} new tasks'.format(len(new_tasks_list)))
 
 
 if __name__ == "__main__":
