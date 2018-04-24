@@ -20,7 +20,8 @@ ESGF_STATUSES = CodeList(
      ('PUBLISHED', 'PUBLISHED'),
      ('REJECTED', 'REJECTED'),
      ('NEEDS_FIX', 'NEEDS_FIX'),
-     ('FILES_MISSING', 'FILES_MISSING'))
+     ('FILES_MISSING', 'FILES_MISSING'),
+     ('NOT_ON_DISK', 'NOT_ON_DISK'))
 )
 
 
