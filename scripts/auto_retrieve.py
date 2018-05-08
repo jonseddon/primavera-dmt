@@ -53,9 +53,11 @@ def run_retrieve_request(retrieval_id):
         ))
         return
 
+    # cmd = ('/home/users/jseddon/primavera/LIVE-prima-dm/scripts/'
+    #        'retrieve_request.py -l debug -a {} {}'.format(STREAM1_DIR,
+    #                                                       retrieval_id))
     cmd = ('/home/users/jseddon/primavera/LIVE-prima-dm/scripts/'
-           'retrieve_request.py -l debug -a {} {}'.format(STREAM1_DIR,
-                                                          retrieval_id))
+           'retrieve_request.py -l debug {}'.format(retrieval_id))
     try:
         subprocess.check_output(cmd, shell=True)
     except OSError as exc:
