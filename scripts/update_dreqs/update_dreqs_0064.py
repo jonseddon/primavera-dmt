@@ -1,6 +1,6 @@
 #!/usr/bin/env python2.7
 """
-update_dreqs_0028.py
+update_dreqs_0064.py
 
 This script is run to add data requests for ta_6hrPlevPt for CMCC.
 """
