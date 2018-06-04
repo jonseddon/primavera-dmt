@@ -249,7 +249,8 @@ def verify_fk_relationships(metadata):
                            institute=metadata['institute'],
                            climate_model=metadata['climate_model'],
                            experiment=metadata['experiment'],
-                           variable_request=metadata['variable'])
+                           variable_request=metadata['variable'],
+                           rip_code=metadata['rip_code'])
     if dreq_match:
         metadata['data_request'] = dreq_match
     else:
@@ -609,7 +610,8 @@ def _object_to_default(obj):
             'variable_request__cmor_name': obj.variable_request.cmor_name,
             'institute__short_name': obj.institute.short_name,
             'climate_model__short_name': obj.climate_model.short_name,
-            'experiment__short_name': obj.experiment.short_name
+            'experiment__short_name': obj.experiment.short_name,
+            'rip_code': obj.rip_code
         }
         return obj_dict
 
