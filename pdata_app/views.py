@@ -132,7 +132,7 @@ class ObservationDatasetList(PagedFilteredTableView):
     model = ObservationDataset
     table_class = ObservationDatasetTable
     filter_class = ObservationDatasetFilter
-    page_title = 'Observation Sets'
+    page_title = 'Observation and Reanalysis Sets'
 
 
 class ObservationFileList(PagedFilteredTableView):
