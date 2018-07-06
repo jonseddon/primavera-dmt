@@ -595,9 +595,13 @@ def main(args):
 
         timeless_files = all_files.filter(start_time__isnull=True)
 
-        data_files = (all_files.exclude(start_time__isnull=True).
-                      filter(start_time__gte=start_float,
-                             end_time__lt=end_float, online=False))
+        if start_float and end_float:
+            data_files = (all_files.exclude(start_time__isnull=True).
+                          filter(start_time__gte=start_float,
+                                 end_time__lt=end_float, online=False))
+        else:
+            data_files = (all_files.exclude(start_time__isnull=True).
+                          filter(online=False))
 
         tape_urls = [qs['tape_url'] for qs in data_files.values('tape_url')]
 
