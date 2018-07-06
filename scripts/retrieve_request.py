@@ -603,9 +603,12 @@ def main(args):
             data_files = (all_files.exclude(start_time__isnull=True).
                           filter(online=False))
 
-        tape_urls = [qs['tape_url'] for qs in data_files.values('tape_url')]
+        timeless_tape_urls = [qs['tape_url']
+                              for qs in timeless_files.values('tape_url')]
+        data_tape_urls = [qs['tape_url']
+                          for qs in data_files.values('tape_url')]
 
-        tape_urls = list(set(tape_urls))
+        tape_urls = list(set(timeless_tape_urls + data_tape_urls))
         tape_urls.sort()
 
         for tape_url in tape_urls:
