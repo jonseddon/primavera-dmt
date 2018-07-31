@@ -110,7 +110,7 @@ def main(args):
     experiments = {
         'dcppc-amv-neg': {'start_date': datetime(1950, 1, 1),
                          'end_date': datetime(2015, 1, 1)},
-        'dcppc-amv-neg': {'start_date': datetime(1950, 1, 1),
+        'dcppc-amv-pos': {'start_date': datetime(1950, 1, 1),
                            'end_date': datetime(2015, 1, 1)}
     }
 
