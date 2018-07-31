@@ -15,7 +15,8 @@ import django
 django.setup()
 
 from pdata_app.models import (DataRequest, VariableRequest, Experiment,
-                              Institute, ClimateModel, Project, Settings)
+                              Institute, ClimateModel, Project, Settings,
+                              ActivityId)
 from pdata_app.utils.dbapi import match_one, get_or_create
 
 
@@ -46,6 +47,8 @@ def main(args):
     """
     Main entry point
     """
+    activity_id = 'DCPP'
+
     new_dreqs = [
         'clt_Amon',
         'hfls_Amon',
@@ -115,6 +118,10 @@ def main(args):
     }
 
     variant_labels = ['r{}i1p1f1'.format(i) for i in range(1, 11)]
+
+    # activity_id
+    ActivityId.objects.get_or_create(short_name=activity_id,
+                                     full_name=activity_id)
 
     # Experiment create
     for expt in experiments:
