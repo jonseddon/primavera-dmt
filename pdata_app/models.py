@@ -1,3 +1,4 @@
+from __future__ import unicode_literals, division, absolute_import
 import re
 
 import cf_units
@@ -46,8 +47,8 @@ class Settings(SingletonModel):
     class Meta:
         verbose_name = "Settings"
 
-    def __unicode__(self):
-        return u"App Settings"
+    def __str__(self):
+        return "App Settings"
 
 
 class Project(models.Model):
@@ -61,7 +62,7 @@ class Project(models.Model):
         blank=False, unique=True)
     full_name = models.CharField(max_length=300, null=False, blank=False)
 
-    def __unicode__(self):
+    def __str__(self):
         return self.short_name
 
 
@@ -76,7 +77,7 @@ class Institute(models.Model):
         blank=False, unique=True)
     full_name = models.CharField(max_length=1000, null=False, blank=False)
 
-    def __unicode__(self):
+    def __str__(self):
         return self.short_name
 
 
@@ -92,7 +93,7 @@ class ClimateModel(models.Model):
                                   blank=False, unique=True)
     full_name = models.CharField(max_length=300, null=False, blank=False)
 
-    def __unicode__(self):
+    def __str__(self):
         return self.short_name
 
     class Meta:
@@ -111,7 +112,7 @@ class Experiment(models.Model):
                                   blank=False, unique=True)
     full_name = models.CharField(max_length=300, null=False, blank=False)
 
-    def __unicode__(self):
+    def __str__(self):
         return self.short_name
 
 
@@ -126,7 +127,7 @@ class ActivityId(models.Model):
         blank=False, unique=True)
     full_name = models.CharField(max_length=300, null=False, blank=False)
 
-    def __unicode__(self):
+    def __str__(self):
         return self.short_name
 
     class Meta:
@@ -152,7 +153,7 @@ class VariableRequest(models.Model):
     positive = models.CharField(max_length=20, null=True, blank=True,
                                   verbose_name='Positive')
     variable_type = models.CharField(max_length=20,
-                                     choices=VARIABLE_TYPES.items(),
+                                     choices=list(VARIABLE_TYPES.items()),
                                      null=False, blank=False,
                                   verbose_name='Variable Type')
     dimensions = models.CharField(max_length=200, null=False, blank=False,
@@ -162,7 +163,7 @@ class VariableRequest(models.Model):
     modeling_realm = models.CharField(max_length=20, null=False, blank=False,
                                   verbose_name='Modeling Realm')
     frequency = models.CharField(max_length=200,
-                                 choices=FREQUENCY_VALUES.items(),
+                                 choices=list(FREQUENCY_VALUES.items()),
                                  null=False, blank=False,
                                   verbose_name='Frequency')
     cell_measures = models.CharField(max_length=200, null=False, blank=False,
@@ -170,7 +171,7 @@ class VariableRequest(models.Model):
     uid = models.CharField(max_length=200, null=False, blank=False,
                                   verbose_name='UID')
 
-    def __unicode__(self):
+    def __str__(self):
         return 'VariableRequest: {} ({})'.format(self.cmor_name, self.table_name)
 
     class Meta:
@@ -190,7 +191,7 @@ class DataFileAggregationBase(models.Model):
     def _file_aggregation(self, field_name):
         records = [getattr(datafile, field_name) for datafile in self.get_data_files()]
         # Return unique sorted set of records
-        unique_records = sorted(set(records))
+        unique_records = list(set(records))
         if unique_records == [None]:
             return None
         else:
@@ -331,7 +332,7 @@ class DataSubmission(DataFileAggregationBase):
     # start_time
     # end_time
 
-    status = models.CharField(max_length=20, choices=STATUS_VALUES.items(),
+    status = models.CharField(max_length=20, choices=list(STATUS_VALUES.items()),
                               verbose_name='Status',
                               default=STATUS_VALUES.EXPECTED,
                               blank=False, null=False)
@@ -348,7 +349,7 @@ class DataSubmission(DataFileAggregationBase):
                                           verbose_name='Date Submitted',
                                           null=False, blank=False)
 
-    def __unicode__(self):
+    def __str__(self):
         return "Data Submission: %s" % self.incoming_directory
 
     class Meta:
@@ -381,7 +382,7 @@ class CEDADataset(DataFileAggregationBase):
     doi = models.CharField(verbose_name="DOI", blank=True, null=True,
                            max_length=500)
 
-    def __unicode__(self):
+    def __str__(self):
         return "CEDA Dataset: %s" % self.catalogue_url
 
     class Meta:
@@ -449,7 +450,7 @@ class ESGFDataset(DataFileAggregationBase):
 
         super(ESGFDataset, self).save(*args, **kwargs)
 
-    def __unicode__(self):
+    def __str__(self):
         """
         Returns full DRS Id.
         """
@@ -485,7 +486,7 @@ class DataRequest(DataFileAggregationBase):
                                   null=False, blank=False)
     calendar = models.CharField(verbose_name='Calendar', max_length=20,
                                 null=False, blank=False,
-                                choices=CALENDARS.items())
+                                choices=list(CALENDARS.items()))
 
     def start_date_string(self):
         """Return a string containing the start date"""
@@ -499,7 +500,7 @@ class DataRequest(DataFileAggregationBase):
                                 self.calendar)
         return dto.strftime('%Y-%m-%d')
 
-    def __unicode__(self):
+    def __str__(self):
         return '{}/{} {}/{}/{}'.format(self.institute, self.climate_model,
                                        self.experiment,
                                        self.variable_request.table_name,
@@ -544,7 +545,7 @@ class DataFile(models.Model):
                                    verbose_name='Experiment')
     variable_request = models.ForeignKey(VariableRequest, null=False, on_delete=PROTECT)
     data_request = models.ForeignKey(DataRequest, null=False, on_delete=PROTECT)
-    frequency = models.CharField(max_length=20, choices=FREQUENCY_VALUES.items(),
+    frequency = models.CharField(max_length=20, choices=list(FREQUENCY_VALUES.items()),
         verbose_name="Time frequency", null=False, blank=False)
     rip_code = models.CharField(max_length=20, verbose_name="Variant Label",
                                 null=False, blank=False)
@@ -557,7 +558,7 @@ class DataFile(models.Model):
     end_time = models.FloatField(verbose_name="End time", null=True, blank=True)
     time_units = models.CharField(verbose_name='Time units', max_length=50, null=True, blank=True)
     calendar = models.CharField(verbose_name='Calendar', max_length=20,
-        null=True, blank=True, choices=CALENDARS.items())
+        null=True, blank=True, choices=list(CALENDARS.items()))
 
     data_submission = models.ForeignKey(DataSubmission, null=False, blank=False,
         on_delete=CASCADE)
@@ -589,7 +590,7 @@ class DataFile(models.Model):
         dto = cf_units.num2date(self.end_time, self.time_units, self.calendar)
         return dto.strftime('%Y-%m-%d')
 
-    def __unicode__(self):
+    def __str__(self):
         return "%s (Directory: %s)" % (self.name, self.directory)
 
     class Meta:
@@ -630,7 +631,7 @@ class ReplacedFile(models.Model):
     data_request = models.ForeignKey(DataRequest, null=False,
                                      on_delete=PROTECT)
     frequency = models.CharField(max_length=20,
-                                 choices=FREQUENCY_VALUES.items(),
+                                 choices=list(FREQUENCY_VALUES.items()),
                                  verbose_name="Time frequency",
                                  null=False, blank=False)
     rip_code = models.CharField(max_length=20, verbose_name="Variant Label",
@@ -648,7 +649,7 @@ class ReplacedFile(models.Model):
                                   null=True, blank=True)
     calendar = models.CharField(verbose_name='Calendar', max_length=20,
                                 null=True, blank=True,
-                                choices=CALENDARS.items())
+                                choices=list(CALENDARS.items()))
 
     data_submission = models.ForeignKey(DataSubmission,
                                         null=False, blank=False,
@@ -661,7 +662,7 @@ class ReplacedFile(models.Model):
     # Checksum
     checksum_value = models.CharField(max_length=200, null=True, blank=True)
     checksum_type = models.CharField(max_length=20,
-                                     choices=CHECKSUM_TYPES.items(),
+                                     choices=list(CHECKSUM_TYPES.items()),
                                      null=True, blank=True)
 
     def start_date_string(self):
@@ -675,7 +676,7 @@ class ReplacedFile(models.Model):
         dto = cf_units.num2date(self.end_time, self.time_units, self.calendar)
         return dto.strftime('%Y-%m-%d')
 
-    def __unicode__(self):
+    def __str__(self):
         return "%s (Directory: %s)" % (self.name, self.directory)
 
     class Meta:
@@ -703,7 +704,7 @@ class DataIssue(models.Model):
     # DataFile that the Data Issue corresponds to
     data_file = models.ManyToManyField(DataFile)
 
-    def __unicode__(self):
+    def __str__(self):
         return "Data Issue (%s): %s (%s)" % (
             self.date_time.strftime('%Y-%m-%d %H:%M:%S'),
             self.issue, self.reporter.username
@@ -720,10 +721,10 @@ class Checksum(models.Model):
     data_file = models.ForeignKey(DataFile, null=False, blank=False,
         on_delete=CASCADE)
     checksum_value = models.CharField(max_length=200, null=False, blank=False)
-    checksum_type = models.CharField(max_length=20, choices=CHECKSUM_TYPES.items(), null=False,
+    checksum_type = models.CharField(max_length=20, choices=list(CHECKSUM_TYPES.items()), null=False,
                                      blank=False)
 
-    def __unicode__(self):
+    def __str__(self):
         return "%s: %s (%s)" % (self.checksum_type, self.checksum_value,
                                 self.data_file.name)
 
@@ -756,7 +757,7 @@ class RetrievalRequest(models.Model):
     start_year = models.IntegerField(verbose_name="Start Year", null=True, blank=False)
     end_year = models.IntegerField(verbose_name="End Year", null=True, blank=False)
 
-    def __unicode__(self):
+    def __str__(self):
         return '{}'.format(self.id)
 
 
@@ -772,7 +773,7 @@ class EmailQueue(models.Model):
 
     sent = models.BooleanField(default=False, null=False)
 
-    def __unicode__(self):
+    def __str__(self):
         return '{} {}'.format(self.recipient.email, self.subject)
 
 
@@ -944,7 +945,7 @@ class ObservationDataset(models.Model):
         else:
             return ONLINE_STATUS.online
 
-    def __unicode__(self):
+    def __str__(self):
         if self.version:
             return '{} ver {}'.format(self.name, self.version)
         else:
@@ -975,7 +976,7 @@ class ObservationFile(models.Model):
 
     checksum_value = models.CharField(max_length=200, null=True, blank=True)
     checksum_type = models.CharField(max_length=20,
-                                     choices=CHECKSUM_TYPES.items(),
+                                     choices=list(CHECKSUM_TYPES.items()),
                                      null=True, blank=True)
 
     # DateTimes are allowed to be null/blank because some fields (such as
@@ -988,7 +989,7 @@ class ObservationFile(models.Model):
                                   null=True, blank=True)
     calendar = models.CharField(verbose_name='Calendar', max_length=20,
                                 null=True, blank=True,
-                                choices=CALENDARS.items())
+                                choices=list(CALENDARS.items()))
     frequency = models.CharField(max_length=200, null=True, blank=True,
                                  verbose_name='Frequency')
 
@@ -1035,5 +1036,5 @@ class ObservationFile(models.Model):
     obs_set = models.ForeignKey(ObservationDataset, null=False, blank=False,
                                 on_delete=CASCADE, verbose_name='Obs Set')
 
-    def __unicode__(self):
+    def __str__(self):
         return '{} (Directory: {})'.format(self.name, self.incoming_directory)

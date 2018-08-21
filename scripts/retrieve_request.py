@@ -1,4 +1,4 @@
-#!/usr/bin/env python2.7
+#!/usr/bin/env python
 """
 retrieve_request.py
 
@@ -10,6 +10,8 @@ system, but this is not checked by this script. `split_retrieve_request.py`
 and `auto_retrieve.py` can be used to split requests and run them on the
 appropriate tape systems respectively.
 """
+from __future__ import unicode_literals, division, absolute_import
+
 import argparse
 import datetime
 import glob
@@ -437,7 +439,7 @@ def _run_command(command):
     cmd_out = None
     try:
         cmd_out = subprocess.check_output(command, stderr=subprocess.STDOUT,
-                                          shell=True)
+                                          shell=True).decode('utf-8')
     except subprocess.CalledProcessError as exc:
         if exc.returncode == 17:
             pass

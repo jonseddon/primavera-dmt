@@ -7,18 +7,16 @@ https://docs.djangoproject.com/en/1.6/topics/settings/
 For the full list of settings and their values, see
 https://docs.djangoproject.com/en/1.6/ref/settings/
 """
-
-# Build paths inside the project like this: os.path.join(BASE_DIR, ...)
-import os
+from __future__ import unicode_literals, division, absolute_import
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/1.6/howto/deployment/checklist/
 
+# Now import local settings (that might override DEBUG settings)
+from .settings_local import *
+
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = False
-
-# Now import local settings (that might override DEBUG settings)
-from settings_local import *
 
 # Application definition
 
@@ -31,7 +29,6 @@ INSTALLED_APPS = (
     'django.contrib.staticfiles',
     'solo',
     'pdata_app',
-    'et_indexer',
     'django_tables2',
     'django_filters'
 )
@@ -42,7 +39,6 @@ MIDDLEWARE = (
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
-    'django.contrib.auth.middleware.SessionAuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 )
