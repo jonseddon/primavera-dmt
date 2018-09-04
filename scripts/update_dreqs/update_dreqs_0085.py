@@ -57,7 +57,7 @@ def main(args):
     )
     logger.debug('{} affected low-res requests found'.format(lowres_spinup.count()))
 
-    lowres_spinup.update(rip_code='r21i1p1f2')
+    lowres_spinup.update(rip_code='r1i1p1f2')
 
 
 if __name__ == "__main__":
