@@ -154,7 +154,7 @@ def identify_and_validate_file(params, output, error_event):
             logger.error(msg)
             error_event.set()
         except FileValidationError as fve:
-            msg = 'File failed validation. {}'.format(fve.message)
+            msg = 'File failed validation. {}'.format(fve.__str__())
             logger.warning(msg)
         else:
             output.append(metadata)
@@ -377,7 +377,7 @@ def create_database_file_object(metadata, data_submission, file_online=True,
         )
     except django.db.utils.IntegrityError as exc:
         msg = ('Unable to submit file {}: {}'.format(metadata['basename'],
-                                                     exc.message))
+                                                     exc.__str__()))
         logger.error(msg)
         raise SubmissionError(msg)
 
