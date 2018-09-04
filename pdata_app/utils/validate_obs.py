@@ -294,7 +294,7 @@ class ObsFile(object):
                 cubes = iris.load(filepath)
             except TypeError as exc:
                 logger.warning('Unable to load file using Iris {}: {}'.
-                               format(self.name, exc.message))
+                               format(self.name, exc.__str__()))
                 self._add_netcdf4_metadata()
             else:
                 for cube in cubes:

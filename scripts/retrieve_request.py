@@ -212,7 +212,7 @@ def get_moose_url(tape_url, data_files, args):
         cmd_out = _run_command(cmd)
     except RuntimeError as exc:
         logger.error('MOOSE command failed\n{}'.
-                     format(exc.message))
+                     format(exc.__str__()))
         sys.exit(1)
 
     logger.debug('Restored {}'.format(tape_url))
@@ -295,7 +295,7 @@ def get_et_url(tape_url, data_files, args):
         cmd_out = _run_command(cmd)
         pass
     except RuntimeError as exc:
-        logger.error('et_get.py command failed\n{}'.format(exc.message))
+        logger.error('et_get.py command failed\n{}'.format(exc.__str__()))
         sys.exit(1)
 
     copy_et_files_into_drs(data_files, retrieval_dir, args)

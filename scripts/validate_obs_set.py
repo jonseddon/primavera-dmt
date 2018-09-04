@@ -41,7 +41,7 @@ def create_obs_set(args):
             obs_set.add_files(only_netcdf=True)
 
     except ValueError as exc:
-        logger.error(exc.message)
+        logger.error(exc.__str__())
         sys.exit(1)
 
     if os.path.exists(args.jsonfile) and not args.force:
