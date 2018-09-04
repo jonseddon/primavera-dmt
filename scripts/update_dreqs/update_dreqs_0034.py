@@ -5,6 +5,8 @@ update_dreqs_0034.py
 This file adds data and variable requests for the Ofx table, which was missed
 at the start of the project.
 """
+from __future__ import (unicode_literals, division, absolute_import,
+                        print_function)
 import argparse
 from datetime import datetime
 import logging.config
@@ -130,7 +132,7 @@ def main(args):
             experiment_objs.append(expt_obj)
         else:
             msg = 'experiment {} not found in the database.'.format(expt)
-            print msg
+            print(msg)
             raise ValueError(msg)
 
     # Institutes
@@ -141,7 +143,7 @@ def main(args):
         msg = 'institute_id {} not found in the database.'.format(
             mpi_details['id']
         )
-        print msg
+        print(msg)
         raise ValueError(msg)
 
     result = match_one(Institute, short_name=mohc_details['id'])
@@ -151,7 +153,7 @@ def main(args):
         msg = 'institute_id {} not found in the database.'.format(
             mohc_details['id']
         )
-        print msg
+        print(msg)
         raise ValueError(msg)
 
     # Look up the ClimateModel object for each institute_id  and save the
@@ -164,7 +166,7 @@ def main(args):
         else:
             msg = ('climate_model {} not found in the database.'.
                    format(clim_model))
-            print msg
+            print(msg)
             raise ValueError(msg)
 
     mohc_model_objs = []
@@ -175,7 +177,7 @@ def main(args):
         else:
             msg = ('climate_model {} not found in the database.'.
                    format(clim_model))
-            print msg
+            print(msg)
             raise ValueError(msg)
 
     # The standard reference time
@@ -221,7 +223,7 @@ def main(args):
             msg = ('Unable to find variable request matching '
                    'cmor_name {} and table_name {} in the '
                    'database.'.format(cmor_name, table_name))
-            print msg
+            print(msg)
             raise ValueError(msg)
 
     for new_dreq in mohc_dreqs:
@@ -258,7 +260,7 @@ def main(args):
             msg = ('Unable to find variable request matching '
                    'cmor_name {} and table_name {} in the '
                    'database.'.format(cmor_name, table_name))
-            print msg
+            print(msg)
             raise ValueError(msg)
 
 

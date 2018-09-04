@@ -48,18 +48,18 @@ def main(args):
     CERFACS_NEW_VERSION = 'v20170622'
 
     wrong_versions = [
-        u'/group_workspaces/jasmin2/primavera4/upload/EC-Earth-Consortium/EC-Earth-3-HR/incoming/v20170607',
-        u'/group_workspaces/jasmin2/primavera4/upload/EC-Earth-Consortium/EC-Earth-3-HR/incoming/v20170608',
-        u'/group_workspaces/jasmin2/primavera4/upload/EC-Earth-Consortium/EC-Earth-3-HR/incoming/v20170609',
-        u'/group_workspaces/jasmin2/primavera4/upload/EC-Earth-Consortium/EC-Earth-3-HR/incoming/v20170610',
-        u'/group_workspaces/jasmin2/primavera4/upload/EC-Earth-Consortium/EC-Earth-3-HR/incoming/v20170611',
-        u'/group_workspaces/jasmin2/primavera4/upload/EC-Earth-Consortium/EC-Earth-3-HR/incoming/v20170612',
-        u'/group_workspaces/jasmin2/primavera4/upload/EC-Earth-Consortium/EC-Earth-3-HR/incoming/v20170616',
-        u'/group_workspaces/jasmin2/primavera4/upload/EC-Earth-Consortium/EC-Earth-3-HR/incoming/v20170619',
-        u'/group_workspaces/jasmin2/primavera4/upload/EC-Earth-Consortium/EC-Earth-3-HR/incoming/v20170621',
-        u'/group_workspaces/jasmin2/primavera4/upload/EC-Earth-Consortium/EC-Earth-3-HR/incoming/v20170622',
-        u'/group_workspaces/jasmin2/primavera4/upload/EC-Earth-Consortium/EC-Earth-3-HR/incoming/v20170626',
-        u'/group_workspaces/jasmin2/primavera4/upload/EC-Earth-Consortium/EC-Earth-3-HR/incoming/v20170628'
+        '/group_workspaces/jasmin2/primavera4/upload/EC-Earth-Consortium/EC-Earth-3-HR/incoming/v20170607',
+        '/group_workspaces/jasmin2/primavera4/upload/EC-Earth-Consortium/EC-Earth-3-HR/incoming/v20170608',
+        '/group_workspaces/jasmin2/primavera4/upload/EC-Earth-Consortium/EC-Earth-3-HR/incoming/v20170609',
+        '/group_workspaces/jasmin2/primavera4/upload/EC-Earth-Consortium/EC-Earth-3-HR/incoming/v20170610',
+        '/group_workspaces/jasmin2/primavera4/upload/EC-Earth-Consortium/EC-Earth-3-HR/incoming/v20170611',
+        '/group_workspaces/jasmin2/primavera4/upload/EC-Earth-Consortium/EC-Earth-3-HR/incoming/v20170612',
+        '/group_workspaces/jasmin2/primavera4/upload/EC-Earth-Consortium/EC-Earth-3-HR/incoming/v20170616',
+        '/group_workspaces/jasmin2/primavera4/upload/EC-Earth-Consortium/EC-Earth-3-HR/incoming/v20170619',
+        '/group_workspaces/jasmin2/primavera4/upload/EC-Earth-Consortium/EC-Earth-3-HR/incoming/v20170621',
+        '/group_workspaces/jasmin2/primavera4/upload/EC-Earth-Consortium/EC-Earth-3-HR/incoming/v20170622',
+        '/group_workspaces/jasmin2/primavera4/upload/EC-Earth-Consortium/EC-Earth-3-HR/incoming/v20170626',
+        '/group_workspaces/jasmin2/primavera4/upload/EC-Earth-Consortium/EC-Earth-3-HR/incoming/v20170628'
     ]
 
     for incom_dir in wrong_versions:
@@ -70,9 +70,9 @@ def main(args):
             data_file.save()
 
     wrong_versions = [
-        u'/group_workspaces/jasmin2/primavera4/upload/CNRM-CERFACS/CNRM-CM6-1-HR/incoming/v20170518_1950',
-        u'/group_workspaces/jasmin2/primavera4/upload/CNRM-CERFACS/CNRM-CM6-1-HR/incoming/v20170518_1960',
-        u'/group_workspaces/jasmin2/primavera4/upload/CNRM-CERFACS/CNRM-CM6-1-HR/incoming/v20170518_1970'
+        '/group_workspaces/jasmin2/primavera4/upload/CNRM-CERFACS/CNRM-CM6-1-HR/incoming/v20170518_1950',
+        '/group_workspaces/jasmin2/primavera4/upload/CNRM-CERFACS/CNRM-CM6-1-HR/incoming/v20170518_1960',
+        '/group_workspaces/jasmin2/primavera4/upload/CNRM-CERFACS/CNRM-CM6-1-HR/incoming/v20170518_1970'
     ]
 
     for incom_dir in wrong_versions:

@@ -48,11 +48,11 @@ def main(args):
     Main entry point
     """
     jseddon = User.objects.get(username='jseddon')
-    years = range(1950, 2015)
+    years = list(range(1950, 2015))
     for year in years:
         logger.debug('Processing year {}'.format(year))
         ds = DataSubmission.objects.get_or_create(
-            status=u'ARRIVED',
+            status='ARRIVED',
             incoming_directory=('/scratch/jseddon/u-ao802/output/u-ai674/'
                                   '{}'.format(year)),
             directory=None,

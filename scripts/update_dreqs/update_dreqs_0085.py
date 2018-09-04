@@ -1,21 +1,19 @@
-#!/usr/bin/env python2.7
+#!/usr/bin/env python
 """
-update_dreqs_0017.py
+update_dreqs_0085.py
 
-This script is run to change the version string in all files from the specified
-CMCC submissions to one value.
+This file updates all CERFACS CNRM-CM6-1-HR spinup-1950 data requests to the
+correct variant_label.
 """
+from __future__ import (unicode_literals, division, absolute_import,
+                        print_function)
 import argparse
 import logging.config
-import os
 import sys
-
-from cf_units import date2num, CALENDAR_GREGORIAN
 
 import django
 django.setup()
-
-from pdata_app.models import DataSubmission
+from pdata_app.models import DataRequest
 
 __version__ = '0.1.0b1'
 
@@ -23,7 +21,6 @@ DEFAULT_LOG_LEVEL = logging.WARNING
 DEFAULT_LOG_FORMAT = '%(levelname)s: %(message)s'
 
 logger = logging.getLogger(__name__)
-
 
 
 def parse_args():
@@ -44,19 +41,23 @@ def main(args):
     """
     Main entry point
     """
-    CMCC_NEW_VERSION = 'v20170706'
+    highres_spinup = DataRequest.objects.filter(
+        institute__short_name='CNRM-CERFACS',
+        climate_model__short_name='CNRM-CM6-1-HR',
+        experiment__short_name='spinup-1950'
+    )
+    logger.debug('{} affected high-res requests found'.format(highres_spinup.count()))
 
-    wrong_versions = [
-        '/group_workspaces/jasmin2/primavera4/upload/CMCC/20170708',
-        '/group_workspaces/jasmin2/primavera4/upload/CMCC/20170725',
-    ]
+    highres_spinup.update(rip_code='r1i1p1f2')
 
-    for incom_dir in wrong_versions:
-        logger.debug(incom_dir)
-        data_sub = DataSubmission.objects.get(incoming_directory=incom_dir)
-        for data_file in data_sub.datafile_set.all():
-            data_file.version = CMCC_NEW_VERSION
-            data_file.save()
+    lowres_spinup = DataRequest.objects.filter(
+        institute__short_name='CNRM-CERFACS',
+        climate_model__short_name='CNRM-CM6-1',
+        experiment__short_name='spinup-1950'
+    )
+    logger.debug('{} affected low-res requests found'.format(lowres_spinup.count()))
+
+    lowres_spinup.update(rip_code='r21i1p1f2')
 
 
 if __name__ == "__main__":
