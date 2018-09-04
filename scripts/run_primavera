@@ -25,6 +25,9 @@ DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 DMT_DIR=`readlink -f $DIR/..`
 VAL_DIR=~jseddon/primavera/primavera-val
 
+# Remove the following environment varibale on LOTUS that breaks conda
+unset LSB_ECHKPNT_RSH_CMD
+
 export PATH=/group_workspaces/jasmin2/primavera1/tools/miniconda2/bin:$PATH
 . activate py3-6
 
