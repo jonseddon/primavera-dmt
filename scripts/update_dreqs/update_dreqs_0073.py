@@ -120,7 +120,7 @@ def main(args):
             experiment_objs.append(expt_obj)
         else:
             msg = 'experiment {} not found in the database.'.format(expt)
-            print msg
+            print(msg)
             raise ValueError(msg)
 
     # Institute
@@ -131,7 +131,7 @@ def main(args):
         msg = 'institute_id {} not found in the database.'.format(
             institute_details['id']
         )
-        print msg
+        print(msg)
         raise ValueError(msg)
 
     # Look up the ClimateModel object for each institute_id  and save the
@@ -144,7 +144,7 @@ def main(args):
         else:
             msg = ('climate_model {} not found in the database.'.
                    format(clim_model))
-            print msg
+            print(msg)
             raise ValueError(msg)
 
     # The standard reference time
@@ -190,7 +190,7 @@ def main(args):
             msg = ('Unable to find variable request matching '
                    'cmor_name {} and table_name {} in the '
                    'database.'.format(cmor_name, table_name))
-            print msg
+            print(msg)
             raise ValueError(msg)
 
 

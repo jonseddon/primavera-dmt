@@ -89,16 +89,16 @@ def main(args):
     ]
 
     submissions = [
-        u'/group_workspaces/jasmin2/primavera4/upload/EC-Earth-Consortium/EC-Earth-3-HR/incoming/v20171110',
-        u'/group_workspaces/jasmin2/primavera4/upload/EC-Earth-Consortium/EC-Earth-3-HR/incoming/v20171111',
-        u'/group_workspaces/jasmin2/primavera4/upload/EC-Earth-Consortium/EC-Earth-3-HR/incoming/v20171112',
-        u'/group_workspaces/jasmin2/primavera4/upload/EC-Earth-Consortium/EC-Earth-3-HR/incoming/v20171116',
-        u'/group_workspaces/jasmin2/primavera4/upload/EC-Earth-Consortium/EC-Earth-3-HR/incoming/v20171024',
-        u'/group_workspaces/jasmin2/primavera4/upload/EC-Earth-Consortium/EC-Earth-3-HR/incoming/v20171027',
-        u'/group_workspaces/jasmin2/primavera4/upload/EC-Earth-Consortium/EC-Earth-3-HR/incoming/v20171101',
-        u'/group_workspaces/jasmin2/primavera4/upload/EC-Earth-Consortium/EC-Earth-3-HR/incoming/v20171114',
-        u'/group_workspaces/jasmin2/primavera4/upload/EC-Earth-Consortium/EC-Earth-3-HR/incoming/v20171115',
-        u'/group_workspaces/jasmin2/primavera4/upload/EC-Earth-Consortium/EC-Earth-3-HR/incoming/v20171113'
+        '/group_workspaces/jasmin2/primavera4/upload/EC-Earth-Consortium/EC-Earth-3-HR/incoming/v20171110',
+        '/group_workspaces/jasmin2/primavera4/upload/EC-Earth-Consortium/EC-Earth-3-HR/incoming/v20171111',
+        '/group_workspaces/jasmin2/primavera4/upload/EC-Earth-Consortium/EC-Earth-3-HR/incoming/v20171112',
+        '/group_workspaces/jasmin2/primavera4/upload/EC-Earth-Consortium/EC-Earth-3-HR/incoming/v20171116',
+        '/group_workspaces/jasmin2/primavera4/upload/EC-Earth-Consortium/EC-Earth-3-HR/incoming/v20171024',
+        '/group_workspaces/jasmin2/primavera4/upload/EC-Earth-Consortium/EC-Earth-3-HR/incoming/v20171027',
+        '/group_workspaces/jasmin2/primavera4/upload/EC-Earth-Consortium/EC-Earth-3-HR/incoming/v20171101',
+        '/group_workspaces/jasmin2/primavera4/upload/EC-Earth-Consortium/EC-Earth-3-HR/incoming/v20171114',
+        '/group_workspaces/jasmin2/primavera4/upload/EC-Earth-Consortium/EC-Earth-3-HR/incoming/v20171115',
+        '/group_workspaces/jasmin2/primavera4/upload/EC-Earth-Consortium/EC-Earth-3-HR/incoming/v20171113'
     ]
 
     models = ['EC-Earth3-HR']

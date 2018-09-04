@@ -42,7 +42,7 @@ def main(args):
     """
     Main entry point
     """
-    awi_variant_label = u'r1i1p1f002'
+    awi_variant_label = 'r1i1p1f002'
     awi_reqs = DataRequest.objects.filter(institute__short_name='AWI')
     for data_req in awi_reqs:
         if data_req.datafile_set.count() > 0:
@@ -63,7 +63,7 @@ def main(args):
             data_req.save()
 
 
-    other_variant_label = u'r1i1p1f1'
+    other_variant_label = 'r1i1p1f1'
     other_reqs = DataRequest.objects.exclude(institute__short_name='AWI')
     for data_req in other_reqs:
         if data_req.datafile_set.count() > 0:

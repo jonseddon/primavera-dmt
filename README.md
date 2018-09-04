@@ -1,3 +1,5 @@
+[![Build Status](https://travis-ci.org/PRIMAVERA-H2020/primavera-dmt.svg?branch=master)](https://travis-ci.org/PRIMAVERA-H2020/primavera-dmt)
+
 # primavera-dmt
 PRIMAVERA Data Management Tool
 
