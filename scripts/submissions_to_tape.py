@@ -141,6 +141,12 @@ def main(args):
         logger.error(msg)
         sys.exit(1)
 
+    if submission.status != u'VALIDATED':
+        msg = ("Submission status is {} rather than 'VALIDATED'".format(
+            submission.status))
+        logger.error(msg)
+        sys.exit(1)
+
     submission_to_tape(submission, args.overwrite)
 
 
