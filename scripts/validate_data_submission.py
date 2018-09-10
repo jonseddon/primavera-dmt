@@ -17,6 +17,7 @@ import os
 import re
 import shutil
 import sys
+import time
 
 import iris
 
@@ -128,36 +129,68 @@ def identify_and_validate_file(params, output, error_event):
             return
 
         try:
-            metadata = identify_filename_metadata(filename, file_format)
+            _identify_and_validate_file(filename, project, file_format,output,
+                                        error_event)
+        except django.db.utils.OperationalError:
+            # Wait and then re-run once in case of temporary database
+            # high load
+            logger.warning('django.db.utils.OperationalError waiting for one '
+                           'minute and then retrying.')
+            time.sleep(60)
+            try:
+                _identify_and_validate_file(filename, project, file_format,
+                                            output, error_event)
+            except django.db.utils.OperationalError:
+                logger.error('django.db.utils.OperationalError for a second '
+                             'time. Exiting.')
+                error_event.set()
+                raise
 
-            if metadata['table'].startswith('Prim'):
-                metadata['project'] = 'PRIMAVERA'
-            else:
-                metadata['project'] = project
 
-            cell_measures = ['areacella', 'areacello', 'volcello']
-            if metadata['cmor_name'] in cell_measures:
-                cf = iris.fileformats.cf.CFReader(filename)
-                metadata.update(identify_cell_measures_metadata(cf, filename))
-                validate_cell_measures_contents(cf, metadata)
-            else:
-                cube = load_cube(filename)
-                metadata.update(identify_contents_metadata(cube, filename))
-                validate_file_contents(cube, metadata)
+def _identify_and_validate_file(filename, project, file_format, output,
+                                error_event):
+    """
+    Do the validation of a file.
 
-            verify_fk_relationships(metadata)
+    :param str filename: The name of the file
+    :param str project: The name of the project
+    :param str file_format: The format of the file (CMIP5 or CMIP6)
+    :param multiprocessing.Manager.list output: A list containing the output
+        metadata dictionaries for each file
+    :param multiprocessing.Manager.Event error_event: If set then a catastrophic
+        error has occurred in another process and processing should end
+    """
+    try:
+        metadata = identify_filename_metadata(filename, file_format)
 
-            calculate_checksum(metadata)
-        except SubmissionError:
-            msg = ('A serious file error means the submission cannot continue: '
-                  '{}'.format(filename))
-            logger.error(msg)
-            error_event.set()
-        except FileValidationError as fve:
-            msg = 'File failed validation. {}'.format(fve.__str__())
-            logger.warning(msg)
+        if metadata['table'].startswith('Prim'):
+            metadata['project'] = 'PRIMAVERA'
         else:
-            output.append(metadata)
+            metadata['project'] = project
+
+        cell_measures = ['areacella', 'areacello', 'volcello']
+        if metadata['cmor_name'] in cell_measures:
+            cf = iris.fileformats.cf.CFReader(filename)
+            metadata.update(identify_cell_measures_metadata(cf, filename))
+            validate_cell_measures_contents(cf, metadata)
+        else:
+            cube = load_cube(filename)
+            metadata.update(identify_contents_metadata(cube, filename))
+            validate_file_contents(cube, metadata)
+
+        verify_fk_relationships(metadata)
+
+        calculate_checksum(metadata)
+    except SubmissionError:
+        msg = ('A serious file error means the submission cannot continue: '
+               '{}'.format(filename))
+        logger.error(msg)
+        error_event.set()
+    except FileValidationError as fve:
+        msg = 'File failed validation. {}'.format(fve.__str__())
+        logger.warning(msg)
+    else:
+        output.append(metadata)
 
 
 def calculate_checksum(metadata):
