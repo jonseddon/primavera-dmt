@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 """
-send_emails.py - send unsent emails that have been queued in the database.
+create_email.py - compose an email and add it to the queue of emails to be
+                  sent in the database.
 """
 from __future__ import unicode_literals, division, absolute_import
 import argparse
@@ -10,72 +11,49 @@ import sys
 
 import django
 django.setup()
-from django.core.mail import EmailMessage
-from django.template.defaultfilters import pluralize
 
+from django.contrib.auth.models import User
 from pdata_app.models import EmailQueue
 
 DEFAULT_LOG_LEVEL = logging.WARNING
 DEFAULT_LOG_FORMAT = '%(levelname)s: %(message)s'
 
 logger = logging.getLogger(__name__)
-
-
-EMAIL_HOST = 'exchsmtp.stfc.ac.uk'
-EMAIL_PORT = 587
-EMAIL_USE_TLS = True
-
-FROM_ADDRESS = 'no-reply@prima-dm.ceda.ac.uk'
-REPLY_TO_ADDRESS = 'jon.seddon@metoffice.gov.uk'
+TO_USERNAME = 'jseddon'
 
 
 def parse_args():
     """
     Parse command-line arguments
     """
-    parser = argparse.ArgumentParser(description='Send any unsent emails that '
-                                                 'are in the queue.')
+    parser = argparse.ArgumentParser(description='Compose an email and queue'
+                                                 'it for delivery.')
+    parser.add_argument('subject', help="The email's subject")
+    parser.add_argument('body', help="The body of the email")
     parser.add_argument('-l', '--log-level', help='set logging level to one of '
-        'debug, info, warn (the default), or error')
+                                                  'debug, info, warn (the '
+                                                  'default), or error')
     args = parser.parse_args()
 
     return args
 
 
-def main():
+def main(args):
     """
     Send any queued emails
 
     :return:
     """
-    num_sent = 0
-
-    for email in EmailQueue.objects.filter(sent=False):
-        if not email.recipient.email:
-            msg = 'No email address is available for user {}'.format(
-                email.recipient.username)
-            logger.warning(msg)
-        else:
-            email_msg = EmailMessage(
-                subject=email.subject,
-                body=email.message,
-                from_email=FROM_ADDRESS,
-                reply_to=(REPLY_TO_ADDRESS,),
-                to=(email.recipient.email,)
-            )
-
-            try:
-                email_msg.send()
-            except SMTPException as exc:
-                msg = 'Unable to send email to {} with subject {}.\n{}'.format(
-                    email.recipient.email, email.subject, exc.message)
-                logger.warning(msg)
-            else:
-                email.sent = True
-                email.save()
-                num_sent += 1
-
-    logger.debug('{} email{} sent'.format(num_sent, pluralize(num_sent)))
+    try:
+        recipient = User.objects.get(username=TO_USERNAME)
+    except django.core.exceptions.ObjectDoesNotExist:
+        logger.error('Username {} cannot be found. Email not queued.')
+        sys.exit(1)
+    logger.debug('To: {}'.format(recipient.email))
+    logger.debug('Subject: {}'.format(args.subject))
+    logger.debug('Message: {}'.format(args.body))
+    EmailQueue.objects.create(recipient=recipient, subject=args.subject,
+                              message=args.body)
 
 
 if __name__ == '__main__':
@@ -118,4 +96,4 @@ if __name__ == '__main__':
     })
 
     # run the code
-    main()
+    main(cmd_args)
