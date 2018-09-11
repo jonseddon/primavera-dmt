@@ -282,6 +282,16 @@ def create_submission(request):
             submission.status = STATUS_VALUES['PENDING_PROCESSING']
             submission.user = request.user
             submission.save()
+
+            # advise the admin of the new submission
+            contact_user_id = Settings.get_solo().contact_user_id
+            contact_user = User.objects.get(username=contact_user_id)
+            subject = 'PRIMAVERA Submission created'
+            message = 'PRIMAVERA Submission {} created'.format(
+                submission.incoming_directory)
+            _em = EmailQueue.objects.create(recipient=contact_user,
+                                            subject=subject, message=message)
+
             return _custom_redirect('data_submissions')
     else:
         form = CreateSubmissionForm()
