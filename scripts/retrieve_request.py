@@ -35,7 +35,8 @@ from django.utils import timezone
 
 from pdata_app.models import Settings, RetrievalRequest, EmailQueue
 from pdata_app.utils.common import (md5, sha256, adler32, construct_drs_path,
-                                    get_temp_filename, PAUSE_FILES)
+                                    get_temp_filename, is_same_gws,
+                                    PAUSE_FILES)
 from pdata_app.utils.dbapi import match_one
 
 
@@ -365,7 +366,8 @@ def copy_et_files_into_drs(data_files, retrieval_dir, args):
 
         # create symbolic link from main directory if storing data in an
         # alternative directory
-        if args.alternative:
+        if args.alternative and not is_same_gws(dest_file_path,
+                                                BASE_OUTPUT_DIR):
             primary_path = os.path.join(BASE_OUTPUT_DIR, drs_path)
             if not os.path.exists(primary_path):
                 os.makedirs(primary_path)
