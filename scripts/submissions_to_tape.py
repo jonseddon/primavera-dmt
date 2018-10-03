@@ -75,7 +75,8 @@ def submission_to_tape(data_sub, overwrite=False):
     logger.debug('File list written to {}'.format(filelist_name))
 
     # run the et_put.py command to send the files to tape
-    cmd = 'et_put.py -v -w primavera -f {}'.format(filelist_name)
+    cmd = ('/usr/bin/python2.7 /usr/bin/et_put.py -v -w primavera '
+           '-f {}'.format(filelist_name))
     cmd_output = _run_command(cmd)
 
     # find the batch id from the text returned by et_put.py
