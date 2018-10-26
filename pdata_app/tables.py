@@ -329,6 +329,7 @@ class DataIssueTable(tables.Table):
     class Meta:
         model = DataIssue
         attrs = {'class': 'paleblue'}
+        order_by = '-id'
 
     num_files_affected = tables.Column(empty_values=(), orderable=False,
                                        verbose_name='Total # Files Affected')
