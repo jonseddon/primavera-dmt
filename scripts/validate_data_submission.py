@@ -16,6 +16,7 @@ from netCDF4 import Dataset
 import os
 import re
 import shutil
+import subprocess
 import sys
 import time
 
@@ -554,6 +555,71 @@ def add_tape_url(metadata, tape_base_url, submission_dir):
         data_file['tape_url'] = tape_base_url + '/' + rel_dir
 
 
+def run_prepare(file_paths, num_processes):
+    """
+    Run PrePARE on each file in the submission. Any failures are reported
+    as an error with the logging and an exception is raised at the end of
+    processing if one or more files has failed.
+
+    :param list file_paths: The paths of the files in the submission's
+        directory.
+    :param int num_processes: The number of processes to use in parallel.
+    :raises SubmissionError: at the end of checking if one or more files has
+    failed PrePARE's checks.
+    """
+    logger.debug('Starting PrePARE on {} files'.format(len(file_paths)))
+    jobs = []
+    manager = Manager()
+    params = manager.Queue()
+    file_failed = manager.Event()
+    for i in range(num_processes):
+        p = Process(target=_run_prepare, args=(params, file_failed))
+        jobs.append(p)
+        p.start()
+
+    for item in itertools.chain(file_paths, (None,) * num_processes):
+        params.put(item)
+
+    for j in jobs:
+        j.join()
+
+    if file_failed.is_set():
+        logger.error('Not all files passed PrePARE')
+        raise SubmissionError()
+
+    logger.debug('All files successfully checked by PrePARE')
+
+
+def _run_prepare(params, file_failed):
+    """
+    Check a single file with PrePARE. This function is called in parallel by
+    multiprocessing.
+
+    :param multiprocessing.Manager.Queue params: A queue, with each item being
+        the full path of a file in the submission to check.
+    :param multiprocessing.Manager.Event file_failed: If set then one or more
+        files has failed validation.
+    """
+    while True:
+        file_path = params.get()
+
+        if file_path is None:
+            return
+
+        prepare_script = os.path.join(
+            os.path.dirname(os.path.realpath(__file__)),
+            'run_prepare.sh'
+        )
+
+        prep_res = subprocess.run([prepare_script, file_path],
+                                  stdout=subprocess.PIPE)
+
+        if prep_res.returncode:
+            logger.error('File {} failed PrePARE\n{}'.
+                         format(file_path, prep_res.stdout.decode('utf-8')))
+            file_failed.set()
+
+
 def _get_submission_object(submission_dir):
     """
     :param str submission_dir: The path of the submission's top level
@@ -711,6 +777,8 @@ def parse_args():
         'create a submission when all files pass validation)', action='store_true')
     parser.add_argument('-v', '--validate_only', help='only validate the input, '
         'do not create a data submission', action='store_true')
+    parser.add_argument('-n', '--no-prepare', help="don't run PrePARE",
+                        action='store_true')
     parser.add_argument('--version', action='version',
         version='%(prog)s {}'.format(__version__))
     args = parser.parse_args()
@@ -747,6 +815,8 @@ def main(args):
                     raise SubmissionError(msg)
 
             try:
+                if not args.no_prepare:
+                    run_prepare(data_files, args.processes)
                 validated_metadata = list(identify_and_validate(data_files,
                     args.mip_era, args.processes, args.file_format))
             except SubmissionError:
