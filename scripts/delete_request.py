@@ -21,8 +21,8 @@ django.setup()
 from django.db.models.query import QuerySet
 from django.utils import timezone
 
-from pdata_app.models import RetrievalRequest
-from pdata_app.utils.common import delete_drs_dir
+from pdata_app.models import RetrievalRequest, Settings
+from pdata_app.utils.common import delete_drs_dir, construct_drs_path
 from pdata_app.utils.dbapi import match_one
 
 
@@ -104,7 +104,7 @@ def main(args):
     """
     Main entry point
     """
-    logger.debug('Starting delete_usage.py for retrieval {}'.format(
+    logger.debug('Starting delete_request.py for retrieval {}'.format(
         args.retrieval_id))
 
     deletion_retrieval = match_one(RetrievalRequest, id=args.retrieval_id)
@@ -127,6 +127,7 @@ def main(args):
 
     problems_encountered = False
     directories_found = []
+    base_output_dir = Settings.get_solo().base_output_dir
 
     # loop through all of the data requests in this retrieval
     for data_req in deletion_retrieval.data_request.all():
@@ -169,6 +170,7 @@ def main(args):
             logger.debug('{} {} files will be deleted.'.format(data_req,
                 files_to_delete.distinct().count()))
             for data_file in files_to_delete:
+                old_file_dir = data_file.directory
                 try:
                     os.remove(os.path.join(data_file.directory,
                                            data_file.name))
@@ -181,6 +183,26 @@ def main(args):
                     data_file.online = False
                     data_file.directory = None
                     data_file.save()
+
+                # if a symbolic link exists from the base output directory
+                # then delete this too
+                if not old_file_dir.startswith(base_output_dir):
+                    sym_link_dir = os.path.join(base_output_dir,
+                                                construct_drs_path(data_file))
+                    sym_link = os.path.join(sym_link_dir, data_file.name)
+                    if not os.path.islink(sym_link):
+                        logger.error("Expected {} to be a link but it isn't. "
+                                     "Leaving this file in place.")
+                        problems_encountered = True
+                    else:
+                        try:
+                            os.remove(sym_link)
+                        except OSError as exc:
+                            logger.error(str(exc))
+                            problems_encountered = True
+                        else:
+                            if sym_link_dir not in directories_found:
+                                directories_found.append(sym_link_dir)
 
     if not args.dryrun:
         # delete any empty directories
@@ -197,7 +219,7 @@ def main(args):
                          'been marked as deleted. All possible files have been '
                          'deleted.'.format(args.retrieval_id))
 
-    logger.debug('Completed delete_usage.py for retrieval {}'.format(
+    logger.debug('Completed delete_request.py for retrieval {}'.format(
         args.retrieval_id))
 
 
