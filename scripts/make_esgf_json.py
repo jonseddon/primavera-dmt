@@ -1,4 +1,4 @@
-#!/usr/bin/env python2.7
+#!/usr/bin/env python
 """
 make_esgf_json.py
 
@@ -64,7 +64,8 @@ def _object_to_default(obj):
                                'institution_id__name':
                                    obj.institute.short_name,
                                'source_id__name': obj.climate_model.short_name,
-                               'experiment_id__name': obj.experiment.short_name
+                               'experiment_id__name': obj.experiment.short_name,
+                               'variant_label': obj.rip_code
                                }}
     else:
         msg = 'Unknown type to save to JSON: {}'.format(obj.__class__.__name__)

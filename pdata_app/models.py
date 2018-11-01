@@ -215,6 +215,9 @@ class DataFileAggregationBase(models.Model):
     def get_tape_urls(self):
         return self._file_aggregation("tape_url")
 
+    def directories(self):
+        return self._file_aggregation("directory")
+
     def get_file_versions(self):
         return self._file_aggregation("version")
 
@@ -527,8 +530,8 @@ class DataRequest(DataFileAggregationBase):
         return dto.strftime('%Y-%m-%d')
 
     def __str__(self):
-        return '{}/{} {}/{}/{}'.format(self.institute, self.climate_model,
-                                       self.experiment,
+        return '{}/{}/{} {}/{}/{}'.format(self.institute, self.climate_model,
+                                       self.experiment, self.rip_code,
                                        self.variable_request.table_name,
                                        self.variable_request.cmor_name)
 
