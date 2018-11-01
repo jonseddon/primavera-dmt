@@ -530,7 +530,7 @@ class DataRequest(DataFileAggregationBase):
         return dto.strftime('%Y-%m-%d')
 
     def __str__(self):
-        return '{}/{}/{} {}/{}/{}'.format(self.institute, self.climate_model,
+        return '{}.{}.{}.{}.{}.{}'.format(self.institute, self.climate_model,
                                        self.experiment, self.rip_code,
                                        self.variable_request.table_name,
                                        self.variable_request.cmor_name)
