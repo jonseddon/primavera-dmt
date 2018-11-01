@@ -1,4 +1,4 @@
-#!/usr/bin/env python2.7
+#!/usr/bin/env python
 """
 make_rose_task_names.py
 
@@ -52,11 +52,11 @@ def main(args):
 
     Task names in the output JSON file are in the form:
 
-    <climate_model>_<experiment>_<table>_<variable>
+    <climate-model>_<experiment>_<variant-label>_<table>_<variable>
 
     e.g.:
 
-    HadGEM3-GC31-LM_highresSST-present_Amon_psl
+    HadGEM3-GC31-LM_highresSST-present_r1i1p1f1_Amon_psl
     """
     existing_tasks = []
     if os.path.exists(args.json_file):
@@ -67,18 +67,20 @@ def main(args):
                      format(len(existing_tasks)))
 
     hadgem3_gc31_lm_amip_amon = DataRequest.objects.filter(
-        climate_model__short_name='HadGEM3-GC31-MM',
+        climate_model__short_name='HadGEM3-GC31-LM',
         experiment__short_name='highresSST-present',
+        variant_label='r1i1p1f1',
         variable_request__table_name='Amon',
         datafile__isnull=False
     ).distinct()
 
     all_tasks = hadgem3_gc31_lm_amip_amon
     task_name_list = [
-        '{}_{}_{}_{}'.format(dr.climate_model.short_name,
-                             dr.experiment.short_name,
-                             dr.variable_request.table_name,
-                             dr.variable_request.cmor_name)
+        '{}_{}_{}_{}_{}'.format(dr.climate_model.short_name,
+                                dr.experiment.short_name,
+                                dr.variant_label,
+                                dr.variable_request.table_name,
+                                dr.variable_request.cmor_name)
         for dr in all_tasks
     ]
     logger.debug('{} tasks in total'.format(len(all_tasks)))
