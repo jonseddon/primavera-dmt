@@ -80,7 +80,7 @@ def main(args):
             ocean_files.datafile_set.count()))
         sys.exit(1)
 
-    delete_files(ocean_files)
+    delete_files(ocean_files.datafile_set.all())
     replace_files(ocean_files.datafile_set.all())
 
 
