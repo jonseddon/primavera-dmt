@@ -30,6 +30,7 @@ unset LSB_ECHKPNT_RSH_CMD
 
 export PATH=/group_workspaces/jasmin2/primavera1/tools/miniconda2/bin:$PATH
 . activate py3-6
+export PYTHON_INTERP=/group_workspaces/jasmin2/primavera1/tools/miniconda2/envs/py3-6/bin/python
 
 export DJANGO_SETTINGS_MODULE=pdata_site.settings
 export PYTHONPATH=$DMT_DIR:$VAL_DIR:$PYTHONPATH
@@ -38,14 +39,14 @@ export PATH=$PATH:/group_workspaces/jasmin2/primavera1/tools/adler32
 PYTHON_SCRIPT=$1
 shift
 
-$DIR/$PYTHON_SCRIPT "$@"
+$PYTHON_INTERP $DIR/$PYTHON_SCRIPT "$@"
 
 exit_code=$?
 
 # send an email to indicate completion
 if [ "$PYTHON_SCRIPT" != "send_emails.py" ] && [ "$PYTHON_SCRIPT" != "create_root_chown_list.py" ] && [ "$PYTHON_SCRIPT" != "split_retrieve_request.py" ] && [ "$PYTHON_SCRIPT" != "auto_validate.py" ]; then
     echo "$PYTHON_SCRIPT complete. Sending email."
-    $DIR/create_email.py "[PRIMAVERA] $LSB_JOBID finished" "$LSB_JOBNAME has finished"
+    $PYTHON_INTERP $DIR/create_email.py "[PRIMAVERA] $LSB_JOBID finished" "$LSB_JOBNAME has finished"
 fi
 
 exit "$exit_code"
