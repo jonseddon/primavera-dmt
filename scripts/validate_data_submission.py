@@ -49,6 +49,12 @@ logger = logging.getLogger(__name__)
 
 CONTACT_PERSON_USER_ID = 'jseddon'
 
+# Don't run PrePARE on the following var/table combinations as they've
+# been removed from the CMIP6 data request, but are still needed for
+# PRIMAVERA
+SKIP_PREPARE_VARS = ['psl_E3hrPt', 'ua850_E3hrPt', 'va850_E3hrPt',
+                     'mrlsl_Emon', 'mrlsl_Lmon', 'sialb_SImon']
+
 
 class SubmissionError(Exception):
     """
@@ -605,6 +611,16 @@ def _run_prepare(params, file_failed):
 
         if file_path is None:
             return
+
+        skip_var = False
+        for skip_var in SKIP_PREPARE_VARS:
+            if skip_var in file_path:
+                logger.debug('Skipping running PrePARE on {}'.
+                             format(file_path))
+                skip_var = True
+                break
+        if skip_var:
+            continue
 
         prepare_script = os.path.join(
             os.path.dirname(os.path.realpath(__file__)),
