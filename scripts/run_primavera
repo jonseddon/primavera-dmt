@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/bash -l
 #BSUB -o /home/users/jseddon/lotus/%J.o
 #BSUB -e /home/users/jseddon/lotus/%J.e
 #BSUB -q short-serial
