@@ -51,7 +51,8 @@ def is_max_jobs_reached(job_name, max_num_jobs):
     :param int max_num_jobs: the maximum number of jobs that can run
     :returns: True if `max_num_jobs` with `name` are running
     """
-    cmd_out = subprocess.run(['bjobs', '-w'], stdout=subprocess.PIPE)
+    cmd_out = subprocess.run('bjobs -w', stdout=subprocess.PIPE,
+                             stderr=subprocess.PIPE, shell=True)
 
     if cmd_out.returncode:
         logger.error('bjobs returned code {}. Assuming the maximum number of '
