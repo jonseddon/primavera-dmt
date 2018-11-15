@@ -158,15 +158,14 @@ def main():
     """
     logger.debug('Starting auto_validate.py')
 
-    if is_max_jobs_reached(VALIDATE_SCRIPT, MAX_VALIDATE_SCRIPTS):
-        logger.debug('Maximum number of jobs reached.')
-        sys.exit(0)
-
     submissions = DataSubmission.objects.filter(status=STATUS_TO_PROCESS)
 
     logger.debug('{} submissions to validate found'.format(submissions.count()))
 
     for submission in submissions:
+        if is_max_jobs_reached(VALIDATE_SCRIPT, MAX_VALIDATE_SCRIPTS):
+            logger.debug('Maximum number of jobs reached.')
+            sys.exit(0)
         if not are_files_chowned(submission):
             logger.debug('Skipping {} as all files not owned by {}.'.
                          format(submission.incoming_directory,
