@@ -158,7 +158,8 @@ def main():
     """
     logger.debug('Starting auto_validate.py')
 
-    submissions = DataSubmission.objects.filter(status=STATUS_TO_PROCESS)
+    submissions = (DataSubmission.objects.filter(status=STATUS_TO_PROCESS).
+                   order_by('id'))
 
     logger.debug('{} submissions to validate found'.format(submissions.count()))
 
