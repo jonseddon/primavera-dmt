@@ -634,7 +634,7 @@ def main(args):
     # check that all files were restored
     offline_files = data_req.datafile_set.filter(online=False)
     missed_timeless_files = offline_files.filter(start_time__isnull=True)
-    if start_float and end_float:
+    if start_float is not None and end_float is not None:
         missed_data_files = (offline_files.exclude(start_time__isnull=True).
             filter(start_time__gte=start_float, end_time__lt=end_float))
     else:
