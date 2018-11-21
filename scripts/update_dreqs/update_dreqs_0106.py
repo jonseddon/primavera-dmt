@@ -48,19 +48,12 @@ def main(args):
     
 
     num_updated = DataRequest.objects.filter(
-        climate_model__short_name='EC-Earth3',
-        experiment__short_name__in=['control-1950', 'highres-future',
-                                    'hist-1950', 'spinup-1950',
-                                    'highresSST-future']
-    ).update(climate_model=lr)
+        climate_model__short_name='AWI-CM-1-0-LR').update(climate_model=lr)
 
     logger.debug('{} DataRequests updated to use {}'.format(num_updated, lr))
 
     num_updated = DataRequest.objects.filter(
-        climate_model__short_name='EC-Earth3-HR',
-        experiment__short_name__in=['control-1950', 'highres-future',
-                                    'hist-1950', 'highresSST-future']
-    ).update(climate_model=hr)
+        climate_model__short_name='AWI-CM-1-0-HR').update(climate_model=hr)
 
     logger.debug('{} DataRequests updated to use {}'.format(num_updated, hr))
 
