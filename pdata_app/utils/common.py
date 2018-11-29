@@ -369,10 +369,18 @@ def get_request_size(retrieval_request, online=False, offline=False):
             timeless_size = 0
 
         if start_float is not None and end_float is not None:
-            timed_files = (all_files.exclude(start_time__isnull=True).
+            between_files = (all_files.exclude(start_time__isnull=True).
                            filter(start_time__gte=start_float,
                                   end_time__lt=end_float))
-            timed_size = timed_files.aggregate(Sum('size'))['size__sum']
+            start_straddle = (all_files.exclude(start_time__isnull=True).
+                              filter(start_time__lt=start_float,
+                                     end_time__gt=start_float))
+            end_straddle = (all_files.exclude(start_time__isnull=True).
+                            filter(start_time__lt=end_float,
+                                   end_time__gt=end_float))
+            timed_files = between_files | start_straddle | end_straddle
+            timed_size = (timed_files.distinct().
+                aggregate(Sum('size'))['size__sum'])
             if timed_size is None:
                 timed_size = 0
         else:
