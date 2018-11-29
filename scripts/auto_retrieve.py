@@ -49,7 +49,9 @@ def run_retrieve_request(retrieval_id):
     """
     retrieval_request = RetrievalRequest.objects.get(id=retrieval_id)
 
-    if get_request_size(retrieval_request) > TWO_TEBIBYTES:
+    if get_request_size(retrieval_request.data_request.all(),
+                        retrieval_request.start_year,
+                        retrieval_request.end_year) > TWO_TEBIBYTES:
         logger.warning('Skipping retrieval {} as it is bigger than {}.'.format(
             retrieval_id, filesizeformat(TWO_TEBIBYTES).encode('utf-8')
         ))

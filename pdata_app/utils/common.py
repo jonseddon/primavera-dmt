@@ -320,12 +320,16 @@ def construct_drs_path(data_file):
     )
 
 
-def get_request_size(retrieval_request, online=False, offline=False):
+def get_request_size(data_reqs, start_year, end_year,
+                     online=False, offline=False):
     """
-    Find the size in bytes of a retrieval request.
+    Find the size in bytes of the files in the data requests between the years
+    specified.
 
-    :param pdata_app.models.RetrievalRequest retrieval_request: The retrieval
-        request
+    :param Iterable data_reqs: an iterable of data requests to get the size
+        of. This is typically a Django query set or a list.
+    :param int start_year: the first year of the range to find.
+    :param int end_year: the final year of the range to find.
     :param bool online: show the size of only files that are currently online
     :param bool offline: show the size of only files that are currently offline
     :rtype: int
@@ -337,7 +341,7 @@ def get_request_size(retrieval_request, online=False, offline=False):
         raise ValueError(msg)
 
     request_sizes = []
-    for req in retrieval_request.data_request.all():
+    for req in data_reqs:
         if online:
             all_files = req.datafile_set.filter(online=True)
         elif offline:
@@ -352,13 +356,13 @@ def get_request_size(retrieval_request, online=False, offline=False):
             time_units = None
             calendar = None
 
-        if retrieval_request.start_year is not None and time_units and calendar:
-            start_date = datetime.datetime(retrieval_request.start_year, 1, 1)
+        if start_year is not None and time_units and calendar:
+            start_date = datetime.datetime(start_year, 1, 1)
             start_float = cf_units.date2num(start_date, time_units, calendar)
         else:
             start_float = None
-        if retrieval_request.end_year is not None and time_units and calendar:
-            end_date = datetime.datetime(retrieval_request.end_year + 1, 1, 1)
+        if end_year is not None and time_units and calendar:
+            end_date = datetime.datetime(end_year + 1, 1, 1)
             end_float = cf_units.date2num(end_date, time_units, calendar)
         else:
             end_float = None
