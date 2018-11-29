@@ -338,3 +338,7 @@ class TestGetRequestSize(TestCase):
         self.assertEqual(0, get_request_size(rreq.data_request.all(),
                                              rreq.start_year, rreq.end_year,
                                              online=True))
+
+    def test_manual_list(self):
+        self.assertEqual(3, get_request_size([self.dreq1, self.dreq2],
+                                             1950, 2000))
