@@ -273,7 +273,8 @@ class TestGetRequestSize(TestCase):
         rreq.data_request.add(self.dreq2)
         rreq.save()
 
-        self.assertEqual(3, get_request_size(rreq))
+        self.assertEqual(3, get_request_size(rreq.data_request.all(),
+                                             rreq.start_year, rreq.end_year))
 
     def test_dates(self):
         rreq = dbapi.get_or_create(models.RetrievalRequest,
@@ -284,7 +285,8 @@ class TestGetRequestSize(TestCase):
         rreq.data_request.add(self.dreq2)
         rreq.save()
 
-        self.assertEqual(2, get_request_size(rreq))
+        self.assertEqual(2, get_request_size(rreq.data_request.all(),
+                                             rreq.start_year, rreq.end_year))
 
     def test_online(self):
         rreq = dbapi.get_or_create(models.RetrievalRequest,
@@ -295,7 +297,8 @@ class TestGetRequestSize(TestCase):
         rreq.data_request.add(self.dreq2)
         rreq.save()
 
-        self.assertEqual(1, get_request_size(rreq, online=True))
+        self.assertEqual(1, get_request_size(rreq.data_request.all(),
+                         rreq.start_year, rreq.end_year, online=True))
 
     def test_offline(self):
         rreq = dbapi.get_or_create(models.RetrievalRequest,
@@ -306,7 +309,9 @@ class TestGetRequestSize(TestCase):
         rreq.data_request.add(self.dreq2)
         rreq.save()
 
-        self.assertEqual(2, get_request_size(rreq, offline=True))
+        self.assertEqual(2, get_request_size(rreq.data_request.all(),
+                                             rreq.start_year, rreq.end_year,
+                                             offline=True))
 
     def test_both_options(self):
         rreq = dbapi.get_or_create(models.RetrievalRequest,
@@ -317,8 +322,9 @@ class TestGetRequestSize(TestCase):
         rreq.data_request.add(self.dreq2)
         rreq.save()
 
-        self.assertRaises(ValueError, get_request_size, rreq,
-                          online= True, offline=True)
+        self.assertRaises(ValueError, get_request_size,
+                          rreq.data_request.all(), rreq.start_year,
+                          rreq.end_year, online= True, offline=True)
 
     def test_no_files(self):
         rreq = dbapi.get_or_create(models.RetrievalRequest,
@@ -329,4 +335,6 @@ class TestGetRequestSize(TestCase):
         rreq.data_request.add(self.dreq2)
         rreq.save()
 
-        self.assertEqual(0, get_request_size(rreq, online=True))
+        self.assertEqual(0, get_request_size(rreq.data_request.all(),
+                                             rreq.start_year, rreq.end_year,
+                                             online=True))
