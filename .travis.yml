@@ -35,10 +35,12 @@ before_script:
   - export PYTHONPATH=$PYTHONPATH:~/primavera-val
   - export DJANGO_SETTINGS_MODULE=pdata_site.settings
   - cp pdata_site/settings_local.py.travis pdata_site/settings_local.py
-  - mkdir db
   - psql -c 'create database travisdb;' -U postgres
   - which python
   - python --version
+  - rm pdata_app/migrations/*
+  - touch pdata_app/migrations/__init__.py
+  - python manage.py makemigrations
   - python manage.py migrate
 
 script:
