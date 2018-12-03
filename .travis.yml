@@ -2,6 +2,8 @@ language: python
 python:
   - "2.7"
   - "3.6"
+services:
+  - postgresql
 install:
   - sudo apt-get update
   # We do this conditionally because it saves us some downloading if the
@@ -34,7 +36,7 @@ before_script:
   - export DJANGO_SETTINGS_MODULE=pdata_site.settings
   - cp pdata_site/settings_local.py.travis pdata_site/settings_local.py
   - mkdir db
-  - touch db/db.sqlite3
+  - psql -c 'create database travisdb;' -U postgres
   - which python
   - python --version
   - python manage.py migrate
