@@ -612,14 +612,14 @@ def _run_prepare(params, file_failed):
         if file_path is None:
             return
 
-        skip_var = False
+        skip_this_var = False
         for skip_var in SKIP_PREPARE_VARS:
             if skip_var in file_path:
                 logger.debug('Skipping running PrePARE on {}'.
                              format(file_path))
-                skip_var = True
+                skip_this_var = True
                 break
-        if skip_var:
+        if skip_this_var:
             continue
 
         prepare_script = os.path.join(
