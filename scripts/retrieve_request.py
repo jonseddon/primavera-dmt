@@ -598,7 +598,7 @@ def main(args):
             if tape_url in tapes:
                 tapes[tape_url] = list(chain(tapes[tape_url], url_files))
             else:
-                tapes[tape_url] = url_files
+                tapes[tape_url] = list(url_files)
 
     # lets get parallel to speed things up
     parallel_get_urls(tapes, args)
