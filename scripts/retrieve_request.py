@@ -586,6 +586,8 @@ def main(args):
         all_files = data_req.datafile_set.filter(online=False)
         filtered_files = date_filter_files(all_files, retrieval.start_year,
                                            retrieval.end_year)
+        if filtered_files is None:
+            continue
 
         tape_urls = list(set([qs['tape_url']
                               for qs in filtered_files.values('tape_url')]))
@@ -609,6 +611,8 @@ def main(args):
         all_files = data_req.datafile_set.filter(online=False)
         missing_files = date_filter_files(all_files, retrieval.start_year,
                                           retrieval.end_year)
+        if missing_files is None:
+            continue
         if missing_files.count() != 0:
             failed_files = True
 
