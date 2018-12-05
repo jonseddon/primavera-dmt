@@ -33,10 +33,10 @@ django.setup()
 from django.contrib.auth.models import User
 from django.utils import timezone
 
-from pdata_app.models import Settings, RetrievalRequest, EmailQueue
+from pdata_app.models import Settings, RetrievalRequest, EmailQueue, DataFile
 from pdata_app.utils.common import (md5, sha256, adler32, construct_drs_path,
                                     get_temp_filename, is_same_gws,
-                                    PAUSE_FILES)
+                                    date_filter_files, PAUSE_FILES)
 from pdata_app.utils.dbapi import match_one
 
 
@@ -583,48 +583,20 @@ def main(args):
 
     tapes = {}
     for data_req in retrieval.data_request.all():
-        all_files = data_req.datafile_set.all()
-        time_units = all_files[0].time_units
-        calendar = all_files[0].calendar
-        start_float = None
-        if retrieval.start_year is not None and time_units and calendar:
-            start_float = cf_units.date2num(
-                datetime.datetime(retrieval.start_year, 1, 1), time_units,
-                calendar
-            )
-        end_float = None
-        if retrieval.end_year is not None and time_units and calendar:
-            end_float = cf_units.date2num(
-                datetime.datetime(retrieval.end_year + 1, 1, 1), time_units,
-                calendar
-            )
+        all_files = data_req.datafile_set.filter(online=False)
+        filtered_files = date_filter_files(all_files, retrieval.start_year,
+                                           retrieval.end_year)
 
-        timeless_files = all_files.filter(start_time__isnull=True)
-
-        if start_float is not None and end_float is not None:
-            data_files = (all_files.exclude(start_time__isnull=True).
-                          filter(start_time__gte=start_float,
-                                 end_time__lt=end_float, online=False))
-        else:
-            data_files = (all_files.exclude(start_time__isnull=True).
-                          filter(online=False))
-
-        timeless_tape_urls = [qs['tape_url']
-                              for qs in timeless_files.values('tape_url')]
-        data_tape_urls = [qs['tape_url']
-                          for qs in data_files.values('tape_url')]
-
-        tape_urls = list(set(timeless_tape_urls + data_tape_urls))
+        tape_urls = list(set([qs['tape_url']
+                              for qs in filtered_files.values('tape_url')]))
         tape_urls.sort()
 
         for tape_url in tape_urls:
-            url_data_files = data_files.filter(tape_url=tape_url)
-            url_timeless_files = timeless_files.filter(tape_url=tape_url)
-            all_url_files = list(chain(url_data_files, url_timeless_files))
+            url_files = filtered_files.filter(tape_url=tape_url)
             if tape_url in tapes:
-                tapes[tape_url] = list(chain(tapes[tape_url], all_url_files))
+                tapes[tape_url] = list(chain(tapes[tape_url], url_files))
             else:
-                tapes[tape_url] = all_url_files
+                tapes[tape_url] = url_files
 
     # lets get parallel to speed things up
     parallel_get_urls(tapes, args)
@@ -632,15 +604,15 @@ def main(args):
     django.db.connections.close_all()
 
     # check that all files were restored
-    offline_files = data_req.datafile_set.filter(online=False)
-    missed_timeless_files = offline_files.filter(start_time__isnull=True)
-    if start_float is not None and end_float is not None:
-        missed_data_files = (offline_files.exclude(start_time__isnull=True).
-            filter(start_time__gte=start_float, end_time__lt=end_float))
-    else:
-        missed_data_files = offline_files.exclude(start_time__isnull=True)
+    failed_files = False
+    for data_req in retrieval.data_request.all():
+        all_files = data_req.datafile_set.filter(online=False)
+        missing_files = date_filter_files(all_files, retrieval.start_year,
+                                          retrieval.end_year)
+        if missing_files.count() != 0:
+            failed_files = True
 
-    if missed_timeless_files or missed_data_files:
+    if failed_files:
         _email_admin_failure(retrieval)
         logger.error('Failed retrieve_request.py for retrieval {}'.
                      format(args.retrieval_id))

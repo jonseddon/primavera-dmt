@@ -327,7 +327,7 @@ def get_request_size(data_reqs, start_year, end_year,
     specified.
 
     :param Iterable data_reqs: an iterable of data requests to get the size
-        of. This is typically a Django query set or a list.
+        of. This is typically a Django queryset or a list.
     :param int start_year: the first year of the range to find.
     :param int end_year: the final year of the range to find.
     :param bool online: show the size of only files that are currently online
@@ -349,50 +349,70 @@ def get_request_size(data_reqs, start_year, end_year,
         else:
             all_files = req.datafile_set.all()
 
-        if all_files:
-            time_units = all_files[0].time_units
-            calendar = all_files[0].calendar
+        filtered_files = date_filter_files(all_files, start_year, end_year)
+        if filtered_files:
+            req_size = filtered_files.aggregate(Sum('size'))['size__sum']
+            if req_size is None:
+                req_size = 0
         else:
-            time_units = None
-            calendar = None
-
-        if start_year is not None and time_units and calendar:
-            start_date = datetime.datetime(start_year, 1, 1)
-            start_float = cf_units.date2num(start_date, time_units, calendar)
-        else:
-            start_float = None
-        if end_year is not None and time_units and calendar:
-            end_date = datetime.datetime(end_year + 1, 1, 1)
-            end_float = cf_units.date2num(end_date, time_units, calendar)
-        else:
-            end_float = None
-
-        timeless_files = all_files.filter(start_time__isnull=True)
-        timeless_size = timeless_files.aggregate(Sum('size'))['size__sum']
-        if timeless_size is None:
-            timeless_size = 0
-
-        if start_float is not None and end_float is not None:
-            between_files = (all_files.exclude(start_time__isnull=True).
-                           filter(start_time__gte=start_float,
-                                  end_time__lt=end_float))
-            start_straddle = (all_files.exclude(start_time__isnull=True).
-                              filter(start_time__lt=start_float,
-                                     end_time__gt=start_float))
-            end_straddle = (all_files.exclude(start_time__isnull=True).
-                            filter(start_time__lt=end_float,
-                                   end_time__gt=end_float))
-            timed_files = between_files | start_straddle | end_straddle
-            timed_size = (timed_files.distinct().
-                aggregate(Sum('size'))['size__sum'])
-            if timed_size is None:
-                timed_size = 0
-        else:
-            timed_size = 0
-
-        request_sizes.append(timeless_size + timed_size)
+            req_size = 0
+        request_sizes.append(req_size)
 
     return sum(request_sizes)
+
+
+def date_filter_files(data_files, start_year, end_year):
+    """
+    Filter a set of data file model objects and return those that lie between
+    or include the 1st January in the start year and the last day of the end
+    year. The data files are assumed to be from a common source and so they all
+    have the same time_units and calendar.
+
+    :param django.db.models.query.QuerySet data_files: the data files to
+        filter by date
+    :param int start_year: the first year of the range to find.
+    :param int end_year: the final year of the range to find.
+    :returns: the filtered files
+    :rtype: django.db.models.query.QuerySet
+    """
+    if data_files:
+        time_units = data_files[0].time_units
+        calendar = data_files[0].calendar
+    else:
+        return None
+
+    if start_year is not None and time_units and calendar:
+        start_float = cf_units.date2num(
+            datetime.datetime(start_year, 1, 1), time_units,
+            calendar
+        )
+    else:
+        start_float = None
+    if end_year is not None and time_units and calendar:
+        end_float = cf_units.date2num(
+            datetime.datetime(end_year + 1, 1, 1), time_units,
+            calendar
+        )
+    else:
+        end_float = None
+
+    timeless_files = data_files.filter(start_time__isnull=True)
+
+    if start_float is not None and end_float is not None:
+        between_files = (data_files.exclude(start_time__isnull=True).
+                         filter(start_time__gte=start_float,
+                                end_time__lt=end_float))
+        start_straddle = (data_files.exclude(start_time__isnull=True).
+                          filter(start_time__lt=start_float,
+                                 end_time__gt=start_float))
+        end_straddle = (data_files.exclude(start_time__isnull=True).
+                        filter(start_time__lt=end_float,
+                               end_time__gt=end_float))
+        data_files = between_files | start_straddle | end_straddle
+    else:
+        data_files = data_files.exclude(start_time__isnull=True)
+
+    return (timeless_files | data_files).distinct()
 
 
 def delete_drs_dir(directory, mip_eras=('PRIMAVERA', 'CMIP6')):
