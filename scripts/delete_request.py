@@ -9,20 +9,17 @@ required online.
 from __future__ import unicode_literals, division, absolute_import
 
 import argparse
-import datetime
 import logging.config
 import os
 import sys
 
-import cf_units
-
 import django
 django.setup()
-from django.db.models.query import QuerySet
 from django.utils import timezone
 
 from pdata_app.models import RetrievalRequest, Settings
-from pdata_app.utils.common import delete_drs_dir, construct_drs_path
+from pdata_app.utils.common import (delete_drs_dir, construct_drs_path,
+                                    date_filter_files)
 from pdata_app.utils.dbapi import match_one
 
 
@@ -32,49 +29,6 @@ DEFAULT_LOG_LEVEL = logging.WARNING
 DEFAULT_LOG_FORMAT = '%(levelname)s: %(message)s'
 
 logger = logging.getLogger(__name__)
-
-def _date_filter_retrieval_files(retrieval_req, data_req):
-    """
-    Filter the files belonging to a data request in a retrieval
-    request and return only the files that fall between the retrieval's
-    start and end dates.
-
-    :param pdata_app.models.RetrievalRequest retrieval_req: The
-        retrieval request.
-    :param pdata_app.models.DataRequest data_req: The data request
-        that we're interested in that belongs to the retrieval.
-    :returns: A tuple of the QuerySet of the timeless and QuerySet of
-        timed files.
-    :rtype: tuple
-    """
-    all_files = data_req.datafile_set.filter(online=True,
-                                             directory__isnull=False)
-    if not all_files:
-        logger.warning('No online files with a directory found for data '
-                       'request {}'.format(data_req))
-        return None, None
-    time_units = all_files[0].time_units
-    calendar = all_files[0].calendar
-    start_float = None
-    if retrieval_req.start_year is not None and time_units and calendar:
-        start_float = cf_units.date2num(
-            datetime.datetime(retrieval_req.start_year, 1, 1), time_units,
-            calendar
-        )
-    end_float = None
-    if retrieval_req.end_year is not None and time_units and calendar:
-        end_float = cf_units.date2num(
-            datetime.datetime(retrieval_req.end_year + 1, 1, 1), time_units,
-            calendar
-        )
-
-    timeless_files = all_files.filter(start_time__isnull=True)
-
-    timed_files = (all_files.exclude(start_time__isnull=True).
-        filter(start_time__gte=start_float,
-               end_time__lt=end_float))
-
-    return timeless_files, timed_files
 
 
 def parse_args():
@@ -131,16 +85,15 @@ def main(args):
 
     # loop through all of the data requests in this retrieval
     for data_req in deletion_retrieval.data_request.all():
-        timeless_files, timed_files = _date_filter_retrieval_files(
-            deletion_retrieval,
-            data_req
+        online_req_files = data_req.datafile_set.filter(
+            online=True, directory__isnull=False
         )
-        if timeless_files is None and timed_files is None:
-            continue
+        files_to_delete = date_filter_files(online_req_files,
+                                            deletion_retrieval.start_year,
+                                            deletion_retrieval.end_year)
 
-        # this is all of the files to delete from this data request of this
-        # retrieval request
-        files_to_delete = QuerySet.union(timeless_files, timed_files)
+        if files_to_delete is None:
+            continue
 
         if not args.force:
             # find any other retrieval requests that still need this data
@@ -150,14 +103,19 @@ def main(args):
             # loop through the retrieval requests that still need this data
             # request
             for ret_req in other_retrievals:
-                ret_timeless_files, ret_timed_files = (
-                    _date_filter_retrieval_files(ret_req, data_req)
+                ret_online_files = data_req.datafile_set.filter(
+                    online=True, directory__isnull=False
                 )
-
+                ret_filtered_files = date_filter_files(
+                    ret_online_files,
+                    ret_req.start_year,
+                    ret_req.end_year
+                )
+                if ret_filtered_files is None:
+                    continue
                 # remove from the list of files to delete the ones that we have
                 # just found are still needed
-                files_to_delete = (files_to_delete.
-                    difference(ret_timeless_files).difference(ret_timed_files))
+                files_to_delete = files_to_delete.difference(ret_filtered_files)
                 # list the parts of the data request that are still required
                 logger.debug("{} {} to {} won't be deleted".format(
                     data_req, ret_req.start_year, ret_req.end_year))
