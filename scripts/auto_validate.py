@@ -51,7 +51,8 @@ def is_max_jobs_reached(job_name, max_num_jobs):
     :param int max_num_jobs: the maximum number of jobs that can run
     :returns: True if `max_num_jobs` with `name` are running
     """
-    cmd_out = subprocess.run(['bjobs', '-w'], stdout=subprocess.PIPE)
+    cmd_out = subprocess.run('bjobs -w', stdout=subprocess.PIPE,
+                             stderr=subprocess.PIPE, shell=True)
 
     if cmd_out.returncode:
         logger.error('bjobs returned code {}. Assuming the maximum number of '
@@ -104,7 +105,7 @@ def submit_validation(submission_directory):
     :param str submission_directory: The full path to the directory to
         validate.
     """
-    cmd = [
+    cmd_cmpts = [
         'bsub',
         LOTUS_OPTIONS,
         PARALLEL_SCRIPT,
@@ -118,8 +119,12 @@ def submit_validation(submission_directory):
         submission_directory
     ]
 
+    cmd = ' '.join(cmd_cmpts)
+
+    logger.debug('Command is:\n{}'.format(cmd))
+
     bsub_out = subprocess.run(cmd, stdout=subprocess.PIPE,
-                              stderr=subprocess.PIPE)
+                              stderr=subprocess.PIPE, shell=True)
 
     if bsub_out.returncode:
         logger.error('Non-zero return code {} from:\n{}\n{}'.
@@ -153,15 +158,15 @@ def main():
     """
     logger.debug('Starting auto_validate.py')
 
-    if is_max_jobs_reached(VALIDATE_SCRIPT, MAX_VALIDATE_SCRIPTS):
-        logger.debug('Maximum number of jobs reached.')
-        sys.exit(0)
-
-    submissions = DataSubmission.objects.filter(status=STATUS_TO_PROCESS)
+    submissions = (DataSubmission.objects.filter(status=STATUS_TO_PROCESS).
+                   order_by('id'))
 
     logger.debug('{} submissions to validate found'.format(submissions.count()))
 
     for submission in submissions:
+        if is_max_jobs_reached(VALIDATE_SCRIPT, MAX_VALIDATE_SCRIPTS):
+            logger.debug('Maximum number of jobs reached.')
+            sys.exit(0)
         if not are_files_chowned(submission):
             logger.debug('Skipping {} as all files not owned by {}.'.
                          format(submission.incoming_directory,

@@ -380,43 +380,12 @@ def confirm_retrieval(request):
         data_req_strs = [str(DataRequest.objects.filter(id=req).first())
                          for req in data_req_ids]
 
-        start_year = request.POST['start_year']
-        end_year = request.POST['end_year']
-
-        # get the size of each data request
-        request_sizes = []
-        for req in data_req_ids:
-            all_files = DataRequest.objects.get(id=req).datafile_set.all()
-            time_units = all_files[0].time_units
-            calendar = all_files[0].calendar
-            start_float = cf_units.date2num(
-                datetime.datetime(int(start_year), 1, 1), time_units, calendar
-            ) if start_year is not None and time_units and calendar else None
-            end_float = cf_units.date2num(
-                datetime.datetime(int(end_year) + 1, 1, 1), time_units, calendar
-            ) if end_year is not None and time_units and calendar else None
-
-            offline_files = (DataRequest.objects.get(id=req).datafile_set.
-                filter(online=False))
-            timeless_files = offline_files.filter(start_time__isnull=True)
-            timeless_size = timeless_files.aggregate(Sum('size'))['size__sum']
-            if timeless_size is None:
-                timeless_size = 0
-
-            if start_float is not None and end_float is not None:
-                timed_files = (offline_files.exclude(start_time__isnull=True).
-                              filter(start_time__gte=start_float,
-                                     end_time__lt=end_float))
-                timed_size = timed_files.aggregate(Sum('size'))['size__sum']
-                if timed_size is None:
-                    timed_size = 0
-            else:
-                timed_size = 0
-
-            request_sizes.append(timeless_size + timed_size)
+        start_year = int(request.POST['start_year'])
+        end_year = int(request.POST['end_year'])
 
         # get the total retrieval size
-        request_size = sum(request_sizes)
+        data_reqs = DataRequest.objects.filter(id__in=data_req_ids)
+        request_size = get_request_size(data_reqs, start_year, end_year)
 
         # generate the confirmation page
         return render(request, 'pdata_app/retrieval_request_confirm.html',
@@ -494,7 +463,9 @@ def confirm_mark_finished(request):
             ret_req = RetrievalRequest.objects.get(id=req)
             summary['data_reqs'] = [str(data_req) for data_req in
                                     ret_req.data_request.all()]
-            summary['size'] = get_request_size(ret_req, online=True)
+            summary['size'] = get_request_size(ret_req.data_request.all(),
+                                               ret_req.start_year,
+                                               ret_req.end_year, online=True)
             ret_req_summaries.append(summary)
 
         # generate the confirmation page

@@ -409,10 +409,15 @@ class RetrievalRequestTable(tables.Table):
         return reqs_str
 
     def render_req_size(self, record):
-        return filesizeformat(get_request_size(record))
+        return filesizeformat(get_request_size(record.data_request.all(),
+                                               record.start_year,
+                                               record.end_year))
 
     def render_retrieval_size(self, record):
-        return filesizeformat(get_request_size(record, offline=True))
+        return filesizeformat(get_request_size(record.data_request.all(),
+                                               record.start_year,
+                                               record.end_year,
+                                               offline = True))
 
     def render_tape_urls(self, record):
         tape_urls = list(record.data_request.all().values_list(
