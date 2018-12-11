@@ -11,8 +11,8 @@ from django.db.models import PROTECT, SET_NULL, CASCADE
 from django.core.exceptions import ValidationError
 
 from pdata_app.utils.common import standardise_time_unit, safe_strftime
-from vocabs import (STATUS_VALUES, FREQUENCY_VALUES, ONLINE_STATUS,
-    CHECKSUM_TYPES, VARIABLE_TYPES, CALENDARS)
+from vocabs import (STATUS_VALUES, ESGF_STATUSES, FREQUENCY_VALUES,
+                    ONLINE_STATUS, CHECKSUM_TYPES, VARIABLE_TYPES, CALENDARS)
 
 model_names = ['Project', 'Institute', 'ClimateModel', 'Experiment',
                'ActivityId', 'DataSubmission', 'DataFile', 'ESGFDataset',
@@ -215,6 +215,9 @@ class DataFileAggregationBase(models.Model):
     def get_tape_urls(self):
         return self._file_aggregation("tape_url")
 
+    def directories(self):
+        return self._file_aggregation("directory")
+
     def get_file_versions(self):
         return self._file_aggregation("version")
 
@@ -401,7 +404,7 @@ class ESGFDataset(DataFileAggregationBase):
         * get_full_id: Returns full DRS Id made up of drsId version as: `self.drs_id`.`self.version`.
     """
     class Meta:
-        unique_together = ('drs_id', 'version')
+        unique_together = ('data_request', 'version')
         verbose_name = "ESGF Dataset"
 
     # RFK relationships:
@@ -416,19 +419,45 @@ class ESGFDataset(DataFileAggregationBase):
     # start_time
     # end_time
 
-    drs_id = models.CharField(max_length=500, verbose_name='DRS Dataset Identifier', blank=False, null=False)
+    status = models.CharField(max_length=20, choices=ESGF_STATUSES.items(),
+                              verbose_name='Status',
+                              default=ESGF_STATUSES.CREATED,
+                              blank=False, null=False)
     version = models.CharField(max_length=20, verbose_name='Version', blank=False, null=False)
-    directory = models.CharField(max_length=500, verbose_name='Directory', blank=False, null=False)
-
+    directory = models.CharField(max_length=500, verbose_name='Directory', blank=True, null=True)
     thredds_url = models.URLField(verbose_name="THREDDS Download URL", blank=True, null=True)
 
     # Each ESGF Dataset will be part of one CEDADataset
     ceda_dataset = models.ForeignKey(CEDADataset, blank=True, null=True,
         on_delete=SET_NULL, verbose_name='CEDA Dataset')
 
-    # Each ESGF Dataset will be part of one submission
-    data_submission = models.ForeignKey(DataSubmission, blank=True, null=True,
-        on_delete=SET_NULL, verbose_name='Data Submission')
+    # Each ESGF Dataset will match exactly one DataRequest
+    data_request = models.ForeignKey('DataRequest', blank=False, null=False,
+                                        on_delete=CASCADE,
+                                        verbose_name='Data Request')
+
+    @property
+    def drs_id(self):
+        """
+        Generate the DRS id from the data request.
+
+        :returns: the DRS id
+        :rtype: str
+        """
+        if self.data_request.datafile_set.count() == 0:
+            raise ValueError('ESGFDataSet from {} has no DataFiles.'.format(
+                self.data_request
+            ))
+
+        components = [
+            self.data_request.project.short_name,
+            self.data_request.datafile_set.
+                values('activity_id__short_name').
+                first()['activity_id__short_name'],
+            self.data_request.institute.short_name,
+            self.data_request.climate_model.short_name
+        ]
+        return '.'.join(components)
 
     def get_full_id(self):
         """
@@ -438,15 +467,15 @@ class ESGFDataset(DataFileAggregationBase):
 
     def clean(self, *args, **kwargs):
         if not re.match(r"^v\d+$", self.version):
-            raise ValidationError('Version must begin with letter "v" followed '
-                                  'by a number (date).')
+            raise ValidationError('Version must begin with letter "v" '
+                                  'followed by a number (date).')
 
-        if not self.directory.startswith("/"):
-            raise ValidationError('Directory must begin with "/" because it is '
-                                  'a full directory path.')
-
-        if self.directory.endswith("/"):
-            self.directory = self.directory.rstrip("/")
+        if self.directory:
+            if not self.directory.startswith("/"):
+                raise ValidationError('Directory must begin with "/" because '
+                                      'it is a full directory path.')
+            if self.directory.endswith("/"):
+                self.directory = self.directory.rstrip("/")
 
         super(ESGFDataset, self).save(*args, **kwargs)
 
@@ -501,8 +530,8 @@ class DataRequest(DataFileAggregationBase):
         return dto.strftime('%Y-%m-%d')
 
     def __str__(self):
-        return '{}/{} {}/{}/{}'.format(self.institute, self.climate_model,
-                                       self.experiment,
+        return '{}.{}.{}.{}.{}.{}'.format(self.institute, self.climate_model,
+                                       self.experiment, self.rip_code,
                                        self.variable_request.table_name,
                                        self.variable_request.cmor_name)
 

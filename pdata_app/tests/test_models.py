@@ -365,14 +365,50 @@ class TestESGFDatasetMethods(TestCase):
     Test the additional methods in the ESGFDataset class
     """
     def setUp(self):
-        self.esgf_ds = get_or_create(models.ESGFDataset,
-            drs_id='a.b.c.d', version='v20160720',
-            directory='/some/dir')
+        proj = get_or_create(models.Project, short_name='CMIP6',
+                             full_name='CMIP6')
+        inst = get_or_create(models.Institute, short_name='MOHC',
+                             full_name='MOHC')
+        clim_model = get_or_create(models.ClimateModel, short_name='Model-1',
+                                   full_name='Model-1')
+        expt = get_or_create(models.Experiment, short_name='control-1950',
+                             full_name='control-1950')
+        act_id = get_or_create(models.ActivityId, short_name='HighResMIP',
+                               full_name='HighResMIP')
+        var_req = get_or_create(
+            models.VariableRequest, table_name='Amon',
+            long_name='very descriptive', units='1', var_name='var1',
+            standard_name='var_name', cell_methods='time:mean',
+            positive='optimistic', variable_type=VARIABLE_TYPES['real'],
+            dimensions='massive', cmor_name='var1', modeling_realm='atmos',
+            frequency=FREQUENCY_VALUES['ann'], cell_measures='', uid='123abc'
+        )
+        data_req = get_or_create(
+            models.DataRequest, project=proj, institute=inst,
+            climate_model=clim_model, experiment=expt,
+            variable_request=var_req, request_start_time=0.0,
+            request_end_time=360.0, time_units='days since 1950-01-01',
+            calendar=u'360_day'
+        )
+        data_prov = get_or_create(User, username='username')
+        data_sub = get_or_create(
+            models.DataSubmission, status=u'VALIDATED',
+            incoming_directory='/dir', user=data_prov
+        )
+        data_file = get_or_create(
+            models.DataFile, name='file.nc', incoming_directory='/dir', size=1,
+            project=proj, institute=inst, climate_model=clim_model,
+            activity_id=act_id, experiment=expt, variable_request=var_req,
+            data_request=data_req, frequency=u'mon', rip_code='r1i1p1f1',
+            data_submission=data_sub, online=True
+        )
+        self.esgf_ds = get_or_create(models.ESGFDataset, status=u'CREATED',
+            version='v20160720', data_request=data_req)
 
     def test_get_full_id(self):
         full_id = self.esgf_ds.get_full_id()
 
-        expected = 'a.b.c.d.v20160720'
+        expected = 'CMIP6.HighResMIP.MOHC.Model-1.v20160720'
 
         self.assertEqual(full_id, expected)
 
@@ -395,7 +431,7 @@ class TestESGFDatasetMethods(TestCase):
     def test_unicode(self):
         unicode_drs = str(self.esgf_ds)
 
-        expected = 'a.b.c.d.v20160720'
+        expected = 'CMIP6.HighResMIP.MOHC.Model-1.v20160720'
 
         self.assertEqual(unicode_drs, expected)
         self.assertIsInstance(unicode_drs, str)
