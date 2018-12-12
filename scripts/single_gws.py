@@ -121,7 +121,7 @@ def main(args):
             for file_to_move in files_to_move:
                 # Move the file
                 src = os.path.join(dir, file_to_move.name)
-                dest_path = os.path.join(single_dir,
+                dest_path = os.path.join(single_dir, 'stream1',
                                     construct_drs_path(file_to_move))
                 if not os.path.exists(dest_path):
                     os.makedirs(dest_path)
