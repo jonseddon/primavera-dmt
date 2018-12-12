@@ -107,8 +107,9 @@ def main(args):
         if not use_single_dir:
             # As a quick sanity check, generate an error if there is no
             # data already in the requested output directory
-            logger.error('The new output directory is {} but no data is '
-                         'currently in this directory.'.format(single_dir))
+            logger.error('The new output directory is {} but no data from '
+                         'this variable is currently in this directory.'.
+                         format(single_dir))
             sys.exit(1)
 
         for dir in existing_dirs:
@@ -123,17 +124,14 @@ def main(args):
                 dest_path = os.path.join(single_dir,
                                     construct_drs_path(file_to_move))
                 if not os.path.exists(dest_path):
-                    # os.makedirs(dest_path)
-                    pass
+                    os.makedirs(dest_path)
                 dest = os.path.join(dest_path, file_to_move.name)
-                logger.debug('mv {} {}'.format(src, dest))
-                # shutil.move(src, dest)
+                shutil.move(src, dest)
                 # Update the file's location in the DB
-                # file_to_move.directory = dest_path
-                # file_to_move.save()
+                file_to_move.directory = dest_path
+                file_to_move.save()
                 # Check that it was safely copied
-                # actual_checksum = adler32(dest)
-                actual_checksum = adler32(src)
+                actual_checksum = adler32(dest)
                 db_checksum = file_to_move.checksum_set.first().checksum_value
                 if not actual_checksum == db_checksum:
                     logger.error('For {}\ndatabase checksum: {}\n'
@@ -154,16 +152,12 @@ def main(args):
                             sys.exit(1)
                         else:
                             # it is a link so remove it
-                            # os.remove(primary_path)
-                            logger.debug('rm {}'.format(primary_path))
+                            os.remove(primary_path)
                     if not os.path.exists(primary_path_dir):
-                        # os.makedirs(primary_path_dir)
-                        pass
-                    # os.symlink(dest, primary_path)
-                    logger.debug('ln -s {} {}'.format(dest, primary_path))
+                        os.makedirs(primary_path_dir)
+                    os.symlink(dest, primary_path)
 
-            # delete_drs_dir(dir)
-            logger.debug('rmdir {}'.format(dir))
+            delete_drs_dir(dir)
 
 
 if __name__ == "__main__":
