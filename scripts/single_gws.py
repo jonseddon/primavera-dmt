@@ -18,8 +18,9 @@ django.setup()
 from django.db.models import Sum
 from django.template.defaultfilters import filesizeformat
 
-from pdata_app.models import DataRequest
-from pdata_app.utils.common import construct_drs_path, delete_drs_dir, adler32
+from pdata_app.models import DataRequest, Settings
+from pdata_app.utils.common import (adler32, construct_drs_path,
+                                    delete_drs_dir, is_same_gws)
 
 __version__ = '0.1.0b'
 
@@ -28,8 +29,11 @@ DEFAULT_LOG_FORMAT = '%(levelname)s: %(message)s'
 
 logger = logging.getLogger(__name__)
 
-
+# The common prefix of all of our GWSs
 COMMON_GWS_NAME = '/group_workspaces/jasmin2/primavera'
+# The top-level directory to write output data to
+BASE_OUTPUT_DIR = Settings.get_solo().base_output_dir
+
 
 def parse_args():
     """
@@ -95,11 +99,16 @@ def main(args):
     else:
         single_dir = '{}{}'.format(COMMON_GWS_NAME, args.move)
         existing_dirs = data_req.directories()
-        if single_dir not in existing_dirs:
+        use_single_dir = False
+        for exist_dir in existing_dirs:
+            if exist_dir.startswith(single_dir):
+                use_single_dir = True
+                break
+        if not use_single_dir:
             # As a quick sanity check, generate an error if there is no
             # data already in the requested output directory
             logger.error('The new output directory is {} but no data is '
-                         'currently in this directory.')
+                         'currently in this directory.'.format(single_dir))
             sys.exit(1)
 
         for dir in existing_dirs:
@@ -109,26 +118,52 @@ def main(args):
             logger.debug('Moving {} files from {}'.format(
                 files_to_move.count(), dir))
             for file_to_move in files_to_move:
+                # Move the file
                 src = os.path.join(dir, file_to_move.name)
                 dest_path = os.path.join(single_dir,
                                     construct_drs_path(file_to_move))
                 if not os.path.exists(dest_path):
-                    os.makedirs(dest_path)
+                    # os.makedirs(dest_path)
+                    pass
                 dest = os.path.join(dest_path, file_to_move.name)
-                shutil.move(src, dest)
-                file_to_move.directory = dest_path
-                file_to_move.save()
-                actual_checksum = adler32(dest)
+                logger.debug('mv {} {}'.format(src, dest))
+                # shutil.move(src, dest)
+                # Update the file's location in the DB
+                # file_to_move.directory = dest_path
+                # file_to_move.save()
+                # Check that it was safely copied
+                # actual_checksum = adler32(dest)
+                actual_checksum = adler32(src)
                 db_checksum = file_to_move.checksum_set.first().checksum_value
                 if not actual_checksum == db_checksum:
                     logger.error('For {}\ndatabase checksum: {}\n'
                                  'actual checksum: {}'.
                                  format(dest, db_checksum, actual_checksum))
                     sys.exit(1)
-            delete_drs_dir(dir)
+                # Update the symlink
+                if not is_same_gws(dest_path, BASE_OUTPUT_DIR):
+                    primary_path_dir = os.path.join(
+                        BASE_OUTPUT_DIR,
+                        construct_drs_path(file_to_move))
+                    primary_path = os.path.join(primary_path_dir,
+                                                file_to_move.name)
+                    if os.path.lexists(primary_path):
+                        if not os.path.islink(primary_path):
+                            logger.error("{} exists and isn't a symbolic "
+                                         "link.".format(primary_path))
+                            sys.exit(1)
+                        else:
+                            # it is a link so remove it
+                            # os.remove(primary_path)
+                            logger.debug('rm {}'.format(primary_path))
+                    if not os.path.exists(primary_path_dir):
+                        # os.makedirs(primary_path_dir)
+                        pass
+                    # os.symlink(dest, primary_path)
+                    logger.debug('ln -s {} {}'.format(dest, primary_path))
 
-
-
+            # delete_drs_dir(dir)
+            logger.debug('rmdir {}'.format(dir))
 
 
 if __name__ == "__main__":
