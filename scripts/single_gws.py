@@ -99,6 +99,9 @@ def main(args):
     else:
         single_dir = '{}{}'.format(COMMON_GWS_NAME, args.move)
         existing_dirs = data_req.directories()
+        # ignore data that is offline
+        if None in existing_dirs:
+            existing_dirs.remove(None)
         use_single_dir = False
         for exist_dir in existing_dirs:
             if exist_dir.startswith(single_dir):
