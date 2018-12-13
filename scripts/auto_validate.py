@@ -35,10 +35,10 @@ ADMIN_USER = Settings.get_solo().contact_user_id
 PARALLEL_SCRIPT = ('/home/users/jseddon/primavera/LIVE-prima-dm/scripts/'
                    'parallel_primavera')
 VALIDATE_SCRIPT = 'validate_data_submission.py'
-MAX_VALIDATE_SCRIPTS = 3
+MAX_VALIDATE_SCRIPTS = 4
 NUM_PROCS_USE_LOTUS = 4
 LOTUS_OPTIONS = ('-o ~/lotus/%J.o -q par-multi -n {} -R "span[hosts=1]" '
-                 '-W 24:00 -R "rusage[mem=98304.0]" -M 98304'.
+                 '-W 24:00 -R "rusage[mem=262144.0]" -M 262144'.
                  format(NUM_PROCS_USE_LOTUS))
 VERSION_STRING = 'v00000000'
 
