@@ -14,6 +14,8 @@ if grep -q '01.00.21' <<< `ncdump -h $1`; then
     TABLE_DIR=/home/users/jseddon/primavera/original-cmor-tables/primavera_1.00.21/Tables
 elif grep -q '01.00.23' <<< `ncdump -h $1`; then
     TABLE_DIR=/home/users/jseddon/primavera/original-cmor-tables/primavera_1.00.23/Tables
+elif grep -q '01.00.13' <<< `ncdump -h $1`; then
+    TABLE_DIR=/home/users/jseddon/primavera/original-cmor-tables/primavera_1.00.21/Tables
 else
     echo 'data_specs_version not known in ' $1 >&2
     exit 1
