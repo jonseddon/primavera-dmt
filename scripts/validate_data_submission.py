@@ -241,21 +241,34 @@ def verify_fk_relationships(metadata):
             logger.error(msg)
             raise SubmissionError(msg)
 
-    # find the variable request
-    var_match = match_one(VariableRequest, cmor_name=metadata['var_name'],
-        table_name=metadata['table'])
-    if var_match:
-        metadata['variable'] = var_match
+    # find the data request
+    dreq_match = match_one(
+        DataRequest,
+        project=metadata['project'],
+        institute=metadata['institute'],
+        climate_model=metadata['climate_model'],
+        experiment=metadata['experiment'],
+        variable_request__table_name=metadata['table'],
+        variable_request__cmor_name=metadata['var_name'],
+        rip_code=metadata['rip_code']
+    )
+    if dreq_match:
+        metadata['data_request'] = dreq_match
+        metadata['variable'] = dreq_match.variable_request
     else:
         # if cmor_name doesn't match then it may be a variable where out_name
         # is different to cmor_name so check these
-        var_matches = VariableRequest.objects.filter(
-            var_name=metadata['var_name'],
-            table_name=metadata['table'])
-        if var_matches.count() == 1:
-            metadata['variable'] = var_matches[0]
-        elif var_matches.count() == 0:
-            msg = ('No variable request found for file: {}.'.
+        dreq_matches = DataRequest.objects.filter(
+            project=metadata['project'],
+            institute=metadata['institute'],
+            climate_model=metadata['climate_model'],
+            experiment=metadata['experiment'],
+            variable_request__table_name=metadata['table'],
+            variable_request__var_name=metadata['var_name'],
+            rip_code=metadata['rip_code']
+        )
+        if dreq_matches.count() == 0:
+            msg = ('No data request found for file: {}.'.
                    format(metadata['basename']))
             logger.error(msg)
             raise FileValidationError(msg)
@@ -263,41 +276,32 @@ def verify_fk_relationships(metadata):
             try:
                 plev_name = _guess_plev_name(metadata)
             except Exception:
-                msg = ('Multiple variable requests found and cannot open '
-                       'file: {}.'.format(metadata['basename']))
-                logger.error(msg)
-                raise FileValidationError(msg)
-            if plev_name:
-                var_matches = VariableRequest.objects.filter(
-                    var_name=metadata['var_name'],
-                    table_name=metadata['table'],
-                    dimensions__icontains=plev_name)
-                if len(var_matches) == 1:
-                    metadata['variable'] = var_matches[0]
-                else:
-                    msg = ('Multiple variable requests found for file: {}.'.
-                           format(metadata['basename']))
-                    logger.error(msg)
-                    raise FileValidationError(msg)
-            else:
-                msg = ('Multiple variable requests found for file: {}.'.
+                msg = ('Cannot open file to determine plev name: {}.'.
                        format(metadata['basename']))
                 logger.error(msg)
                 raise FileValidationError(msg)
-
-    # find the data request
-    dreq_match = match_one(DataRequest, project=metadata['project'],
-                           institute=metadata['institute'],
-                           climate_model=metadata['climate_model'],
-                           experiment=metadata['experiment'],
-                           variable_request=metadata['variable'],
-                           rip_code=metadata['rip_code'])
-    if dreq_match:
-        metadata['data_request'] = dreq_match
-    else:
-        msg = ('No data request found for file: {}.'.
-               format(metadata['basename']))
-        raise FileValidationError(msg)
+            if plev_name:
+                plev_matches = dreq_matches.filter(
+                    variable_request__dimensions__icontains=plev_name
+                )
+                if plev_matches.count() == 1:
+                    metadata['data_request'] = plev_matches[0]
+                    metadata['variable'] = plev_matches[0].variable_request
+                elif plev_matches.count() == 0:
+                    msg = ('No data requests found with plev {} for file: {}.'.
+                           format(plev_name, metadata['basename']))
+                    logger.error(msg)
+                    raise FileValidationError(msg)
+                else:
+                    msg = ('Multiple data requests found with plev {} for '
+                           'file: {}.'.format(plev_name, metadata['basename']))
+                    logger.error(msg)
+                    raise FileValidationError(msg)
+            else:
+                msg = ('Unable to determine plev name: {}.'.
+                       format(metadata['basename']))
+                logger.error(msg)
+                raise FileValidationError(msg)
 
 
 def update_database_submission(validated_metadata, data_sub, files_online=True,
