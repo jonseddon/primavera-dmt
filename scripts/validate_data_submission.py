@@ -53,6 +53,11 @@ logger = logging.getLogger(__name__)
 
 CONTACT_PERSON_USER_ID = 'jseddon'
 
+# The maximum size (in bytes) of file to read into memory for an HDF
+# data integrity check
+# 1073741824 = 1 GiB
+MAX_DATA_INTEGRITY_SIZE = 1073741824
+
 # Don't run PrePARE on the following var/table combinations as they've
 # been removed from the CMIP6 data request, but are still needed for
 # PRIMAVERA
@@ -188,7 +193,7 @@ def _identify_and_validate_file(filename, project, file_format, output,
             cube = load_cube(filename)
             metadata.update(identify_contents_metadata(cube, filename))
             validate_file_contents(cube, metadata)
-            _contents_hdf_check(cube, metadata)
+            _contents_hdf_check(cube, metadata, cmd_args.data_limit)
 
         verify_fk_relationships(metadata)
 
@@ -605,7 +610,7 @@ def run_prepare(file_paths, num_processes):
     logger.debug('All files successfully checked by PrePARE')
 
 
-def _contents_hdf_check(cube, metadata, max_size=1073741824):
+def _contents_hdf_check(cube, metadata, max_size=MAX_DATA_INTEGRITY_SIZE):
     """
     Check that the entire data of the file can be read into memory without
     any errors. Corrupt files typically generate an HDF error. Files larger
@@ -629,7 +634,6 @@ def _contents_hdf_check(cube, metadata, max_size=1073741824):
         _data = cube.data
     except Exception:
         msg = 'Unable to read data from file {}.'.format(metadata['basename'])
-        logger.warning(msg)
         raise FileValidationError(msg)
     else:
         return True
@@ -834,6 +838,12 @@ def parse_args():
         'do not create a data submission', action='store_true')
     parser.add_argument('-n', '--no-prepare', help="don't run PrePARE",
                         action='store_true')
+    parser.add_argument('-d', '--data-limit', help='the maximum size of file '
+                                                   '(in bytes) to load into '
+                                                   'memory for an HDF '
+                                                   'integrity check (default: '
+                                                   '%(default)s)',
+                        type=int, default=MAX_DATA_INTEGRITY_SIZE)
     parser.add_argument('--version', action='version',
         version='%(prog)s {}'.format(__version__))
     args = parser.parse_args()
