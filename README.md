@@ -3,28 +3,26 @@
 # primavera-dmt
 PRIMAVERA Data Management Tool
 
-Quick set-up
+### Quick set-up
 
- 1. Make a virtualenv and activate it:
-
- `$ virtualenv-2.7 venv`
-
- `$ . venv/bin/activate` 
-
- 1. Install dependencies:
-
- `$ pip install -r requirements.txt`
-
- 1. Create local settings:
-
- `$ cp pdata_site/settings_local.py.tmpl pdata_site/settings_local.py`
-
- 1. Django setup:
-
- `python manage.py makemigrations pdata_app`
-
- `python manage.py migrate`
-
- 1. Run tests:
-
- `python manage.py test`
+1. Load a Conda or virtualenv environment containing:   
+   ```  
+    django  
+    django-filter  
+    django-solo  
+    django-tables2  
+    iris  
+    ```  
+2. Create local settings:    
+   ```  
+   $ cp pdata_site/settings_local.py.tmpl pdata_site/settings_local.py  
+    ```  
+3. Django set-up:  
+    ```
+   python manage.py makemigrations pdata_app
+   python manage.py migrate
+    ```
+4. Run tests:
+   ```
+   python manage.py test
+    ```
