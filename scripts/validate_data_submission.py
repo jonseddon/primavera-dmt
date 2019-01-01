@@ -19,6 +19,7 @@ import shutil
 import subprocess
 import sys
 import time
+import warnings
 
 import iris
 
@@ -39,6 +40,9 @@ from pdata_app.models import (Project, ClimateModel, Experiment, DataSubmission,
 from pdata_app.utils.dbapi import get_or_create, match_one
 from pdata_app.utils.common import adler32, list_files, pdt2num
 from vocabs.vocabs import STATUS_VALUES, CHECKSUM_TYPES
+
+# Ignore warnings displayed when loading data
+warnings.filterwarnings("ignore")
 
 __version__ = '0.1.0b'
 
