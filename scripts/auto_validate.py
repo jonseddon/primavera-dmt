@@ -42,6 +42,10 @@ LOTUS_OPTIONS = ('-o ~/lotus/%J.o -q par-multi -n {} -R "span[hosts=1]" '
                  format(NUM_PROCS_USE_LOTUS))
 VERSION_STRING = 'v00000000'
 
+# Don't run PrePARE as part of the validation if the following strings
+# are in the submission's dierctory name
+SKIP_PREPARE = ['ECMWF']
+
 
 def is_max_jobs_reached(job_name, max_num_jobs):
     """
@@ -105,6 +109,12 @@ def submit_validation(submission_directory):
     :param str submission_directory: The full path to the directory to
         validate.
     """
+    # Don't run PrePARE for specified directory names
+    prepare_option = ''
+    for sub_str in SKIP_PREPARE:
+        if sub_str in submission_directory:
+            prepare_option = '--no-prepare'
+
     cmd_cmpts = [
         'bsub',
         LOTUS_OPTIONS,
@@ -112,6 +122,7 @@ def submit_validation(submission_directory):
         VALIDATE_SCRIPT,
         '--log-level',
         'DEBUG',
+        prepare_option
         '--processes',
         '{}'.format(NUM_PROCS_USE_LOTUS),
         '--version-string',
