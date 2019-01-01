@@ -122,7 +122,7 @@ def submit_validation(submission_directory):
         VALIDATE_SCRIPT,
         '--log-level',
         'DEBUG',
-        prepare_option
+        prepare_option,
         '--processes',
         '{}'.format(NUM_PROCS_USE_LOTUS),
         '--version-string',
