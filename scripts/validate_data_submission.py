@@ -19,6 +19,7 @@ import shutil
 import subprocess
 import sys
 import time
+import warnings
 
 import iris
 
@@ -39,6 +40,9 @@ from pdata_app.models import (Project, ClimateModel, Experiment, DataSubmission,
 from pdata_app.utils.dbapi import get_or_create, match_one
 from pdata_app.utils.common import adler32, list_files, pdt2num
 from vocabs.vocabs import STATUS_VALUES, CHECKSUM_TYPES
+
+# Ignore warnings displayed when loading data
+warnings.filterwarnings("ignore")
 
 __version__ = '0.1.0b'
 
@@ -184,6 +188,7 @@ def _identify_and_validate_file(filename, project, file_format, output,
             cube = load_cube(filename)
             metadata.update(identify_contents_metadata(cube, filename))
             validate_file_contents(cube, metadata)
+            _contents_hdf_check(cube, metadata)
 
         verify_fk_relationships(metadata)
 
@@ -598,6 +603,36 @@ def run_prepare(file_paths, num_processes):
         raise SubmissionError()
 
     logger.debug('All files successfully checked by PrePARE')
+
+
+def _contents_hdf_check(cube, metadata, max_size=1073741824):
+    """
+    Check that the entire data of the file can be read into memory without
+    any errors. Corrupt files typically generate an HDF error. Files larger
+    than `max_size` are not read and a warning is displayed. Most files are
+    under this limit, but those over are excessively slow to validate.
+
+    :param iris.cube.Cube cube: The cube to check
+    :param dict metadata: Metadata obtained from the file
+    :param int max_size: Files larger than this (in bytes) are not checked
+    :returns: True if file read ok.
+    :raises FileValidationError: If there was any problem reading the data.
+    """
+    if os.path.getsize(os.path.join(metadata['directory'],
+                                    metadata['basename'])) > max_size:
+        logger.warning('File {} is larger than {} bytes. File contents '
+                       'reading check not run.'.format(metadata['basename'],
+                                                       max_size))
+        return True
+
+    try:
+        _data = cube.data
+    except Exception:
+        msg = 'Unable to read data from file {}.'.format(metadata['basename'])
+        logger.warning(msg)
+        raise FileValidationError(msg)
+    else:
+        return True
 
 
 def _run_prepare(params, file_failed):
