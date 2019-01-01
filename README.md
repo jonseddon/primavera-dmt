@@ -17,7 +17,7 @@ PRIMAVERA Data Management Tool
    ```  
    $ cp pdata_site/settings_local.py.tmpl pdata_site/settings_local.py  
     ```  
-3. Django setup:  
+3. Django set-up:  
     ```
    python manage.py makemigrations pdata_app
    python manage.py migrate
