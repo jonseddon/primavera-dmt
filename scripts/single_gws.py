@@ -129,6 +129,12 @@ def main(args):
                 if not os.path.exists(dest_path):
                     os.makedirs(dest_path)
                 dest = os.path.join(dest_path, file_to_move.name)
+                # remove existing link if about to write over it
+                if dest.startswith(BASE_OUTPUT_DIR):
+                    if os.path.exists(dest):
+                        if os.path.islink(dest):
+                            os.remove(dest)
+                # Move the file
                 shutil.move(src, dest)
                 # Update the file's location in the DB
                 file_to_move.directory = dest_path
