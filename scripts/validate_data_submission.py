@@ -723,7 +723,9 @@ def _guess_plev_name(metadata):
 
     if level_name:
         num_plevs = len(rootgrp.dimensions[level_name])
-        if num_plevs == 7:
+        if num_plevs == 4:
+            plev_val = 'plev4'
+        elif num_plevs == 7:
             plev_val = 'plev7h'
         elif num_plevs == 27:
             plev_val = 'plev27'
