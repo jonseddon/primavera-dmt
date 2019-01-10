@@ -14,7 +14,8 @@ from pdata_app import models
 from pdata_app.utils.common import (make_partial_date_time,
                                     standardise_time_unit,
                                     calc_last_day_in_month, pdt2num,
-                                    is_same_gws, get_request_size,
+                                    is_same_gws, get_gws, construct_filename,
+                                    construct_time_string, get_request_size,
                                     date_filter_files)
 from pdata_app.utils import dbapi
 from vocabs.vocabs import STATUS_VALUES, FREQUENCY_VALUES, VARIABLE_TYPES
@@ -175,6 +176,114 @@ class TestIsSameGws(TestCase):
         six.assertRaisesRegex(self, RuntimeError, 'Cannot determine group '
             'workspace name from /group_workspaces/jasmin1/primavera1/some/dir',
                                 is_same_gws, path1, path2)
+
+
+class TestGetGws(TestCase):
+    """Test pdata_app.utils.common.get_gws()"""
+    def test_gws1(self):
+        path = '/group_workspaces/jasmin2/primavera1/stream1/drs/path/blah'
+
+        self.assertEqual(get_gws(path),
+                         '/group_workspaces/jasmin2/primavera1/stream1')
+
+    def test_missing_stream(self):
+        path = '/group_workspaces/jasmin2/primavera1/drs/path/blah'
+
+        self.assertRaises(RuntimeError, get_gws, path)
+
+    def test_anything_else(self):
+        path = '/rabbits'
+
+        self.assertRaises(RuntimeError, get_gws, path)
+
+
+class TestConstructFilename(TestCase):
+    """Test pdata_app.utils.common.construct_filename()"""
+    def setUp(self):
+        _make_example_files(self)
+        datafile = models.DataFile.objects.get(name='test1')
+        datafile.name = 'var_table_model_expt_varlab_gn_1-2.nc'
+        datafile.save()
+
+    def test_basic(self):
+        datafile = models.DataFile.objects.get(
+            name='var_table_model_expt_varlab_gn_1-2.nc')
+        actual = construct_filename(datafile)
+        expected = 'var1_Amon_t_t_r1i1p1_gn_1950-1960.nc'
+        self.assertEqual(actual, expected)
+
+    def test_no_gn(self):
+        datafile = models.DataFile.objects.get(name='test2')
+        six.assertRaisesRegex(self, ValueError, 'No undesrcores found in '
+                                                'filename test2',
+                              construct_filename, datafile)
+
+    def test_bad_gn(self):
+        datafile = models.DataFile.objects.get(name='test2')
+        datafile.name = 'var_table_model_expt_varlab_fn_1-2.nc'
+        datafile.save()
+        six.assertRaisesRegex(self, ValueError,
+                              "Grid label does not start with 'g' in file "
+                              "var_table_model_expt_varlab_fn_1-2.nc",
+                              construct_filename, datafile)
+
+    def test_no_time(self):
+        datafile = models.DataFile.objects.get(
+            name='var_table_model_expt_varlab_gn_1-2.nc')
+        datafile.frequency = 'fx'
+        datafile.save()
+        actual = construct_filename(datafile)
+        expected = 'var1_Amon_t_t_r1i1p1_gn.nc'
+        self.assertEqual(actual, expected)
+
+
+class TestConstructTimeString(TestCase):
+    """Test pdata_app.utils.common.construct_time_string()"""
+    def test_yearly(self):
+        actual = construct_time_string(360.0, 'days since 1950-01-01',
+                                       '360_day', 'ann')
+        expected = '1951'
+        self.assertEqual(actual, expected)
+
+    def test_monthly(self):
+        actual = construct_time_string(360.0, 'days since 1950-01-01',
+                                       '360_day', 'mon')
+        expected = '195101'
+        self.assertEqual(actual, expected)
+
+    def test_daily(self):
+        actual = construct_time_string(360.0, 'days since 1950-01-01',
+                                       '360_day', 'day')
+        expected = '19510101'
+        self.assertEqual(actual, expected)
+
+    def test_6hourly(self):
+        actual = construct_time_string(360.0, 'days since 1950-01-01',
+                                       '360_day', '6hr')
+        expected = '195101010000'
+        self.assertEqual(actual, expected)
+
+    def test_3hourly(self):
+        actual = construct_time_string(360.0, 'days since 1950-01-01',
+                                       '360_day', '3hr')
+        expected = '195101010000'
+        self.assertEqual(actual, expected)
+
+    def test_hourly(self):
+        actual = construct_time_string(360.0, 'days since 1950-01-01',
+                                       '360_day', '1hr')
+        expected = '195101010000'
+        self.assertEqual(actual, expected)
+
+    def test_gregorian(self):
+        actual = construct_time_string(360.0, 'days since 1950-01-01',
+                                       'gregorian', 'ann')
+        expected = '1950'
+        self.assertEqual(actual, expected)
+
+    def test_other_freq(self):
+        self.assertRaises(ValueError, construct_time_string, 360.,
+                          'days since 1950-01-01', '360_day', 'fx')
 
 
 class TestGetRequestSize(TestCase):
@@ -376,7 +485,7 @@ def _make_example_files(parent_obj):
                                      experiment=expt,
                                      variable_request=vble1,
                                      data_request=parent_obj.dreq1,
-                                     activity_id=act_id, frequency='t',
+                                     activity_id=act_id, frequency='ann',
                                      rip_code='r1i1p1',
                                      data_submission=dsub, online=True,
                                      start_time=0,  # 1950-01-01 00:00:00
@@ -392,7 +501,7 @@ def _make_example_files(parent_obj):
                                      experiment=expt,
                                      variable_request=vble1,
                                      data_request=parent_obj.dreq1,
-                                     activity_id=act_id, frequency='t',
+                                     activity_id=act_id, frequency='ann',
                                      rip_code='r1i1p1',
                                      data_submission=dsub, online=False,
                                      start_time=7200,  # 1970-01-01 00:00:00
@@ -408,7 +517,7 @@ def _make_example_files(parent_obj):
                                      experiment=expt,
                                      variable_request=vble1,
                                      data_request=parent_obj.dreq1,
-                                     activity_id=act_id, frequency='t',
+                                     activity_id=act_id, frequency='ann',
                                      rip_code='r1i1p1',
                                      data_submission=dsub, online=False,
                                      start_time=10800,  # 1980-01-01 00:00:00
@@ -424,7 +533,7 @@ def _make_example_files(parent_obj):
                                      experiment=expt,
                                      variable_request=vble2,
                                      data_request=parent_obj.dreq2,
-                                     activity_id=act_id, frequency='t',
+                                     activity_id=act_id, frequency='ann',
                                      rip_code='r1i1p1',
                                      data_submission=dsub, online=True)
 

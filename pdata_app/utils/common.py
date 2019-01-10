@@ -284,6 +284,7 @@ def is_same_gws(path1, path2):
     :param str path1: The first path
     :param str path2: The second path
     :returns: True if both paths are in the same group workspace
+    :raises RuntimeError: if the paths aren't recognised
     """
     gws_pattern = r'^/group_workspaces/jasmin2/primavera\d'
     gws1 = re.match(gws_pattern, path1)
@@ -299,11 +300,30 @@ def is_same_gws(path1, path2):
     return True if gws1.group(0) == gws2.group(0) else False
 
 
+def get_gws(path):
+    """
+    Find the group workspace path at the start of `path`.
+
+    :param str path:
+    :returns: the path identified
+    :rtype: str
+    :raises RuntimeError: if the the path isn't a gws path
+    """
+    gws_pattern = r'^/group_workspaces/jasmin2/primavera\d/stream1'
+    gws = re.match(gws_pattern, path)
+
+    if not gws:
+        msg = 'Cannot determine group workspace name from {}'.format(path)
+        raise RuntimeError(msg)
+
+    return gws.group(0)
+
+
 def construct_drs_path(data_file):
     """
     Make the CMIP6 DRS directory path for the specified file.
 
-    :param pdata_app.models.DataFile data_file:
+    :param pdata_app.models.DataFile data_file: the file
     :returns: A string containing the DRS directory structure
     """
     return os.path.join(
@@ -318,6 +338,82 @@ def construct_drs_path(data_file):
         data_file.grid,
         data_file.version
     )
+
+
+def construct_filename(data_file):
+    """
+    Calculate the CMIP6 filename for the specified file.
+
+    The grid code cannot be determined using any other method and so is taken
+    from the existing file name.
+
+    :param pdata_app.models.DataFile data_file: the file
+    :returns: A string containing the file's name
+    :raises ValueError: if information cannot be determined
+    """
+    if '_' not in data_file.name:
+        msg = 'No undesrcores found in filename {}'.format(data_file.name)
+        raise ValueError(msg)
+    grid_label = data_file.name.split('_')[5]
+    if not grid_label.startswith('g'):
+        msg = ("Grid label does not start with 'g' in file {}".
+               format(data_file.name))
+        raise ValueError(msg)
+
+    components = [
+        data_file.variable_request.cmor_name,
+        data_file.variable_request.table_name,
+        data_file.data_request.climate_model.short_name,
+        data_file.data_request.experiment.short_name,
+        data_file.rip_code,
+        grid_label,
+    ]
+
+    if data_file.frequency != 'fx':
+        start_str = construct_time_string(data_file.start_time,
+                                          data_file.time_units,
+                                          data_file.calendar,
+                                          data_file.frequency)
+        end_str = construct_time_string(data_file.end_time,
+                                        data_file.time_units,
+                                        data_file.calendar,
+                                        data_file.frequency)
+        components.append(start_str + '-' + end_str)
+
+    return '_'.join(components) + '.nc'
+
+
+def construct_time_string(time_point, time_units, calendar, frequency):
+    """
+    Calculate the time string to the appropriate resolution for use in CMIP6
+    filenames according to http://goo.gl/v1drZl
+
+    :param float time_point: the start time
+    :param str time_units: the time's units
+    :param str calendar: the time's calendar
+    :param str frequency: the variables' frequnecy string
+    :returns: the time point
+    :rtype: str
+    :raises ValueError: if the frequency isn't known
+    """
+    formats = {
+        'ann': '%Y',
+        'mon': '%Y%m',
+        'day': '%Y%m%d',
+        '6hr': '%Y%m%d%H%M',
+        '3hr': '%Y%m%d%H%M',
+        '1hr': '%Y%m%d%H%M',
+    }
+
+    try:
+        time_fmt = formats[frequency]
+    except KeyError:
+        msg = 'No time format known for frequency string {}'.format(frequency)
+        raise ValueError(msg)
+
+    datetime = netcdftime.num2date(time_point, time_units, calendar)
+
+    return datetime.strftime(time_fmt)
 
 
 def get_request_size(data_reqs, start_year, end_year,
