@@ -7,7 +7,6 @@ import six
 from iris.time import PartialDateTime
 from numpy.testing import assert_almost_equal
 
-from django.contrib.auth.models import User
 from django.test import TestCase
 
 from pdata_app import models
@@ -18,7 +17,7 @@ from pdata_app.utils.common import (make_partial_date_time,
                                     construct_time_string, get_request_size,
                                     date_filter_files)
 from pdata_app.utils import dbapi
-from vocabs.vocabs import STATUS_VALUES, FREQUENCY_VALUES, VARIABLE_TYPES
+from .common import make_example_files
 
 
 class TestMakePartialDateTime(TestCase):
@@ -200,7 +199,7 @@ class TestGetGws(TestCase):
 class TestConstructFilename(TestCase):
     """Test pdata_app.utils.common.construct_filename()"""
     def setUp(self):
-        _make_example_files(self)
+        make_example_files(self)
         datafile = models.DataFile.objects.get(name='test1')
         datafile.name = 'var_table_model_expt_varlab_gn_1-2.nc'
         datafile.save()
@@ -288,7 +287,7 @@ class TestConstructTimeString(TestCase):
 
 class TestGetRequestSize(TestCase):
     def setUp(self):
-        _make_example_files(self)
+        make_example_files(self)
 
     def test_all_files(self):
         rreq = dbapi.get_or_create(models.RetrievalRequest,
@@ -372,7 +371,7 @@ class TestGetRequestSize(TestCase):
 
 class TestDateFilterFiles(TestCase):
     def setUp(self):
-        _make_example_files(self)
+        make_example_files(self)
 
     def test_entirely_contains(self):
         data_files =  models.DataFile.objects.all()
@@ -409,133 +408,6 @@ class TestDateFilterFiles(TestCase):
         self.assertEqual(['test4', 'test8'],
                          _assertable(date_filter_files(data_files,
                                                        1975, 1985)))
-
-
-def _make_example_files(parent_obj):
-    """
-    Create some common test data. Attach the items that tests need to refer-to
-    to the parent object. Other items will just exist in the database.
-
-    :param parent_obj: the parent object
-    """
-    project = dbapi.get_or_create(models.Project, short_name='t',
-                                  full_name='test')
-    clim_mod = dbapi.get_or_create(models.ClimateModel, short_name='t',
-                                   full_name='test')
-    institute = dbapi.get_or_create(models.Institute, short_name='MOHC',
-                                    full_name='Met Office Hadley Centre')
-    expt = dbapi.get_or_create(models.Experiment, short_name='t',
-                               full_name='test')
-    vble1 = dbapi.get_or_create(models.VariableRequest,
-                                table_name='Amon',
-                                long_name='very descriptive', units='1',
-                                var_name='var1',
-                                standard_name='var_name',
-                                cell_methods='time:mean',
-                                positive='optimistic',
-                                variable_type=VARIABLE_TYPES['real'],
-                                dimensions='massive', cmor_name='var1',
-                                modeling_realm='atmos',
-                                frequency=FREQUENCY_VALUES['ann'],
-                                cell_measures='', uid='123abc')
-    vble2 = dbapi.get_or_create(models.VariableRequest,
-                                table_name='Amon',
-                                long_name='very descriptive', units='1',
-                                var_name='var2',
-                                standard_name='var_name',
-                                cell_methods='time:mean',
-                                positive='optimistic',
-                                variable_type=VARIABLE_TYPES['real'],
-                                dimensions='massive', cmor_name='var1',
-                                modeling_realm='atmos',
-                                frequency=FREQUENCY_VALUES['ann'],
-                                cell_measures='', uid='123abc')
-    parent_obj.dreq1 = dbapi.get_or_create(models.DataRequest, project=project,
-                                           institute=institute,
-                                           climate_model=clim_mod, experiment=expt,
-                                           variable_request=vble1,
-                                           rip_code='r1i1p1f1',
-                                           request_start_time=0.0,
-                                           request_end_time=23400.0,
-                                           time_units='days since 1950-01-01',
-                                           calendar='360_day')
-    parent_obj.dreq2 = dbapi.get_or_create(models.DataRequest, project=project,
-                                           institute=institute,
-                                           climate_model=clim_mod, experiment=expt,
-                                           variable_request=vble2,
-                                           rip_code='r1i1p1f1',
-                                           request_start_time=0.0,
-                                           request_end_time=23400.0,
-                                           time_units='days since 1950-01-01',
-                                           calendar='360_day')
-    parent_obj.user = dbapi.get_or_create(User, username='fred')
-    act_id = dbapi.get_or_create(models.ActivityId,
-                                 short_name='HighResMIP',
-                                 full_name='High Resolution Model Intercomparison Project')
-    dsub = dbapi.get_or_create(models.DataSubmission,
-                               status=STATUS_VALUES['EXPECTED'],
-                               incoming_directory='/some/dir',
-                               directory='/some/dir', user=parent_obj.user)
-    data_file1 = dbapi.get_or_create(models.DataFile, name='test1',
-                                     incoming_directory='/some/dir',
-                                     directory='/some/dir', size=1,
-                                     project=project,
-                                     climate_model=clim_mod,
-                                     institute=institute,
-                                     experiment=expt,
-                                     variable_request=vble1,
-                                     data_request=parent_obj.dreq1,
-                                     activity_id=act_id, frequency='ann',
-                                     rip_code='r1i1p1',
-                                     data_submission=dsub, online=True,
-                                     start_time=0,  # 1950-01-01 00:00:00
-                                     end_time=3600,  # 1960-01-01 00:00:00
-                                     calendar='360_day',
-                                     time_units='days since 1950-01-01')
-    data_file4 = dbapi.get_or_create(models.DataFile, name='test4',
-                                     incoming_directory='/some/dir',
-                                     directory='/some/dir', size=4,
-                                     project=project,
-                                     climate_model=clim_mod,
-                                     institute=institute,
-                                     experiment=expt,
-                                     variable_request=vble1,
-                                     data_request=parent_obj.dreq1,
-                                     activity_id=act_id, frequency='ann',
-                                     rip_code='r1i1p1',
-                                     data_submission=dsub, online=False,
-                                     start_time=7200,  # 1970-01-01 00:00:00
-                                     end_time=10800,  # 1980-01-01 00:00:00
-                                     calendar='360_day',
-                                     time_units='days since 1950-01-01')
-    data_file8 = dbapi.get_or_create(models.DataFile, name='test8',
-                                     incoming_directory='/some/dir',
-                                     directory='/some/dir', size=8,
-                                     project=project,
-                                     climate_model=clim_mod,
-                                     institute=institute,
-                                     experiment=expt,
-                                     variable_request=vble1,
-                                     data_request=parent_obj.dreq1,
-                                     activity_id=act_id, frequency='ann',
-                                     rip_code='r1i1p1',
-                                     data_submission=dsub, online=False,
-                                     start_time=10800,  # 1980-01-01 00:00:00
-                                     end_time=10800,  # 1990-01-01 00:00:00
-                                     calendar='360_day',
-                                     time_units='days since 1950-01-01')
-    data_file2 = dbapi.get_or_create(models.DataFile, name='test2',
-                                     incoming_directory='/some/dir',
-                                     directory='/some/dir', size=2,
-                                     project=project,
-                                     climate_model=clim_mod,
-                                     institute=institute,
-                                     experiment=expt,
-                                     variable_request=vble2,
-                                     data_request=parent_obj.dreq2,
-                                     activity_id=act_id, frequency='ann',
-                                     rip_code='r1i1p1',
-                                     data_submission=dsub, online=True)
 
 
 def _assertable(queryset, list_item='name'):
