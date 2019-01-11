@@ -354,8 +354,8 @@ def construct_filename(data_file):
     components = [
         data_file.variable_request.cmor_name,
         data_file.variable_request.table_name,
-        data_file.data_request.climate_model.short_name,
-        data_file.data_request.experiment.short_name,
+        data_file.climate_model.short_name,
+        data_file.experiment.short_name,
         data_file.rip_code,
         data_file.grid,
     ]

@@ -93,7 +93,8 @@ def make_example_files(parent_obj):
                                      start_time=0,  # 1950-01-01 00:00:00
                                      end_time=3600,  # 1960-01-01 00:00:00
                                      calendar='360_day',
-                                     time_units='days since 1950-01-01')
+                                     time_units='days since 1950-01-01',
+                                     version='v12345678')
     data_file4 = dbapi.get_or_create(models.DataFile, name='test4',
                                      incoming_directory='/some/dir',
                                      directory='/some/dir', size=4,
