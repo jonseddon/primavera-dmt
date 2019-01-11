@@ -83,17 +83,43 @@ class TestIntegration(TestCase):
     """Test scripts.attribute_update.main"""
     def setUp(self):
         make_example_files(self)
+        self.test_file = DataFile.objects.get(name='test1')
         _make_files_realistic()
+        self.test_file.refresh_from_db()
 
     def test_variant_label(self):
+        new_var_label = 'r1i1p2f1'
         class ArgparseNamespace(object):
-            file_path = '/some/dir/test1'
+            file_path = '/group_workspaces/jasmin2/primavera9/stream1/path/var_table_model_expt_varlab_gn_1-2.nc'
             attribute_name = 'variant_label'
-            new_value = 'r1i1p2f1'
+            new_value = new_var_label
         ns = ArgparseNamespace()
 
-        self.assertTrue(True)
+        att_update_main(ns)
+        self.test_file.refresh_from_db()
+        self.assertEqual(self.test_file.rip_code, new_var_label)
 
+    def test_climate_model(self):
+        new_model = 'bestest-ever-model'
+        ClimateModel.objects.create(short_name=new_model)
+        class ArgparseNamespace(object):
+            file_path = '/group_workspaces/jasmin2/primavera9/stream1/path/var_table_model_expt_varlab_gn_1-2.nc'
+            attribute_name = 'source_id'
+            new_value = new_model
+        ns = ArgparseNamespace()
+
+        att_update_main(ns)
+        self.test_file.refresh_from_db()
+        self.assertEqual(self.test_file.climate_model.short_name, new_model)
+
+    def test_some_other_option(self):
+        class ArgparseNamespace(object):
+            file_path = '/group_workspaces/jasmin2/primavera9/stream1/path/var_table_model_expt_varlab_gn_1-2.nc'
+            attribute_name = 'other-option'
+            new_value = 'new-model'
+        ns = ArgparseNamespace()
+
+        self.assertRaises(SystemExit, att_update_main, ns)
 
 def _make_files_realistic():
     """
