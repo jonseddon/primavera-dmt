@@ -211,21 +211,6 @@ class TestConstructFilename(TestCase):
         expected = 'var1_Amon_t_t_r1i1p1_gn_1950-1960.nc'
         self.assertEqual(actual, expected)
 
-    def test_no_gn(self):
-        datafile = models.DataFile.objects.get(name='test2')
-        six.assertRaisesRegex(self, ValueError, 'No undesrcores found in '
-                                                'filename test2',
-                              construct_filename, datafile)
-
-    def test_bad_gn(self):
-        datafile = models.DataFile.objects.get(name='test2')
-        datafile.name = 'var_table_model_expt_varlab_fn_1-2.nc'
-        datafile.save()
-        six.assertRaisesRegex(self, ValueError,
-                              "Grid label does not start with 'g' in file "
-                              "var_table_model_expt_varlab_fn_1-2.nc",
-                              construct_filename, datafile)
-
     def test_no_time(self):
         datafile = models.DataFile.objects.get(
             name='var_table_model_expt_varlab_gn_1-2.nc')
@@ -281,7 +266,7 @@ class TestConstructTimeString(TestCase):
         self.assertEqual(actual, expected)
 
     def test_other_freq(self):
-        self.assertRaises(ValueError, construct_time_string, 360.,
+        self.assertRaises(NotImplementedError, construct_time_string, 360.,
                           'days since 1950-01-01', '360_day', 'fx')
 
 

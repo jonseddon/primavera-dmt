@@ -349,24 +349,15 @@ def construct_filename(data_file):
 
     :param pdata_app.models.DataFile data_file: the file
     :returns: A string containing the file's name
-    :raises ValueError: if information cannot be determined
+    :raises NotImplementedError: if the frequency isn't known
     """
-    if '_' not in data_file.name:
-        msg = 'No undesrcores found in filename {}'.format(data_file.name)
-        raise ValueError(msg)
-    grid_label = data_file.name.split('_')[5]
-    if not grid_label.startswith('g'):
-        msg = ("Grid label does not start with 'g' in file {}".
-               format(data_file.name))
-        raise ValueError(msg)
-
     components = [
         data_file.variable_request.cmor_name,
         data_file.variable_request.table_name,
         data_file.data_request.climate_model.short_name,
         data_file.data_request.experiment.short_name,
         data_file.rip_code,
-        grid_label,
+        data_file.grid,
     ]
 
     if data_file.frequency != 'fx':
@@ -394,7 +385,7 @@ def construct_time_string(time_point, time_units, calendar, frequency):
     :param str frequency: the variables' frequnecy string
     :returns: the time point
     :rtype: str
-    :raises ValueError: if the frequency isn't known
+    :raises NotImplementedError: if the frequency isn't known
     """
     formats = {
         'ann': '%Y',
@@ -409,7 +400,7 @@ def construct_time_string(time_point, time_units, calendar, frequency):
         time_fmt = formats[frequency]
     except KeyError:
         msg = 'No time format known for frequency string {}'.format(frequency)
-        raise ValueError(msg)
+        raise NotImplementedError(msg)
 
     datetime = netcdftime.num2date(time_point, time_units, calendar)
 

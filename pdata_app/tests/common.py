@@ -88,7 +88,7 @@ def make_example_files(parent_obj):
                                      variable_request=vble1,
                                      data_request=parent_obj.dreq1,
                                      activity_id=act_id, frequency='ann',
-                                     rip_code='r1i1p1',
+                                     rip_code='r1i1p1', grid='gn',
                                      data_submission=dsub, online=True,
                                      start_time=0,  # 1950-01-01 00:00:00
                                      end_time=3600,  # 1960-01-01 00:00:00
