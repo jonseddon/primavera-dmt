@@ -160,12 +160,25 @@ class TestIsSameGws(TestCase):
 
         self.assertFalse(is_same_gws(path1, path2))
 
+    def test_new_same(self):
+        path1 = '/gws/nopw/j04/primavera1/some/dir'
+        path2 = '/gws/nopw/j04/primavera1/another/dir'
+
+        self.assertTrue(is_same_gws(path1, path2))
+
+    def test_new_diff(self):
+        path1 = '/gws/nopw/j04/primavera1/some/dir'
+        path2 = '/gws/nopw/j04/primavera5/another/dir'
+
+        self.assertFalse(is_same_gws(path1, path2))
+
     def test_bad_path(self):
         path1 = 'primavera1/some/dir'
         path2 = '/group_workspaces/jasmin2/primavera2/some/dir'
 
-        six.assertRaisesRegex(self, RuntimeError, 'Cannot determine group '
-            'workspace name from primavera1/some/dir', is_same_gws,
+        six.assertRaisesRegex(self, ValueError,
+                              'path1 format is not a recognised group workspace'
+                              ' pattern: primavera1/some/dir', is_same_gws,
                                 path1, path2)
 
     def test_slightly_bad_path(self):
