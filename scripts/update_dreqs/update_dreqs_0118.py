@@ -55,7 +55,8 @@ def main():
         climate_model__short_name='HadGEM3-GC31-LM',
         experiment__short_name='highresSST-present',
         rip_code__in=['r1i2p1f1', 'r1i3p1f1'],
-        variable_request__table_name='Amon'
+        variable_request__table_name='Amon',
+        variable_request__cmor_name__in=['tas', 'pr', 'psl']
     )
     logger.debug('{} data requests found'.format(data_reqs.count()))
 
