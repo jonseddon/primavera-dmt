@@ -281,6 +281,9 @@ def is_same_gws(path1, path2):
     """
     Check that two paths both start with the same group workspace name.
 
+    It's assumed that both paths are both in either the old-style or both
+    in the new-style format.
+
     :param str path1: The first path
     :param str path2: The second path
     :returns: True if both paths are in the same group workspace
