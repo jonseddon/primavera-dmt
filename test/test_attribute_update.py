@@ -28,6 +28,13 @@ class TestSourceIdUpdate(TestCase):
         self.desired_source_id = 'better-model'
         ClimateModel.objects.create(short_name=self.desired_source_id)
 
+        # mock sys.stdout to prevent unwanted output but also allow
+        # testing of output
+        patch = mock.patch('sys.stdout', new_callable=io.StringIO)
+        self.mock_stdout = patch.start()
+        self.addCleanup(patch.stop)
+
+
     def test_source_id_updated(self):
         updater = SourceIdUpdate(self.test_file, self.desired_source_id)
         updater.update()
@@ -51,11 +58,10 @@ class TestSourceIdUpdate(TestCase):
                        'v12345678')
         self.assertEqual(self.test_file.directory, desired_dir)
 
-    @mock.patch('sys.stdout', new_callable=io.StringIO)
-    def test_report_results(self, mock_stdout):
+    def test_report_results(self):
         updater = SourceIdUpdate(self.test_file, self.desired_source_id)
         updater.update()
-        actual = mock_stdout.getvalue()
+        actual = self.mock_stdout.getvalue()
         expected = ('{"filename": "var1_Amon_better-model_t_r1i1p1_gn_1950-'
                     '1960.nc", "directory": "/group_workspaces/jasmin2/'
                     'primavera9/stream1/t/HighResMIP/MOHC/better-model/t/'
@@ -71,6 +77,12 @@ class TestVariantLabelUpdate(TestCase):
         _make_files_realistic()
         self.test_file.refresh_from_db()
         self.desired_variant_label = 'r9i9p9f9'
+
+        # mock sys.stdout to prevent unwanted output but also allow
+        # testing of output
+        patch = mock.patch('sys.stdout', new_callable=io.StringIO)
+        self.mock_stdout = patch.start()
+        self.addCleanup(patch.stop)
 
     def test_variant_label_updated(self):
         updater = VariantLabelUpdate(self.test_file, self.desired_variant_label)
@@ -93,6 +105,16 @@ class TestVariantLabelUpdate(TestCase):
                        'HighResMIP/MOHC/t/t/r9i9p9f9/Amon/var1/gn/v12345678')
         self.assertEqual(self.test_file.directory, desired_dir)
 
+    def test_report_results(self):
+        updater = VariantLabelUpdate(self.test_file, self.desired_variant_label)
+        updater.update()
+        actual = self.mock_stdout.getvalue()
+        expected = ('{"filename": "var1_Amon_t_t_r9i9p9f9_gn_1950-1960.nc", '
+                    '"directory": "/group_workspaces/jasmin2/primavera9/'
+                    'stream1/t/HighResMIP/MOHC/t/t/r9i9p9f9/Amon/var1/gn/'
+                    'v12345678"}\n')
+        self.assertEqual(actual, expected)
+
 
 class TestIntegration(TestCase):
     """Test scripts.attribute_update.main"""
@@ -101,6 +123,16 @@ class TestIntegration(TestCase):
         self.test_file = DataFile.objects.get(name='test1')
         _make_files_realistic()
         self.test_file.refresh_from_db()
+
+        # mock sys.stdout and stderr to prevent unwanted output but also allow
+        # testing of output
+        patch = mock.patch('sys.stdout', new_callable=io.StringIO)
+        self.mock_stdout = patch.start()
+        self.addCleanup(patch.stop)
+
+        patch = mock.patch('sys.stderr', new_callable=io.StringIO)
+        self.mock_stderr = patch.start()
+        self.addCleanup(patch.stop)
 
     def test_variant_label(self):
         new_var_label = 'r1i1p2f1'
