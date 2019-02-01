@@ -7,6 +7,7 @@ Data Management Tool.
 """
 from abc import ABCMeta, abstractmethod
 import argparse
+import json
 import logging
 import os
 import sys
@@ -55,6 +56,7 @@ class DmtUpdate(object, metaclass=ABCMeta):
         self.datafile.refresh_from_db()
         self._update_filename()
         self._update_directory()
+        self._report_results()
 
     @abstractmethod
     def _update_attribute(self):
@@ -79,6 +81,13 @@ class DmtUpdate(object, metaclass=ABCMeta):
                                           construct_drs_path(self.datafile))
         self.datafile.directory = self.new_directory
         self.datafile.save()
+
+    def _report_results(self):
+        """
+        Report the new filename and directory on stdout
+        """
+        print(json.dumps({'filename': self.new_filename,
+                          'directory': self.new_directory}))
 
 
 class SourceIdUpdate(DmtUpdate):

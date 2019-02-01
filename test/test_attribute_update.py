@@ -3,6 +3,9 @@ test_attribute_update.py
 
 Test of attribute_update.py
 """
+import io
+import mock
+
 import django
 django.setup()
 
@@ -44,8 +47,20 @@ class TestSourceIdUpdate(TestCase):
         updater.update()
         self.test_file.refresh_from_db()
         desired_dir = ('/group_workspaces/jasmin2/primavera9/stream1/t/'
-                       'HighResMIP/MOHC/better-model/t/r1i1p1/Amon/var1/gn/v12345678')
+                       'HighResMIP/MOHC/better-model/t/r1i1p1/Amon/var1/gn/'
+                       'v12345678')
         self.assertEqual(self.test_file.directory, desired_dir)
+
+    @mock.patch('sys.stdout', new_callable=io.StringIO)
+    def test_report_results(self, mock_stdout):
+        updater = SourceIdUpdate(self.test_file, self.desired_source_id)
+        updater.update()
+        actual = mock_stdout.getvalue()
+        expected = ('{"filename": "var1_Amon_better-model_t_r1i1p1_gn_1950-'
+                    '1960.nc", "directory": "/group_workspaces/jasmin2/'
+                    'primavera9/stream1/t/HighResMIP/MOHC/better-model/t/'
+                    'r1i1p1/Amon/var1/gn/v12345678"}\n')
+        self.assertEqual(actual, expected)
 
 
 class TestVariantLabelUpdate(TestCase):
