@@ -3,7 +3,10 @@ test_attribute_update.py
 
 Test of attribute_update.py
 """
-import io
+try:
+    from StringIO import StringIO
+except ImportError:
+    from io import StringIO
 import mock
 
 import django
@@ -30,7 +33,7 @@ class TestSourceIdUpdate(TestCase):
 
         # mock sys.stdout to prevent unwanted output but also allow
         # testing of output
-        patch = mock.patch('sys.stdout', new_callable=io.StringIO)
+        patch = mock.patch('sys.stdout', new_callable=StringIO)
         self.mock_stdout = patch.start()
         self.addCleanup(patch.stop)
 
@@ -62,11 +65,17 @@ class TestSourceIdUpdate(TestCase):
         updater = SourceIdUpdate(self.test_file, self.desired_source_id)
         updater.update()
         actual = self.mock_stdout.getvalue()
-        expected = ('{"filename": "var1_Amon_better-model_t_r1i1p1_gn_1950-'
+        # Python 2 and 3 appear to have the dictionary in different orders
+        # so handle both ways
+        expected = ['{"filename": "var1_Amon_better-model_t_r1i1p1_gn_1950-'
                     '1960.nc", "directory": "/group_workspaces/jasmin2/'
                     'primavera9/stream1/t/HighResMIP/MOHC/better-model/t/'
-                    'r1i1p1/Amon/var1/gn/v12345678"}\n')
-        self.assertEqual(actual, expected)
+                    'r1i1p1/Amon/var1/gn/v12345678"}\n',
+                    '{"directory": "/group_workspaces/jasmin2/primavera9/'
+                    'stream1/t/HighResMIP/MOHC/better-model/t/r1i1p1/Amon/var1'
+                    '/gn/v12345678", "filename": "var1_Amon_better-model_t_'
+                    'r1i1p1_gn_1950-1960.nc"}\n']
+        self.assertIn(actual, expected)
 
 
 class TestVariantLabelUpdate(TestCase):
@@ -80,7 +89,7 @@ class TestVariantLabelUpdate(TestCase):
 
         # mock sys.stdout to prevent unwanted output but also allow
         # testing of output
-        patch = mock.patch('sys.stdout', new_callable=io.StringIO)
+        patch = mock.patch('sys.stdout', new_callable=StringIO)
         self.mock_stdout = patch.start()
         self.addCleanup(patch.stop)
 
@@ -109,11 +118,17 @@ class TestVariantLabelUpdate(TestCase):
         updater = VariantLabelUpdate(self.test_file, self.desired_variant_label)
         updater.update()
         actual = self.mock_stdout.getvalue()
-        expected = ('{"filename": "var1_Amon_t_t_r9i9p9f9_gn_1950-1960.nc", '
+        # Python 2 and 3 appear to have the dictionary in different orders
+        # so handle both ways
+        expected = ['{"filename": "var1_Amon_t_t_r9i9p9f9_gn_1950-1960.nc", '
                     '"directory": "/group_workspaces/jasmin2/primavera9/'
                     'stream1/t/HighResMIP/MOHC/t/t/r9i9p9f9/Amon/var1/gn/'
-                    'v12345678"}\n')
-        self.assertEqual(actual, expected)
+                    'v12345678"}\n',
+                    '{"directory": "/group_workspaces/jasmin2/primavera9/'
+                    'stream1/t/HighResMIP/MOHC/t/t/r9i9p9f9/Amon/var1/gn/'
+                    'v12345678", "filename": "var1_Amon_t_t_r9i9p9f9_gn_1950-'
+                    '1960.nc"}\n']
+        self.assertIn(actual, expected)
 
 
 class TestIntegration(TestCase):
@@ -126,11 +141,11 @@ class TestIntegration(TestCase):
 
         # mock sys.stdout and stderr to prevent unwanted output but also allow
         # testing of output
-        patch = mock.patch('sys.stdout', new_callable=io.StringIO)
+        patch = mock.patch('sys.stdout', new_callable=StringIO)
         self.mock_stdout = patch.start()
         self.addCleanup(patch.stop)
 
-        patch = mock.patch('sys.stderr', new_callable=io.StringIO)
+        patch = mock.patch('sys.stderr', new_callable=StringIO)
         self.mock_stderr = patch.start()
         self.addCleanup(patch.stop)
 

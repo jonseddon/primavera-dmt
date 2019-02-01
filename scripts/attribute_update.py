@@ -5,11 +5,13 @@ attribute_update.py
 This script is called by the pre-proc tool to update metadata in the
 Data Management Tool.
 """
+from __future__ import print_function, division
 from abc import ABCMeta, abstractmethod
 import argparse
 import json
 import logging
 import os
+import six
 import sys
 
 import django
@@ -31,8 +33,8 @@ DEFAULT_LOG_FORMAT = '%(levelname)s: %(message)s'
 
 logger = logging.getLogger(__name__)
 
-
-class DmtUpdate(object, metaclass=ABCMeta):
+@six.add_metaclass(ABCMeta)
+class DmtUpdate(object):
     """
     Abstract base class for all DMT metadata updates.
     """
@@ -98,7 +100,7 @@ class SourceIdUpdate(DmtUpdate):
         """
         Initialise the class
         """
-        super().__init__(datafile, new_value)
+        super(SourceIdUpdate, self).__init__(datafile, new_value)
 
     def _update_attribute(self):
         """
@@ -117,7 +119,7 @@ class VariantLabelUpdate(DmtUpdate):
         """
         Initialise the class
         """
-        super().__init__(datafile, new_value)
+        super(VariantLabelUpdate, self).__init__(datafile, new_value)
 
     def _update_attribute(self):
         """
