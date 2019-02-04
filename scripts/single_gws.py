@@ -30,7 +30,7 @@ DEFAULT_LOG_FORMAT = '%(levelname)s: %(message)s'
 logger = logging.getLogger(__name__)
 
 # The common prefix of all of our GWSs
-COMMON_GWS_NAME = '/group_workspaces/jasmin2/primavera'
+COMMON_GWS_NAME = '/gws/nopw/j04/primavera'
 # The top-level directory to write output data to
 BASE_OUTPUT_DIR = Settings.get_solo().base_output_dir
 

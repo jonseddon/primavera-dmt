@@ -22,7 +22,7 @@ else
 fi
 
 # Set-up the environment and run PrePARE
-export PATH=/group_workspaces/jasmin2/primavera1/tools/miniconda2/bin:$PATH
+export PATH=/gws/nopw/j04/primavera1/tools/miniconda2/bin:$PATH
 source activate cmor
 
 PrePARE --table-path $TABLE_DIR $1

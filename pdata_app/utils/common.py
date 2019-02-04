@@ -18,9 +18,8 @@ import cf_units
 from django.db.models import Sum
 
 PAUSE_FILES = {
-    'et:': '/group_workspaces/jasmin2/primavera5/.tape_pause/pause_et',
-    'moose:':
-        '/group_workspaces/jasmin2/primavera5/.tape_pause/pause_moose',
+    'et:': '/gws/nopw/j04/primavera5/.tape_pause/pause_et',
+    'moose:': '/gws/nopw/j04/primavera5/.tape_pause/pause_moose',
 }
 
 logger = logging.getLogger(__name__)
