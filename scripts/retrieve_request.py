@@ -50,7 +50,7 @@ logger = logging.getLogger(__name__)
 # The top-level directory to write output data to
 BASE_OUTPUT_DIR = Settings.get_solo().base_output_dir
 # The name of the directory to store et_get.py log files in
-LOG_FILE_DIR = '/group_workspaces/jasmin2/primavera5/.et_logs/'
+LOG_FILE_DIR = '/gws/nopw/j04/primavera5/.et_logs/'
 # The prefix to use on et_get.py log files
 LOG_PREFIX = 'et_get'
 # The number of processes that et_get.py should use.
@@ -286,10 +286,8 @@ def get_et_url(tape_url, data_files, args):
 
     logger.debug('Restoring to {}'.format(retrieval_dir))
 
-    cmd = ('/usr/bin/python /usr/bin/et_get.py -v -l {} -f {} -r {} -t {} '
-           '2>&1 | tee -a /group_workspaces/jasmin2/primavera5/'
-           '.et_logs/stdall.log'.format(
-        _make_logfile_name(LOG_FILE_DIR), filelist_name, retrieval_dir,
+    cmd = ('/usr/bin/python /usr/bin/et_get.py -l {} -f {} -r {} -t {}'.
+        format(_make_logfile_name(LOG_FILE_DIR), filelist_name, retrieval_dir,
         MAX_ET_GET_PROC))
 
     logger.debug('et_get.py command is:\n{}'.format(cmd))
