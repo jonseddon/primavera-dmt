@@ -4,12 +4,12 @@ common.py - several functions that are used throughout the pdata_app
 from __future__ import unicode_literals, division, absolute_import
 
 import datetime
-from itertools import zip_longest
 import logging
 import os
 import random
 import re
 from subprocess import check_output, CalledProcessError
+from six.moves import zip_longest
 from tempfile import gettempdir
 
 from iris.time import PartialDateTime
