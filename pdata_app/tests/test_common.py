@@ -15,7 +15,7 @@ from pdata_app.utils.common import (make_partial_date_time,
                                     standardise_time_unit,
                                     calc_last_day_in_month, pdt2num,
                                     is_same_gws, get_request_size,
-                                    date_filter_files)
+                                    date_filter_files, grouper)
 from pdata_app.utils import dbapi
 from vocabs.vocabs import STATUS_VALUES, FREQUENCY_VALUES, VARIABLE_TYPES
 
@@ -313,6 +313,28 @@ class TestDateFilterFiles(TestCase):
         self.assertEqual(['test4', 'test8'],
                          _assertable(date_filter_files(data_files,
                                                        1975, 1985)))
+
+
+class TestGrouper(TestCase):
+    def test_exact_multiple(self):
+        actual = [list(chunk) for chunk in grouper(range(8), 4)]
+        expected = [[0, 1, 2, 3], [4, 5, 6, 7]]
+        self.assertEqual(actual, expected)
+
+    def test_non_exact_multiple(self):
+        actual = [list(chunk) for chunk in grouper(range(10), 4)]
+        expected = [[0, 1, 2, 3], [4, 5, 6, 7], [8, 9]]
+        self.assertEqual(actual, expected)
+
+    def test_n_is_one(self):
+        actual = [list(chunk) for chunk in grouper(range(3), 1)]
+        expected = [[0], [1], [2]]
+        self.assertEqual(actual, expected)
+
+    def test_other_type(self):
+        actual = [list(chunk) for chunk in grouper(list(range(10)), 4)]
+        expected = [[0, 1, 2, 3], [4, 5, 6, 7], [8, 9]]
+        self.assertEqual(actual, expected)
 
 
 def _make_example_files(parent_obj):

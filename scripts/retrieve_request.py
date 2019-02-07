@@ -36,7 +36,7 @@ from django.utils import timezone
 from pdata_app.models import Settings, RetrievalRequest, EmailQueue, DataFile
 from pdata_app.utils.common import (md5, sha256, adler32, construct_drs_path,
                                     get_temp_filename, is_same_gws,
-                                    date_filter_files, PAUSE_FILES)
+                                    date_filter_files, PAUSE_FILES, grouper)
 from pdata_app.utils.dbapi import match_one
 
 
@@ -49,15 +49,15 @@ logger = logging.getLogger(__name__)
 
 # The top-level directory to write output data to
 BASE_OUTPUT_DIR = Settings.get_solo().base_output_dir
-# The name of the directory to store et_get.py log files in
-LOG_FILE_DIR = '/gws/nopw/j04/primavera5/.et_logs/'
-# The prefix to use on et_get.py log files
-LOG_PREFIX = 'et_get'
 # The number of processes that et_get.py should use.
 # Between 5 and 10 are recommended
-MAX_ET_GET_PROC = 10
+MAX_ET_GET_PROC = 5
 # The maximum number of retrievals to run in parallel
 MAX_TAPE_GET_PROC = 5
+# The maximum number of files to get from MASS in one moo get command
+# to avoid the length of the command being longer than the shell can manage
+MAX_MASS_FILES = 200
+
 
 class ChecksumError(Exception):
     def __init__(self, message=''):
@@ -161,7 +161,8 @@ def get_tape_url(tape_url, data_files, args):
     if tape_url.startswith('et:'):
         get_et_url(tape_url, data_files, args)
     elif tape_url.startswith('moose:'):
-        get_moose_url(tape_url, data_files, args)
+        for file_chunk in grouper(data_files, MAX_MASS_FILES):
+            get_moose_url(tape_url, file_chunk, args)
     else:
         msg = ('Tape url {} is not a currently supported type of tape.'.
                format(tape_url))
@@ -286,8 +287,8 @@ def get_et_url(tape_url, data_files, args):
 
     logger.debug('Restoring to {}'.format(retrieval_dir))
 
-    cmd = ('/usr/bin/python /usr/bin/et_get.py -l {} -f {} -r {} -t {}'.
-        format(_make_logfile_name(LOG_FILE_DIR), filelist_name, retrieval_dir,
+    cmd = ('/usr/bin/python /usr/bin/et_get.py -f {} -r {} -t {}'.
+        format(filelist_name, retrieval_dir,
         MAX_ET_GET_PROC))
 
     logger.debug('et_get.py command is:\n{}'.format(cmd))
@@ -412,22 +413,6 @@ def _check_file_checksum(data_file, file_path):
                checksum_obj.checksum_type, checksum_obj.checksum_value))
         logger.warning(msg)
         raise ChecksumError(msg)
-
-
-def _make_logfile_name(directory=None):
-    """
-    From the current date and time make a filename for a log-file.
-
-    :param str directory: The optional directory path to prepend to the
-        generated filename
-    :returns: The name of a log file to use
-    """
-    time_str = datetime.datetime.utcnow().strftime('%Y%m%d%H%M%S')
-    filename = '{}_{}.txt'.format(LOG_PREFIX, time_str)
-    if directory:
-        return os.path.join(directory, filename)
-    else:
-        return filename
 
 
 def _run_command(command):

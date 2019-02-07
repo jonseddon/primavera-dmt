@@ -9,6 +9,7 @@ import os
 import random
 import re
 from subprocess import check_output, CalledProcessError
+from six.moves import zip_longest
 from tempfile import gettempdir
 
 from iris.time import PartialDateTime
@@ -446,3 +447,21 @@ def delete_drs_dir(directory, mip_eras=('PRIMAVERA', 'CMIP6')):
             not directory.endswith(mip_eras)):
         # parent is empty so delete it
         delete_drs_dir(parent_dir)
+
+
+def grouper(iterable, n):
+    """
+    Group an iterable into chunks of length `n` with the final chunk containing
+    any remaining values and so possibly being less than length n.
+
+    Taken from:
+    https://docs.python.org/3.6/library/itertools.html#itertools-recipes
+
+    :param Iterable iterable: the input iterable to chunk
+    :param int n: return chunks of this length
+    :returns: iterables of length n
+    :rtype: Iterable
+    """
+    args = [iter(iterable)] * n
+    for chunk in zip_longest(*args):
+        yield filter(lambda x: x is not None, chunk)
