@@ -36,7 +36,7 @@ from django.utils import timezone
 from pdata_app.models import Settings, RetrievalRequest, EmailQueue, DataFile
 from pdata_app.utils.common import (md5, sha256, adler32, construct_drs_path,
                                     get_temp_filename, is_same_gws,
-                                    date_filter_files, PAUSE_FILES)
+                                    date_filter_files, PAUSE_FILES, grouper)
 from pdata_app.utils.dbapi import match_one
 
 
@@ -54,6 +54,10 @@ BASE_OUTPUT_DIR = Settings.get_solo().base_output_dir
 MAX_ET_GET_PROC = 5
 # The maximum number of retrievals to run in parallel
 MAX_TAPE_GET_PROC = 5
+# The maximum number of files to get from MASS in one moo get command
+# to avoid the length of the command being longer than the shell can manage
+MAX_MASS_FILES = 200
+
 
 class ChecksumError(Exception):
     def __init__(self, message=''):
@@ -157,7 +161,8 @@ def get_tape_url(tape_url, data_files, args):
     if tape_url.startswith('et:'):
         get_et_url(tape_url, data_files, args)
     elif tape_url.startswith('moose:'):
-        get_moose_url(tape_url, data_files, args)
+        for file_chunk in grouper(data_files, MAX_MASS_FILES):
+            get_moose_url(tape_url, file_chunk, args)
     else:
         msg = ('Tape url {} is not a currently supported type of tape.'.
                format(tape_url))
