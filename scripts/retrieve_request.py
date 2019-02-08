@@ -162,7 +162,7 @@ def get_tape_url(tape_url, data_files, args):
         get_et_url(tape_url, data_files, args)
     elif tape_url.startswith('moose:'):
         for file_chunk in grouper(data_files, MAX_MASS_FILES):
-            get_moose_url(tape_url, file_chunk, args)
+            get_moose_url(tape_url, list(file_chunk), args)
     else:
         msg = ('Tape url {} is not a currently supported type of tape.'.
                format(tape_url))
