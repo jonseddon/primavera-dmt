@@ -32,7 +32,7 @@ def parse_args():
     """
     parser = argparse.ArgumentParser(description='Check extracted data and '
                                                  'move to DRS.')
-    parser.add_argument('top-dir', help='The top-level directory to search '
+    parser.add_argument('top_dir', help='The top-level directory to search '
                                         'for files')
     parser.add_argument('-l', '--log-level', help='set logging level to one of '
                                                   'debug, info, warn (the '
