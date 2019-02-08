@@ -591,6 +591,13 @@ This script copies the data from its current directory to the test area.
 
 THIS SCRIPT SHOULD NOT BE RUN AGAINST THE LIVE DATABASE!!!
 </td></tr>
+<tr><td>update_dreqs_0119.py</td><td>
+One large elastic tape retrieval failed when the server had to be rebooted
+80% of the way through a large retrieval. This script identfies files in this
+retrieval, checks their checksum and if they are fine then copies them into
+teh DRS directory structure (hardcoded to primavera5 and so no symbolic links
+are required) and updates the file's status in the DMT.
+</td></tr>
 
 </table>
 </body>
