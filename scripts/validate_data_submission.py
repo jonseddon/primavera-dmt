@@ -288,6 +288,9 @@ def verify_fk_relationships(metadata):
                    format(metadata['basename']))
             logger.error(msg)
             raise FileValidationError(msg)
+        elif dreq_matches.count() == 1:
+            metadata['data_request'] = dreq_matches[0]
+            metadata['variable'] = dreq_matches[0].variable_request
         else:
             try:
                 plev_name = _guess_plev_name(metadata)
