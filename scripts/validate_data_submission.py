@@ -21,6 +21,10 @@ import sys
 import time
 import warnings
 
+# Limit Dask to using a single thread in Iris
+from multiprocessing.pool import ThreadPool
+import dask
+dask.config.set(pool=ThreadPool(1))
 import iris
 
 from primavera_val import (identify_filename_metadata, validate_file_contents,
