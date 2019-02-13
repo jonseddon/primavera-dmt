@@ -22,7 +22,10 @@ import sys
 import time
 import warnings
 
-import dask
+try:
+    import dask
+except ImportError:
+    pass
 import iris
 
 from primavera_val import (identify_filename_metadata, validate_file_contents,
@@ -876,7 +879,7 @@ def main(args):
     """
     Main entry point
     """
-    if args.processes == 1:
+    if args.processes == 1 and not iris.__version__.startswith('1.'):
         # if not multiprocessing then limit the number of Dask threads
         # this can't seem to be limited when using multiprocessing
         dask.config.set(pool=ThreadPool(2))
