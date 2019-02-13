@@ -12,6 +12,7 @@ import itertools
 import json
 import logging.config
 from multiprocessing import Process, Manager
+from multiprocessing.pool import ThreadPool
 from netCDF4 import Dataset
 import os
 import re
@@ -21,10 +22,7 @@ import sys
 import time
 import warnings
 
-# Limit Dask to using two threads in Iris
-from multiprocessing.pool import ThreadPool
 import dask
-dask.config.set(pool=ThreadPool(2))
 import iris
 
 from primavera_val import (identify_filename_metadata, validate_file_contents,
@@ -878,6 +876,11 @@ def main(args):
     """
     Main entry point
     """
+    if args.processes == 1:
+        # if not multiprocessing then limit the number of Dask threads
+        # this can't seem to be limited when using multiprocessing
+        dask.config.set(pool=ThreadPool(2))
+
     submission_dir = os.path.normpath(args.directory)
     logger.debug('Submission directory: %s', submission_dir)
     logger.debug('Project: %s', args.mip_era)
