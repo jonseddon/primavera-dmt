@@ -21,10 +21,10 @@ import sys
 import time
 import warnings
 
-# Limit Dask to using five threads in Iris
+# Limit Dask to using two threads in Iris
 from multiprocessing.pool import ThreadPool
 import dask
-dask.config.set(pool=ThreadPool(5))
+dask.config.set(pool=ThreadPool(2))
 import iris
 
 from primavera_val import (identify_filename_metadata, validate_file_contents,
@@ -104,11 +104,12 @@ def identify_and_validate(filenames, project, num_processes, file_format):
     params = manager.Queue()
     result_list = manager.list()
     error_event = manager.Event()
-    for i in range(num_processes):
-        p = Process(target=identify_and_validate_file, args=(params,
-            result_list, error_event))
-        jobs.append(p)
-        p.start()
+    if num_processes != 1:
+        for i in range(num_processes):
+            p = Process(target=identify_and_validate_file, args=(params,
+                result_list, error_event))
+            jobs.append(p)
+            p.start()
 
     func_input_pair = list(zip(filenames,
                           (project,) * len(filenames),
@@ -119,8 +120,11 @@ def identify_and_validate(filenames, project, num_processes, file_format):
     for item in iters:
         params.put(item)
 
-    for j in jobs:
-        j.join()
+    if num_processes == 1:
+        identify_and_validate_file(params, result_list, error_event)
+    else:
+        for j in jobs:
+            j.join()
 
     if error_event.is_set():
         raise SubmissionError()
@@ -605,16 +609,20 @@ def run_prepare(file_paths, num_processes):
     manager = Manager()
     params = manager.Queue()
     file_failed = manager.Event()
-    for i in range(num_processes):
-        p = Process(target=_run_prepare, args=(params, file_failed))
-        jobs.append(p)
-        p.start()
+    if num_processes != 1:
+        for i in range(num_processes):
+            p = Process(target=_run_prepare, args=(params, file_failed))
+            jobs.append(p)
+            p.start()
 
     for item in itertools.chain(file_paths, (None,) * num_processes):
         params.put(item)
 
-    for j in jobs:
-        j.join()
+    if num_processes == 1:
+        _run_prepare(params, file_failed)
+    else:
+        for j in jobs:
+            j.join()
 
     if file_failed.is_set():
         logger.error('Not all files passed PrePARE')
