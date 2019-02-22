@@ -43,37 +43,41 @@ def main(args):
     """
     Main entry point
     """
-    yohan = User.objects.get(username='yohan')
+    yohan = User.objects.get(username='yruprich')
     rr = RetrievalRequest.objects.create(requester=yohan, start_year=1950,
-                                         end_year=1950)
+                                         end_year=2014)
     time_zone = datetime.timezone(datetime.timedelta())
     rr.date_created = datetime.datetime(2000, 1, 1, 0, 0, tzinfo=time_zone)
     rr.save()
 
-    common = {
-        'experiment__short_name': 'highresSST-present',
-    }
-    stream_1 = [
-        {'climate_model__short_name__in': ['CMCC-CM2-HR4', 'CMCC-CM2-VHR4'],
-         'rip_code': 'r1i1p1f1'},
-        {'climate_model__short_name__in': ['CNRM-CM6-1', 'CNRM-CM6-1-HR'],
-         'rip_code__in': ['r21i1p1f2', 'r1i1p1f2']},
-        {'climate_model__short_name__in': ['EC-Earth3', 'EC-Earth3-HR'],
-         'rip_code': 'r1i1p1f1'},
-        {'climate_model__short_name__in': ['ECMWF-IFS-LR', 'ECMWF-IFS-HR'],
-         'rip_code': 'r1i1p1f1'},
-        {'climate_model__short_name__in': ['HadGEM3-GC31-LM',
-                                           'HadGEM3-GC31-MM',
-                                           'HadGEM3-GC31-HM'],
-         'rip_code': 'r1i1p1f1'},
-        {'climate_model__short_name__in': ['MPIESM-1-2-HR', 'MPIESM-1-2-XR'],
-         'rip_code': 'r1i1p1f1'}
-    ]
-    for stream in stream_1:
-        drs = DataRequest.objects.filter(datafile__isnull=False,
-                                         variable_request__frequency='mon',
-                                         **common, **stream).distinct()
-        rr.data_request.add(*drs)
+    drs = DataRequest.objects.filter(
+        institute__short_name='MPI-M',
+        experiment__short_name__in=['dcppc-amv-neg', 'dcppc-amv-pos'],
+        variable_request__table_name__in=['Amon', 'Omon'],
+        variable_request__cmor_name__in=['hfls', 'hfss', 'pr', 'ps', 'psl',
+                                         'rlus', 'rlut', 'rsds', 'rsdt',
+                                         'rsut', 'tos', 'ta', 'ua', 'va',
+                                         'wap']
+    )
+    rr.data_request.add(*drs)
+
+    rr = RetrievalRequest.objects.create(requester=yohan, start_year=1950,
+                                         end_year=2014)
+    time_zone = datetime.timezone(datetime.timedelta())
+    rr.date_created = datetime.datetime(2000, 1, 1, 0, 0, tzinfo=time_zone)
+    rr.save()
+
+    drs = DataRequest.objects.filter(
+        institute__short_name='ECMWF',
+        experiment__short_name__in=['primWP5-amv-neg', 'primWP5-amv-pos'],
+        variable_request__table_name__in=['Amon', 'Omon'],
+        variable_request__cmor_name__in=['hfls', 'hfss', 'pr', 'ps', 'psl',
+                                         'rlus', 'rlut', 'rsds', 'rsdt',
+                                         'rsut', 'tos', 'ta', 'ua', 'va',
+                                         'wap']
+    )
+    rr.data_request.add(*drs)
+
 
 
 if __name__ == "__main__":
