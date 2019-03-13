@@ -1,8 +1,8 @@
 #!/usr/bin/env python
 """
-update_dreqs_0135.py
+update_dreqs_0136.py
 
-This file adds a data request for CERFACS for the AMIP models.
+This file adds a data request for simassacrossline_PrimSIday the CERFACS coupled HR models.
 """
 from __future__ import (unicode_literals, division, absolute_import,
                         print_function)
@@ -50,20 +50,24 @@ def main(args):
     """
     institute_details = {
         'id': 'CNRM-CERFACS',
-        'model_ids': ['CNRM-CM6-1', 'CNRM-CM6-1-HR'],
+        'model_ids': ['CNRM-CM6-1-HR'],
         'calendar': CALENDAR_GREGORIAN
     }
 
     experiments = {
-        'highresSST-present': {'start_date': datetime(1950, 1, 1),
-                               'end_date': datetime(2015, 1, 1)},
+        'control-1950': {'start_date': datetime(1950, 1, 1),
+                         'end_date': datetime(2050, 1, 1)},
+        'highres-future': {'start_date': datetime(2015, 1, 1),
+                           'end_date': datetime(2051, 1, 1)},
+        'hist-1950': {'start_date': datetime(1950, 1, 1),
+                      'end_date': datetime(2015, 1, 1)},
     }
 
     variant_label = 'r1i1p1f2'
 
     # Experiment
     new_dreqs = [
-        'rivo_Eday',
+        'simassacrossline_PrimSIday',
     ]
 
     experiment_objs = []
