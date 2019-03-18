@@ -1,6 +1,6 @@
 #!/bin/bash
 # run_prepare.sh
-# The PRIMAVERA DMT's script to run the CMIP6 PreAPRE software on a single file
+# The PRIMAVERA DMT's script to run the CMIP6 PrePARE software on a single file
 # It takes a single parameter, which is the name of the file.
 
 # Check if file exists
@@ -14,6 +14,8 @@ if grep -q '01.00.21' <<< `ncdump -h $1`; then
     TABLE_DIR=/home/users/jseddon/primavera/original-cmor-tables/primavera_1.00.21/Tables
 elif grep -q '01.00.23' <<< `ncdump -h $1`; then
     TABLE_DIR=/home/users/jseddon/primavera/original-cmor-tables/primavera_1.00.23/Tables
+elif grep -q '01.00.28' <<< `ncdump -h $1`; then
+    TABLE_DIR=/home/users/jseddon/primavera/original-cmor-tables/cmip6-cmor-tables-6.2.15.0/Tables
 elif grep -q '01.00.13' <<< `ncdump -h $1`; then
     TABLE_DIR=/home/users/jseddon/primavera/original-cmor-tables/primavera_1.00.21/Tables
 else
