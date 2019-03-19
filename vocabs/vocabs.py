@@ -16,6 +16,7 @@ STATUS_VALUES = CodeList(
 ESGF_STATUSES = CodeList(
     (('CREATED', 'CREATED'),
      ('SUBMITTED', 'SUBMITTED'),
+     ('SUBMIT_FAILED', 'SUBMIT_FAILED'),
      ('AT_CEDA', 'AT_CEDA'),
      ('PUBLISHED', 'PUBLISHED'),
      ('REJECTED', 'REJECTED'),
