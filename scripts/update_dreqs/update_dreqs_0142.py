@@ -2,7 +2,8 @@
 """
 update_dreqs_0142.py
 
-This file adds an issue to ECMWF hist and control Amon ts coupled.
+This file adds an issue to ECMWF experiments that may have an aliasing of the
+diurnal cycle in time mean values.
 """
 import argparse
 import logging.config
@@ -42,22 +43,58 @@ def main(args):
     """
     Main entry point
     """
-    malcolm = User.objects.get(username='mjrobert')
+    retish = User.objects.get(username='retish')
     issue_txt = (
-        "An unexpected difference has been found in Amon ts at the start of the hist-1950 and "
-        "control-1950 experiments. It is believed that these should the be same but there is a "
-        "difference of a few degrees. It isn't known if anything else is affeced. tas does not "
-        "appear to be affected."
+        "Some ECMWF variables are not true monthly or daily means and are "
+        "instead calculated from instantaneous values at the frequency they "
+        "are output. Experiments and members are affected differently "
+        "depending on how the output frequency was specified. This feature "
+        "was first spotted when a difference was found in the variable ts "
+        "between the hist-1950 and control-1950 simulations."
     )
-    issue, _created = DataIssue.objects.get_or_create(issue=issue_txt, reporter=malcolm)
+    # issue, _created = DataIssue.objects.get_or_create(issue=issue_txt,
+    #                                                   reporter=retish)
 
-    spinup = DataFile.objects.filter(
-        climate_model__short_name__in=['ECMWF-IFS-LR', 'ECMWF-IFS-HR'],
-        experiment__short_name__in=['control-1950', 'hist-1950'],
-        rip_code='r1i1p1f1',
-    )
-    logger.debug('{} spinup files found'.format(spinup.count()))
-    issue.data_file.add(*spinup)
+    common = {
+        'institute__short_name': 'ECMWF',
+        'frequency__in': ['mon', 'day'],
+        'variable_request__cmor_name__in': ['lai', 'snw', 'stlsi', 'mrso',
+                                            'clwvi', 'clivi', 'ps', 'prw',
+                                            'tsl', 'snd', 'ts', 'tsn',
+                                            'uneutrals', 'vneutrals', 'tso']
+    }
+
+    affected_sims = [
+        'ECMWF-IFS-LR_hist-1950_r2i1p1f1',
+        'ECMWF-IFS-LR_hist-1950_r3i1p1f1',
+        'ECMWF-IFS-LR_hist-1950_r4i1p1f1',
+        'ECMWF-IFS-LR_hist-1950_r5i1p1f1',
+        'ECMWF-IFS-LR_hist-1950_r6i1p1f1',
+        'ECMWF-IFS-LR_control-1950_r1i1p1f1',
+        'ECMWF-IFS-LR_highresSST-present_r3i1p1f1',
+        'ECMWF-IFS-LR_highresSST-present_r4i1p1f1',
+        'ECMWF-IFS-LR_highresSST-present_r5i1p1f1',
+        'ECMWF-IFS-LR_highresSST-present_r6i1p1f1',
+        'ECMWF-IFS-MR_hist-1950_r1i1p1f1',
+        'ECMWF-IFS-MR_control-1950_r1i1p1f1',
+        'ECMWF-IFS-HR_hist-1950_r3i1p1f1',
+        'ECMWF-IFS-HR_hist-1950_r4i1p1f1',
+        'ECMWF-IFS-HR_control-1950_r1i1p1f1',
+        'ECMWF-IFS-HR_highresSST-present_r3i1p1f1',
+        'ECMWF-IFS-HR_highresSST-present_r4i1p1f1'
+    ]
+
+    for sim in affected_sims:
+        model, expt, var_lab = sim.split('_')
+        affected_files = DataFile.objects.filter(
+            climate_model__short_name=model,
+            experiment__short_name=expt,
+            rip_code=var_lab,
+            **common
+        ).distinct()
+        logger.debug('{} affected files found for {}'.
+            format(affected_files.count(), sim))
+        # issue.data_file.add(*affected_files)
 
 
 if __name__ == "__main__":
