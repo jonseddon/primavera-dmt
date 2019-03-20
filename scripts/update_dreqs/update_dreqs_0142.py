@@ -52,8 +52,8 @@ def main(args):
         "was first spotted when a difference was found in the variable ts "
         "between the hist-1950 and control-1950 simulations."
     )
-    # issue, _created = DataIssue.objects.get_or_create(issue=issue_txt,
-    #                                                   reporter=retish)
+    issue, _created = DataIssue.objects.get_or_create(issue=issue_txt,
+                                                      reporter=retish)
 
     common = {
         'institute__short_name': 'ECMWF',
@@ -94,7 +94,7 @@ def main(args):
         ).distinct()
         logger.debug('{} affected files found for {}'.
             format(affected_files.count(), sim))
-        # issue.data_file.add(*affected_files)
+        issue.data_file.add(*affected_files)
 
 
 if __name__ == "__main__":
