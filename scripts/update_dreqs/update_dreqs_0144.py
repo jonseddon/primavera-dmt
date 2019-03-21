@@ -58,7 +58,7 @@ def main(args):
     affected_files = DataFile.objects.filter(
         institute__short_name='ECMWF',
         frequency__in=['mon', 'day'],
-        experiment__short_name__in=['', ''],
+        experiment__short_name__in=['primWP5-amv-pos', 'primWP5-amv-neg'],
         variable_request__cmor_name__in=['lai', 'snw', 'stlsi', 'mrso',
                                             'clwvi', 'clivi', 'ps', 'prw',
                                             'tsl', 'snd', 'ts', 'tsn',
@@ -66,7 +66,7 @@ def main(args):
     )
 
     logger.debug('{} affected files found'.format(affected_files.count()))
-    # issue.data_file.add(*affected_files)
+    issue.data_file.add(*affected_files)
 
 
 if __name__ == "__main__":
