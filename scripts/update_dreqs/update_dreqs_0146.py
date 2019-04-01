@@ -2,24 +2,20 @@
 """
 update_dreqs_0146.py
 
-This file adds monthly data requests for CERFACS for the AMIP models.
+Remove all HadGEM3-GC31 tasmax, tasmin, epfluxdiv files.
 """
-from __future__ import (unicode_literals, division, absolute_import,
-                        print_function)
 import argparse
-from datetime import datetime
 import logging.config
+import os
 import sys
 
 from cf_units import date2num, CALENDAR_GREGORIAN
 
 import django
 django.setup()
-
-from pdata_app.models import (DataRequest, VariableRequest, Experiment,
-                              Institute, ClimateModel, Project, Settings)
-from pdata_app.utils.dbapi import match_one, get_or_create
-
+from pdata_app.utils.replace_file import replace_files
+from pdata_app.models import DataFile, ReplacedFile
+from pdata_app.utils.common import delete_drs_dir
 
 __version__ = '0.1.0b1'
 
@@ -28,6 +24,28 @@ DEFAULT_LOG_FORMAT = '%(levelname)s: %(message)s'
 
 logger = logging.getLogger(__name__)
 
+
+def delete_files(query_set):
+    """
+    Delete any files online from the specified queryset
+    """
+    directories_found = []
+    for df in query_set.filter(online=True):
+        try:
+            os.remove(os.path.join(df.directory, df.name))
+        except OSError as exc:
+            logger.error(str(exc))
+        else:
+            if df.directory not in directories_found:
+                directories_found.append(df.directory)
+        df.online = False
+        df.directory = None
+        df.save()
+
+    for directory in directories_found:
+        if not os.listdir(directory):
+            delete_drs_dir(directory)
+    logger.debug('{} directories removed'.format(len(directories_found)))
 
 
 def parse_args():
@@ -48,112 +66,29 @@ def main(args):
     """
     Main entry point
     """
-    institute_details = {
-        'id': 'CNRM-CERFACS',
-        'model_ids': ['CNRM-CM6-1', 'CNRM-CM6-1-HR'],
-        'calendar': CALENDAR_GREGORIAN
-    }
+    files = DataFile.objects.filter(
+        climate_model__short_name__startswith='HadGEM3-GC31',
+        variable_request__cmor_name__in=['tasmax', 'tasmin', 'epfluxdiv']
+    )
+    logger.debug('{} affected files found'.format(files.count()))
 
-    experiments = {
-        'highresSST-present': {'start_date': datetime(1950, 1, 1),
-                               'end_date': datetime(2015, 1, 1)},
-        'highresSST-future': {'start_date': datetime(2015, 1, 1),
-                              'end_date': datetime(2051, 1, 1)},
-    }
+    delete_files(files)
 
-    variant_label = 'r1i1p1f2'
-
-    # Experiment
-    new_dreqs = [
-        'intuadse_Emon',
-        'intuaw_Emon',
-        'intvadse_Emon',
-        'intvaw_Emon',
-        'mrtws_Emon',
-        'od550so4_AERmon',
-        'rsutcsaf_AERmon',
-        'wtd_Emon'
-    ]
-
-    experiment_objs = []
-    for expt in experiments:
-        expt_obj = match_one(Experiment, short_name=expt)
-        if expt_obj:
-            experiment_objs.append(expt_obj)
-        else:
-            msg = 'experiment {} not found in the database.'.format(expt)
-            print(msg)
-            raise ValueError(msg)
-
-    # Institute
-    result = match_one(Institute, short_name=institute_details['id'])
-    if result:
-        institute = result
-    else:
-        msg = 'institute_id {} not found in the database.'.format(
-            institute_details['id']
+    # some files have already been replaced and must have their
+    # incoming_directory updated to maintain uniqueness.
+    for df in files:
+        rfs = ReplacedFile.objects.filter(
+            name=df.name,
+            incoming_directory=df.incoming_directory
         )
-        print(msg)
-        raise ValueError(msg)
+        if rfs.count() == 0:
+            continue
+        for rf in rfs:
+            rf.incoming_directory = rf.incoming_directory + '_01'
+            rf.save()
 
-    # Look up the ClimateModel object for each institute_id  and save the
-    # results to a dictionary for quick look up later
-    model_objs = []
-    for clim_model in institute_details['model_ids']:
-        result = match_one(ClimateModel, short_name=clim_model)
-        if result:
-            model_objs.append(result)
-        else:
-            msg = ('climate_model {} not found in the database.'.
-                   format(clim_model))
-            print(msg)
-            raise ValueError(msg)
+    replace_files(files)
 
-    # The standard reference time
-    std_units = Settings.get_solo().standard_time_units
-
-    # create the new data requests
-    for new_dreq in new_dreqs:
-        cmor_name, table_name = new_dreq.split('_')
-        if table_name.startswith('Prim'):
-            project = match_one(Project, short_name='PRIMAVERA')
-        else:
-            project = match_one(Project, short_name='CMIP6')
-
-        var_req_obj = match_one(VariableRequest, cmor_name=cmor_name,
-                                table_name=table_name)
-        if var_req_obj:
-            for expt in experiment_objs:
-                for clim_model in model_objs:
-                    try:
-                        _dr = get_or_create(
-                            DataRequest,
-                            project=project,
-                            institute=institute,
-                            climate_model=clim_model,
-                            experiment=expt,
-                            variable_request=var_req_obj,
-                            request_start_time=date2num(
-                                experiments[expt.short_name]['start_date'],
-                                std_units, institute_details['calendar']
-                            ),
-                            request_end_time=date2num(
-                                experiments[expt.short_name]['end_date'],
-                                std_units, institute_details['calendar']
-                            ),
-                            time_units=std_units,
-                            calendar=institute_details['calendar'],
-                            rip_code = variant_label
-                        )
-                    except django.core.exceptions.MultipleObjectsReturned:
-                        logger.error('{}'.format(var_req_obj))
-                        raise
-        else:
-            msg = ('Unable to find variable request matching '
-                   'cmor_name {} and table_name {} in the '
-                   'database.'.format(cmor_name, table_name))
-            print(msg)
-            raise ValueError(msg)
 
 
 if __name__ == "__main__":
