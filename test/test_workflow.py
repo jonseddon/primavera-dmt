@@ -252,8 +252,12 @@ class TestWorkflows(PdataBaseTest):
         # Make some assertions
         for dfile_name in test_dsub.files:
             df = DataFile.objects.get(name=dfile_name)
-            self.assertEqual(df.esgf_dataset.get_full_id(), 'CMIP6.HighResMIP.MOHC.Python.v20160720')
-            self.assertEqual(df.esgf_download_url, 'http://esgf.ceda.ac.uk/browse/badc/cmip5/' + df.name)
+            self.assertEqual(df.esgf_dataset.get_full_id(),
+                             'CMIP6.HighResMIP.MOHC.Python.amip4K.r1i1p1f1.'
+                             'day.beans.gn.v20160720')
+            self.assertEqual(df.esgf_download_url,
+                             'http://esgf.ceda.ac.uk/browse/badc/cmip5/' +
+                             df.name)
 
 
 def _make_data_submission():
@@ -300,7 +304,8 @@ def _make_data_submission():
             frequency=FREQUENCY_VALUES['ann'], rip_code=m["ensemble"],
             activity_id=act_id, start_time=m["start_time"],
             end_time=m["end_time"], time_units=m["time_units"],
-            calendar=m["calendar"], data_submission=dsub, online=True)
+            calendar=m["calendar"], data_submission=dsub, online=True,
+            grid='gn')
 
     return test_dsub
 

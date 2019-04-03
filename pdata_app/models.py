@@ -455,7 +455,12 @@ class ESGFDataset(DataFileAggregationBase):
                 values('activity_id__short_name').
                 first()['activity_id__short_name'],
             self.data_request.institute.short_name,
-            self.data_request.climate_model.short_name
+            self.data_request.climate_model.short_name,
+            self.data_request.experiment.short_name,
+            self.data_request.rip_code,
+            self.data_request.variable_request.table_name,
+            self.data_request.variable_request.cmor_name,
+            self.data_request.datafile_set.values('grid').first()['grid']
         ]
         return '.'.join(components)
 
