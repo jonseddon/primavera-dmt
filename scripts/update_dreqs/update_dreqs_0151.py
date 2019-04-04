@@ -2,7 +2,7 @@
 """
 update_dreqs_0151.py
 
-This file creates data requests for CNR's EC-Earth contributions to WP5.
+This file creates data requests for EC-Earth's HR contributions to WP5.
 """
 from __future__ import (unicode_literals, division, absolute_import,
                         print_function)
@@ -115,7 +115,7 @@ def main(args):
 
     institute_details = {
         'id': 'EC-Earth-Consortium',
-        'model_ids': ['EC-Earth3P', 'EC-Earth3P-HR'],
+        'model_ids': ['EC-Earth3P-HR'],
         'calendar': CALENDAR_GREGORIAN
     }
 
@@ -126,16 +126,12 @@ def main(args):
                            'end_date': datetime(1960, 1, 1)}
     }
 
-    lr_variant_labels = ['r{}i1p1f1'.format(i) for i in range(1, 31)]
-    hr_variant_labels = ['r{}i1p1f1'.format(i) for i in range(1, 16)]
+    variant_labels = ['r{}i1p2f1'.format(i) for i in range(1, 11)]
 
     # activity_id
     ActivityId.objects.get_or_create(short_name=activity_id,
                                      full_name=activity_id)
 
-    # Experiment create
-    for expt in experiments:
-        Experiment.objects.get_or_create(short_name=expt, full_name=expt)
     # Experiment cache
     experiment_objs = []
     for expt in experiments:
@@ -187,12 +183,6 @@ def main(args):
         if var_req_obj:
             for expt in experiment_objs:
                 for clim_model in model_objs:
-                    if clim_model.short_name.endswith('LR'):
-                        variant_labels = lr_variant_labels
-                    elif clim_model.short_name.endswith('HR'):
-                        variant_labels = hr_variant_labels
-                    else:
-                        raise NotImplementedError('Unknown climate model')
                     for var_lab in variant_labels:
                         _dr = get_or_create(
                             DataRequest,
