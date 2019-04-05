@@ -388,7 +388,7 @@ class TestESGFDatasetMethods(TestCase):
             climate_model=clim_model, experiment=expt,
             variable_request=var_req, request_start_time=0.0,
             request_end_time=360.0, time_units='days since 1950-01-01',
-            calendar=u'360_day'
+            calendar=u'360_day', rip_code='r1i1p1f1'
         )
         data_prov = get_or_create(User, username='username')
         data_sub = get_or_create(
@@ -400,7 +400,7 @@ class TestESGFDatasetMethods(TestCase):
             project=proj, institute=inst, climate_model=clim_model,
             activity_id=act_id, experiment=expt, variable_request=var_req,
             data_request=data_req, frequency=u'mon', rip_code='r1i1p1f1',
-            data_submission=data_sub, online=True
+            data_submission=data_sub, online=True, grid='gn'
         )
         self.esgf_ds = get_or_create(models.ESGFDataset, status=u'CREATED',
             version='v20160720', data_request=data_req)
@@ -408,7 +408,8 @@ class TestESGFDatasetMethods(TestCase):
     def test_get_full_id(self):
         full_id = self.esgf_ds.get_full_id()
 
-        expected = 'CMIP6.HighResMIP.MOHC.Model-1.v20160720'
+        expected = ('CMIP6.HighResMIP.MOHC.Model-1.control-1950.r1i1p1f1.'
+                    'Amon.var1.gn.v20160720')
 
         self.assertEqual(full_id, expected)
 
@@ -431,7 +432,8 @@ class TestESGFDatasetMethods(TestCase):
     def test_unicode(self):
         unicode_drs = str(self.esgf_ds)
 
-        expected = 'CMIP6.HighResMIP.MOHC.Model-1.v20160720'
+        expected = ('CMIP6.HighResMIP.MOHC.Model-1.control-1950.r1i1p1f1.'
+                    'Amon.var1.gn.v20160720')
 
         self.assertEqual(unicode_drs, expected)
         self.assertIsInstance(unicode_drs, str)
