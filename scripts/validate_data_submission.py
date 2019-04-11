@@ -199,8 +199,7 @@ def _identify_and_validate_file(filename, project, file_format, output,
         else:
             metadata['project'] = project
 
-        cell_measures = ['areacella', 'areacello', 'volcello']
-        if metadata['cmor_name'] in cell_measures:
+        if 'fx' in metadata['table']:
             cf = iris.fileformats.cf.CFReader(filename)
             metadata.update(identify_cell_measures_metadata(cf, filename))
             validate_cell_measures_contents(cf, metadata)
