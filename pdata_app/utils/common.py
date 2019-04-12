@@ -465,3 +465,29 @@ def grouper(iterable, n):
     args = [iter(iterable)] * n
     for chunk in zip_longest(*args):
         yield filter(lambda x: x is not None, chunk)
+
+
+def directories_spanned(data_req):
+    """
+    Find all of the directories containing files from the specified data
+    request.
+
+    :param pdata_app.models.DataRequest data_req: the data request to query
+    :return: a list of dictionaries containing the directories containing data
+        for the specified data request
+    """
+    dirs_list = []
+
+    for data_dir in data_req.directories():
+        # ignore Nones
+        if data_dir:
+            dfs = data_req.datafile_set.filter(directory=data_dir)
+            dirs_list.append({
+                'dir_name': data_dir,
+                'num_files': dfs.count(),
+                'dir_size': dfs.aggregate(Sum('size'))['size__sum']
+            })
+
+    dirs_list.sort(key=lambda dd: dd['dir_name'])
+
+    return dirs_list
