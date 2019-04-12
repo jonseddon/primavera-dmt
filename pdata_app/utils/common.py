@@ -479,12 +479,14 @@ def directories_spanned(data_req):
     dirs_list = []
 
     for data_dir in data_req.directories():
-        dfs = data_req.datafile_set.filter(directory=data_dir)
-        dirs_list.append({
-            'dir_name': data_dir,
-            'num_files': dfs.count(),
-            'dir_size': dfs.aggregate(Sum('size'))['size__sum']
-        })
+        # ignore Nones
+        if data_dir:
+            dfs = data_req.datafile_set.filter(directory=data_dir)
+            dirs_list.append({
+                'dir_name': data_dir,
+                'num_files': dfs.count(),
+                'dir_size': dfs.aggregate(Sum('size'))['size__sum']
+            })
 
     dirs_list.sort(key=lambda dd: dd['dir_name'])
 
