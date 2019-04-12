@@ -80,6 +80,10 @@ def main(args):
         'sisnmass_SImon',
         'sisnthick_SImon',
         'sithick_SImon',
+        'rivo_Eday',
+        'siforceintstrx_PrimSIday',
+        'siforceintstry_PrimSIday',
+        'simassacrossline_PrimSIday',
     ]
 
     experiment_objs = []

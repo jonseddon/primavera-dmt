@@ -327,10 +327,6 @@ def main(args):
         'sftgif_fx',
         'sftlf_fx',
         'zfull_fx',
-        'rivo_Eday',
-        'siforceintstrx_PrimSIday',
-        'siforceintstry_PrimSIday',
-        'simassacrossline_PrimSIday',
     ]
 
     institute_details = {
