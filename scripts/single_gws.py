@@ -15,12 +15,12 @@ import sys
 
 import django
 django.setup()
-from django.db.models import Sum
 from django.template.defaultfilters import filesizeformat
 
 from pdata_app.models import DataRequest, Settings
 from pdata_app.utils.common import (adler32, construct_drs_path,
-                                    delete_drs_dir, is_same_gws)
+                                    delete_drs_dir, is_same_gws,
+                                    directories_spanned)
 
 __version__ = '0.1.0b'
 
@@ -88,13 +88,11 @@ def main(args):
 
     if not args.move:
         # print the number of files and their total size
-        for dir in data_req.directories():
-            dfs = data_req.datafile_set.filter(directory=dir)
+        for dir in directories_spanned(data_req):
             print('{} {} {}'.format(
-                dir,
-                dfs.count(),
-                filesizeformat(dfs.aggregate(Sum('size'))['size__sum']).
-                    replace('\xa0', ' ')
+                dir['dir_name'],
+                dir['num_files'],
+                filesizeformat(dir['dir_size']).replace('\xa0', ' ')
             ))
     else:
         single_dir = '{}{}'.format(COMMON_GWS_NAME, args.move)

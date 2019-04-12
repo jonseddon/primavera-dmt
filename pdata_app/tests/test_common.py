@@ -15,7 +15,8 @@ from pdata_app.utils.common import (make_partial_date_time,
                                     standardise_time_unit,
                                     calc_last_day_in_month, pdt2num,
                                     is_same_gws, get_request_size,
-                                    date_filter_files, grouper)
+                                    date_filter_files, grouper,
+                                    directories_spanned)
 from pdata_app.utils import dbapi
 from vocabs.vocabs import STATUS_VALUES, FREQUENCY_VALUES, VARIABLE_TYPES
 
@@ -337,6 +338,30 @@ class TestGrouper(TestCase):
         self.assertEqual(actual, expected)
 
 
+class TestDirectoriesSpanned(TestCase):
+    def setUp(self):
+        _make_example_files(self)
+        self.dreq = models.DataRequest.objects.get(
+            variable_request__var_name='var1'
+        )
+
+    def test_correct_order(self):
+        dirs_list = directories_spanned(self.dreq)
+        expected = [
+            {'dir_name': '/some/dir1', 'num_files': 1, 'dir_size': 1},
+            {'dir_name': '/some/dir2', 'num_files': 2, 'dir_size': 12}
+        ]
+        self.assertEqual(dirs_list, expected)
+
+    def test_wrong_order(self):
+        dirs_list = directories_spanned(self.dreq)
+        expected = [
+            {'dir_name': '/some/dir2', 'num_files': 2, 'dir_size': 12},
+            {'dir_name': '/some/dir1', 'num_files': 1, 'dir_size': 1}
+        ]
+        self.assertNotEqual(dirs_list, expected)
+
+
 def _make_example_files(parent_obj):
     """
     Create some common test data. Attach the items that tests need to refer-to
@@ -404,7 +429,7 @@ def _make_example_files(parent_obj):
                                directory='/some/dir', user=parent_obj.user)
     data_file1 = dbapi.get_or_create(models.DataFile, name='test1',
                                      incoming_directory='/some/dir',
-                                     directory='/some/dir', size=1,
+                                     directory='/some/dir1', size=1,
                                      project=project,
                                      climate_model=clim_mod,
                                      institute=institute,
@@ -420,7 +445,7 @@ def _make_example_files(parent_obj):
                                      time_units='days since 1950-01-01')
     data_file4 = dbapi.get_or_create(models.DataFile, name='test4',
                                      incoming_directory='/some/dir',
-                                     directory='/some/dir', size=4,
+                                     directory='/some/dir2', size=4,
                                      project=project,
                                      climate_model=clim_mod,
                                      institute=institute,
@@ -436,7 +461,7 @@ def _make_example_files(parent_obj):
                                      time_units='days since 1950-01-01')
     data_file8 = dbapi.get_or_create(models.DataFile, name='test8',
                                      incoming_directory='/some/dir',
-                                     directory='/some/dir', size=8,
+                                     directory='/some/dir2', size=8,
                                      project=project,
                                      climate_model=clim_mod,
                                      institute=institute,
