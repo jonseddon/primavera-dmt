@@ -35,6 +35,85 @@ COMMON_GWS_NAME = '/gws/nopw/j04/primavera'
 BASE_OUTPUT_DIR = Settings.get_solo().base_output_dir
 
 
+def move_dirs(data_req, new_gws):
+    """
+    Move the files
+
+    :param pdata_app.models.DataRequest data_req: the data request to move
+    :param int new_gws: the number of the gws to move to
+    """
+    single_dir = '{}{}'.format(COMMON_GWS_NAME, new_gws)
+    existing_dirs = data_req.directories()
+    # ignore data that is offline
+    if None in existing_dirs:
+        existing_dirs.remove(None)
+    use_single_dir = False
+    for exist_dir in existing_dirs:
+        if exist_dir.startswith(single_dir):
+            use_single_dir = True
+            break
+    if not use_single_dir:
+        # As a quick sanity check, generate an error if there is no
+        # data already in the requested output directory
+        logger.error('The new output directory is {} but no data from '
+                     'this variable is currently in this directory.'.
+                     format(single_dir))
+        sys.exit(1)
+
+    for exist_dir in existing_dirs:
+        if exist_dir.startswith(single_dir):
+            continue
+        files_to_move = data_req.datafile_set.filter(directory=exist_dir)
+        logger.debug('Moving {} files from {}'.format(
+            files_to_move.count(), exist_dir))
+        for file_to_move in files_to_move:
+            # Move the file
+            src = os.path.join(exist_dir, file_to_move.name)
+            dest_path = os.path.join(single_dir, 'stream1',
+                                     construct_drs_path(file_to_move))
+            if not os.path.exists(dest_path):
+                os.makedirs(dest_path)
+            dest = os.path.join(dest_path, file_to_move.name)
+            # remove existing link if about to write over it
+            if dest.startswith(BASE_OUTPUT_DIR):
+                if os.path.exists(dest):
+                    if os.path.islink(dest):
+                        os.remove(dest)
+            # Move the file
+            shutil.move(src, dest)
+            # Update the file's location in the DB
+            file_to_move.directory = dest_path
+            file_to_move.save()
+            # Check that it was safely copied
+            actual_checksum = adler32(dest)
+            db_checksum = file_to_move.checksum_set.first().checksum_value
+            if not actual_checksum == db_checksum:
+                logger.error('For {}\ndatabase checksum: {}\n'
+                             'actual checksum: {}'.
+                             format(dest, db_checksum, actual_checksum))
+                sys.exit(1)
+            # Update the symlink
+            if not is_same_gws(dest_path, BASE_OUTPUT_DIR):
+                primary_path_dir = os.path.join(
+                    BASE_OUTPUT_DIR,
+                    construct_drs_path(file_to_move))
+                primary_path = os.path.join(primary_path_dir,
+                                            file_to_move.name)
+                if os.path.lexists(primary_path):
+                    if not os.path.islink(primary_path):
+                        logger.error("{} exists and isn't a symbolic "
+                                     "link.".format(primary_path))
+                        sys.exit(1)
+                    else:
+                        # it is a link so remove it
+                        os.remove(primary_path)
+                if not os.path.exists(primary_path_dir):
+                    os.makedirs(primary_path_dir)
+                os.symlink(dest, primary_path)
+
+        delete_drs_dir(exist_dir)
+
+
 def parse_args():
     """
     Parse command-line arguments
@@ -88,83 +167,15 @@ def main(args):
 
     if not args.move:
         # print the number of files and their total size
-        for dir in directories_spanned(data_req):
+        for exist_dir in directories_spanned(data_req):
             print('{} {} {}'.format(
-                dir['dir_name'],
-                dir['num_files'],
-                filesizeformat(dir['dir_size']).replace('\xa0', ' ')
+                exist_dir['dir_name'],
+                exist_dir['num_files'],
+                filesizeformat(exist_dir['dir_size']).replace('\xa0', ' ')
             ))
     else:
-        single_dir = '{}{}'.format(COMMON_GWS_NAME, args.move)
-        existing_dirs = data_req.directories()
-        # ignore data that is offline
-        if None in existing_dirs:
-            existing_dirs.remove(None)
-        use_single_dir = False
-        for exist_dir in existing_dirs:
-            if exist_dir.startswith(single_dir):
-                use_single_dir = True
-                break
-        if not use_single_dir:
-            # As a quick sanity check, generate an error if there is no
-            # data already in the requested output directory
-            logger.error('The new output directory is {} but no data from '
-                         'this variable is currently in this directory.'.
-                         format(single_dir))
-            sys.exit(1)
-
-        for dir in existing_dirs:
-            if dir.startswith(single_dir):
-                continue
-            files_to_move = data_req.datafile_set.filter(directory=dir)
-            logger.debug('Moving {} files from {}'.format(
-                files_to_move.count(), dir))
-            for file_to_move in files_to_move:
-                # Move the file
-                src = os.path.join(dir, file_to_move.name)
-                dest_path = os.path.join(single_dir, 'stream1',
-                                    construct_drs_path(file_to_move))
-                if not os.path.exists(dest_path):
-                    os.makedirs(dest_path)
-                dest = os.path.join(dest_path, file_to_move.name)
-                # remove existing link if about to write over it
-                if dest.startswith(BASE_OUTPUT_DIR):
-                    if os.path.exists(dest):
-                        if os.path.islink(dest):
-                            os.remove(dest)
-                # Move the file
-                shutil.move(src, dest)
-                # Update the file's location in the DB
-                file_to_move.directory = dest_path
-                file_to_move.save()
-                # Check that it was safely copied
-                actual_checksum = adler32(dest)
-                db_checksum = file_to_move.checksum_set.first().checksum_value
-                if not actual_checksum == db_checksum:
-                    logger.error('For {}\ndatabase checksum: {}\n'
-                                 'actual checksum: {}'.
-                                 format(dest, db_checksum, actual_checksum))
-                    sys.exit(1)
-                # Update the symlink
-                if not is_same_gws(dest_path, BASE_OUTPUT_DIR):
-                    primary_path_dir = os.path.join(
-                        BASE_OUTPUT_DIR,
-                        construct_drs_path(file_to_move))
-                    primary_path = os.path.join(primary_path_dir,
-                                                file_to_move.name)
-                    if os.path.lexists(primary_path):
-                        if not os.path.islink(primary_path):
-                            logger.error("{} exists and isn't a symbolic "
-                                         "link.".format(primary_path))
-                            sys.exit(1)
-                        else:
-                            # it is a link so remove it
-                            os.remove(primary_path)
-                    if not os.path.exists(primary_path_dir):
-                        os.makedirs(primary_path_dir)
-                    os.symlink(dest, primary_path)
-
-            delete_drs_dir(dir)
+        # move the data
+        move_dirs(data_req, args.move)
 
 
 if __name__ == "__main__":
