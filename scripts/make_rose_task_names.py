@@ -5,6 +5,11 @@ make_rose_task_names.py
 This script is used to generate a JSON list of the task names that
 should be run by the rose suite that performs submissions to the CREPP
 system.
+
+All task names are added to the specified JSON file, e.g. `filename.json`, but
+an additional file called `filename_name.json` is created containing the task
+names that have been added to the JSON file. Any existing `filename_new.json`
+file is renamed to `filename_new.json.YYmmddHHMM`.
 """
 import argparse
 import datetime

@@ -193,7 +193,7 @@ class TestIsSameGws(TestCase):
 
 class TestGetRequestSize(TestCase):
     def setUp(self):
-        _make_example_files(self)
+        make_example_files(self)
 
     def test_all_files(self):
         rreq = dbapi.get_or_create(models.RetrievalRequest,
@@ -277,7 +277,7 @@ class TestGetRequestSize(TestCase):
 
 class TestDateFilterFiles(TestCase):
     def setUp(self):
-        _make_example_files(self)
+        make_example_files(self)
 
     def test_entirely_contains(self):
         data_files =  models.DataFile.objects.all()
@@ -340,7 +340,7 @@ class TestGrouper(TestCase):
 
 class TestDirectoriesSpanned(TestCase):
     def setUp(self):
-        _make_example_files(self)
+        make_example_files(self)
         self.dreq = models.DataRequest.objects.get(
             variable_request__var_name='var1'
         )
@@ -362,7 +362,7 @@ class TestDirectoriesSpanned(TestCase):
         self.assertNotEqual(dirs_list, expected)
 
 
-def _make_example_files(parent_obj):
+def make_example_files(parent_obj):
     """
     Create some common test data. Attach the items that tests need to refer-to
     to the parent object. Other items will just exist in the database.
@@ -397,7 +397,7 @@ def _make_example_files(parent_obj):
                                 cell_methods='time:mean',
                                 positive='optimistic',
                                 variable_type=VARIABLE_TYPES['real'],
-                                dimensions='massive', cmor_name='var1',
+                                dimensions='massive', cmor_name='var2',
                                 modeling_realm='atmos',
                                 frequency=FREQUENCY_VALUES['ann'],
                                 cell_measures='', uid='123abc')
