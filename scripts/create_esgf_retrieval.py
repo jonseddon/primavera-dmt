@@ -15,7 +15,8 @@ import django
 django.setup()
 
 from django.contrib.auth.models import User
-from pdata_app.models import DataRequest, RetrievalRequest, Settings
+from pdata_app.models import RetrievalRequest, Settings
+from pdata_app.utils.esgf_utils import add_data_request, parse_rose_stream_name
 
 __version__ = '0.1.0b'
 
@@ -63,16 +64,18 @@ def main(args):
     logger.debug('{} task names loaded'.format(len(task_names)))
 
     system_user = User.objects.get(username=Settings.get_solo().contact_user_id)
-    rr = RetrievalRequest.objects.create(requester=system_user,
+    ret_req = RetrievalRequest.objects.create(requester=system_user,
                                          start_year=1900, end_year=2100)
     time_zone = datetime.timezone(datetime.timedelta())
-    rr.date_created = datetime.datetime(2000, 1, 1, 0, 0, tzinfo=time_zone)
-    rr.save()
+    ret_req.date_created = datetime.datetime(2000, 1, 1, 0, 0, tzinfo=time_zone)
+    ret_req.save()
 
     for task_name in task_names:
-        pass
+        task_cmpts = parse_rose_stream_name(task_name)
+        add_data_request(task_cmpts, debug_req_found=False)
+        ret_req.data_request.add(task_cmpts['data_req'])
 
-    logger.debug('Request id {} created'.format(rr.id))
+    logger.debug('Request id {} created'.format(ret_req.id))
 
 
 if __name__ == "__main__":

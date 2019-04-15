@@ -1,5 +1,6 @@
 """
-common.py - several functions that are used throughout the pdata_app
+esgf_utils.py - several functions that are used during ESGF submissions and
+    Rose suites.
 """
 from __future__ import unicode_literals, division, absolute_import
 import logging
@@ -10,13 +11,15 @@ from pdata_app.models import DataRequest
 logger = logging.getLogger(__name__)
 
 
-def add_data_request(stream_cmpts):
+def add_data_request(stream_cmpts, debug_req_found=True):
     """
     Using the dictionary of components of the stream name, find the
     corresponding pdata_app.models.DataRequest and add this to the
     dictionary.
 
     :param dict stream_cmpts: The components of the dataset stream.
+    :param bool debug_req_found: If True then generate a debug message naming
+        the request found.
     """
     try:
         stream_cmpts['data_req'] = DataRequest.objects.get(
@@ -38,7 +41,8 @@ def add_data_request(stream_cmpts):
         logger.error(msg)
         raise
 
-    logger.debug('Found data request {}'.format(stream_cmpts['data_req']))
+    if debug_req_found:
+        logger.debug('Found data request {}'.format(stream_cmpts['data_req']))
 
 
 def parse_rose_stream_name(stream_name):

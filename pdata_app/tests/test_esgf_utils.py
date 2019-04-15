@@ -2,6 +2,10 @@
 test_esgf_utils.py - unit tests for pdata_app.utils.esgf_utils.py
 """
 from __future__ import unicode_literals, division, absolute_import
+try:
+    from unittest import mock
+except ImportError:
+    import mock
 
 from django.test import TestCase
 from pdata_app.utils.esgf_utils import add_data_request, parse_rose_stream_name
@@ -25,16 +29,27 @@ class TestParseRoseStreamName(TestCase):
 class TestAddDataRequest(TestCase):
     def setUp(self):
         make_example_files(self)
-
-    def test_dreq_added(self):
-        input_dict = {
+        self.input_dict = {
             'source_id': 't',
             'experiment_id': 't',
             'variant_label': 'r1i1p1f1',
             'table_id': 'Amon',
             'cmor_name': 'var1'
         }
-        expected = input_dict.copy()
+
+    def test_dreq_added(self):
+        expected = self.input_dict.copy()
         expected['data_req'] = self.dreq1
-        add_data_request(input_dict)
-        self.assertEqual(input_dict, expected)
+        add_data_request(self.input_dict)
+        self.assertEqual(self.input_dict, expected)
+
+    @mock.patch('pdata_app.utils.esgf_utils.logger')
+    def test_debug_true(self, mock_logger):
+        add_data_request(self.input_dict)
+        mock_logger.debug.assert_called_with('Found data request {}'.
+                                             format(self.dreq1))
+
+    @mock.patch('pdata_app.utils.esgf_utils.logger')
+    def test_debug_false(self, mock_logger):
+        add_data_request(self.input_dict, debug_req_found=False)
+        mock_logger.debug.assert_not_called()
