@@ -1,8 +1,8 @@
 #!/usr/bin/env python
 """
-update_dreqs_0146.py
+update_dreqs_0161.py
 
-Remove all HadGEM3-GC31 tasmax, tasmin, epfluxdiv files.
+Restore all HadGEM3-GC31 day tasmax and tasmin files.
 """
 import argparse
 import logging.config
@@ -13,9 +13,8 @@ from cf_units import date2num, CALENDAR_GREGORIAN
 
 import django
 django.setup()
-from pdata_app.utils.replace_file import replace_files
-from pdata_app.models import DataFile, ReplacedFile
-from pdata_app.utils.common import delete_drs_dir
+from pdata_app.utils.replace_file import restore_files
+from pdata_app.models import ReplacedFile
 
 __version__ = '0.1.0b1'
 
@@ -23,29 +22,6 @@ DEFAULT_LOG_LEVEL = logging.WARNING
 DEFAULT_LOG_FORMAT = '%(levelname)s: %(message)s'
 
 logger = logging.getLogger(__name__)
-
-
-def delete_files(query_set):
-    """
-    Delete any files online from the specified queryset
-    """
-    directories_found = []
-    for df in query_set.filter(online=True):
-        try:
-            os.remove(os.path.join(df.directory, df.name))
-        except OSError as exc:
-            logger.error(str(exc))
-        else:
-            if df.directory not in directories_found:
-                directories_found.append(df.directory)
-        df.online = False
-        df.directory = None
-        df.save()
-
-    for directory in directories_found:
-        if not os.listdir(directory):
-            delete_drs_dir(directory)
-    logger.debug('{} directories removed'.format(len(directories_found)))
 
 
 def parse_args():
@@ -66,35 +42,41 @@ def main(args):
     """
     Main entry point
     """
-    tas_files = DataFile.objects.filter(
+    # first add in two missing checksums
+    rf= ReplacedFile.objects.get(
+        name='tasmin_day_HadGEM3-GC31-LL_highres-future_r1i1p1f1_gn_'
+             '20390101-20391230.nc', size=20933155)
+    rf.checksum_value='974051111'
+    rf.checksum_type = 'ADLER32'
+    rf.save()
+    rf= ReplacedFile.objects.get(
+        name='tasmax_day_HadGEM3-GC31-LL_highres-future_r1i1p1f1_gn_'
+             '20390101-20391230.nc', size=20657477)
+    rf.checksum_value='739424075'
+    rf.checksum_type = 'ADLER32'
+    rf.save()
+
+    # now find the files required and restore them
+    files = ReplacedFile.objects.filter(
         climate_model__short_name__startswith='HadGEM3-GC31',
-        variable_request__table_name='Amon',
+        variable_request__table_name='day',
         variable_request__cmor_name__in=['tasmax', 'tasmin']
+    ).exclude(
+        climate_model__short_name='HadGEM3-GC31-HH',
+        experiment__short_name='hist-1950',
+        version='v20171213'
+    ).exclude(
+        climate_model__short_name='HadGEM3-GC31-HM',
+        experiment__short_name='hist-1950',
+        version='v20171024'
+    ).exclude(
+        climate_model__short_name='HadGEM3-GC31-HM',
+        experiment__short_name='control-1950',
+        version='v20171025'
     )
-    epfluxdiv_files = DataFile.objects.filter(
-        climate_model__short_name__startswith='HadGEM3-GC31',
-        variable_request__cmor_name='epfluxdiv'
-    )
-    files = tas_files | epfluxdiv_files
     logger.debug('{} affected files found'.format(files.count()))
 
-    delete_files(files)
-
-    # some files have already been replaced and must have their
-    # incoming_directory updated to maintain uniqueness.
-    for df in files:
-        rfs = ReplacedFile.objects.filter(
-            name=df.name,
-            incoming_directory=df.incoming_directory
-        )
-        if rfs.count() == 0:
-            continue
-        for rf in rfs:
-            rf.incoming_directory = rf.incoming_directory + '_01'
-            rf.save()
-
-    replace_files(files)
-
+    restore_files(files)
 
 
 if __name__ == "__main__":
