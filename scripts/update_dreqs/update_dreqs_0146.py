@@ -66,10 +66,16 @@ def main(args):
     """
     Main entry point
     """
-    files = DataFile.objects.filter(
+    tas_files = DataFile.objects.filter(
         climate_model__short_name__startswith='HadGEM3-GC31',
-        variable_request__cmor_name__in=['tasmax', 'tasmin', 'epfluxdiv']
+        variable_request__table_name='Amon',
+        variable_request__cmor_name__in=['tasmax', 'tasmin']
     )
+    epfluxdiv_files = DataFile.objects.filter(
+        climate_model__short_name__startswith='HadGEM3-GC31',
+        variable_request__cmor_name='epfluxdiv'
+    )
+    files = tas_files | epfluxdiv_files
     logger.debug('{} affected files found'.format(files.count()))
 
     delete_files(files)
