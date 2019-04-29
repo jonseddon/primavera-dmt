@@ -90,6 +90,7 @@ def submit_validation(submission_directory):
         '--data-limit',
         # 1 terabyte
         '1099511627776',
+        '--validate_only',
         submission_directory
     ]
 
