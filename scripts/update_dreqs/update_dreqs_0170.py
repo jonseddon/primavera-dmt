@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 """
-update_dreqs_0168.py
+update_dreqs_0170.py
 
 This file removes an issue from all HadGEM3-GC31 ice files explaining that
 the grid in the file may be incorrect.
