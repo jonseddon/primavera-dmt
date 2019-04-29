@@ -141,7 +141,8 @@ def main():
         submissions = DataSubmission.objects.filter(
             incoming_directory__startswith='/gws/nopw/j04/primavera4/upload/'
                                            'CNRM-CERFACS/CNRM-CM6-1/incoming/'
-                                           'CNRM-CM6-1_primWP5-amv'
+                                           'CNRM-CM6-1_primWP5-amv',
+            date_submitted__range=['2019-04-18', '2019-04-19']
         ).order_by('id')
 
         sub_dicts = [{
