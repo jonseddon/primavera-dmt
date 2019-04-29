@@ -2,7 +2,7 @@
 """
 update_dreqs_0168.py
 
-This file adds an issue to all HadGEM3-GC31 ocean or ice files explaining that
+This file adds an issue to all HadGEM3-GC31 ocean files explaining that
 the grid in the file may be incorrect.
 """
 import argparse
@@ -43,25 +43,28 @@ def main(args):
     """
     Main entry point
     """
-    jon = User.objects.get(username='jseddon')
-    nemo_txt = (
-        'The grid in this file may be incorrect. For each variable the T, U, '
-        'V or W may have been included in this file irrespective of the grid '
-        'that the data was generated on. It is not currently known which grid '
-        'has been included (although this can be determined easily). Please '
-        'contact Jon or Malcolm for assistance with these files.'
-    )
-    nemo_issue, _created = DataIssue.objects.get_or_create(issue=nemo_txt,
-                                                           reporter=jon)
+    # jon = User.objects.get(username='jseddon')
+    # nemo_txt = (
+    #     'The grid in this file may be incorrect. For each variable the T, U, '
+    #     'V or W may have been included in this file irrespective of the grid '
+    #     'that the data was generated on. It is not currently known which grid '
+    #     'has been included (although this can be determined easily). Please '
+    #     'contact Jon or Malcolm for assistance with these files.'
+    # )
+    # nemo_issue, _created = DataIssue.objects.get_or_create(issue=nemo_txt,
+    #                                                        reporter=jon)
+
+    nemo_issue = DataIssue.objects.get(id=18,
+                               issue__startswith='The grid in this file may '
+                                                 'be incorrect.')
 
     nemo_files = DataFile.objects.filter(
         institute__short_name__in=['MOHC', 'NERC'],
         experiment__short_name__in=['control-1950', 'hist-1950', 'spinup-1950',
                                     'highres-future'],
-        variable_request__table_name__in=['SIday', 'PrimSIday', 'SImon',
-                                          'Oday', 'PrimOday', 'Omon',
+        variable_request__table_name__in=['Oday', 'PrimOday', 'Omon',
                                           'PrimOmon']
-    )
+    ).exclude(dataissue=nemo_issue)
     logger.debug('{} files requiring issue found'.format(nemo_files.count()))
     nemo_issue.data_file.add(*nemo_files)
 
