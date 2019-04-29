@@ -89,7 +89,7 @@ def submit_validation(submission_directory):
         '{}'.format(NUM_PROCS_USE_LOTUS),
         '--data-limit',
         # 1 terabyte
-        1099511627776,
+        '1099511627776',
         submission_directory
     ]
 
