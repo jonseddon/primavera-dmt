@@ -12,6 +12,7 @@ import itertools
 import json
 import logging.config
 from multiprocessing import Process, Manager
+from multiprocessing.pool import ThreadPool
 from netCDF4 import Dataset
 import os
 import re
@@ -21,6 +22,10 @@ import sys
 import time
 import warnings
 
+try:
+    import dask
+except ImportError:
+    pass
 import iris
 
 from primavera_val import (identify_filename_metadata, validate_file_contents,
@@ -61,8 +66,14 @@ MAX_DATA_INTEGRITY_SIZE = 1073741824
 # Don't run PrePARE on the following var/table combinations as they've
 # been removed from the CMIP6 data request, but are still needed for
 # PRIMAVERA
+# Additionally, don't run PrePARE on any of the PRIMAVERA only tables
 SKIP_PREPARE_VARS = ['psl_E3hrPt', 'ua850_E3hrPt', 'va850_E3hrPt',
-                     'mrlsl_Emon', 'mrlsl_Lmon', 'sialb_SImon']
+                     'mrlsl_Emon', 'mrlsl_Lmon', 'sialb_SImon',
+                     'Prim1hr', 'Prim3hr', 'Prim3hrPt', 'Prim6hr',
+                     'Prim6hrPt', 'PrimO6hr', 'PrimOday', 'PrimOmon',
+                     'PrimSIday', 'Primday', 'PrimdayPt', 'Primmon',
+                     'PrimmonZ',
+]
 
 
 class SubmissionError(Exception):
@@ -94,11 +105,12 @@ def identify_and_validate(filenames, project, num_processes, file_format):
     params = manager.Queue()
     result_list = manager.list()
     error_event = manager.Event()
-    for i in range(num_processes):
-        p = Process(target=identify_and_validate_file, args=(params,
-            result_list, error_event))
-        jobs.append(p)
-        p.start()
+    if num_processes != 1:
+        for i in range(num_processes):
+            p = Process(target=identify_and_validate_file, args=(params,
+                result_list, error_event))
+            jobs.append(p)
+            p.start()
 
     func_input_pair = list(zip(filenames,
                           (project,) * len(filenames),
@@ -109,8 +121,11 @@ def identify_and_validate(filenames, project, num_processes, file_format):
     for item in iters:
         params.put(item)
 
-    for j in jobs:
-        j.join()
+    if num_processes == 1:
+        identify_and_validate_file(params, result_list, error_event)
+    else:
+        for j in jobs:
+            j.join()
 
     if error_event.is_set():
         raise SubmissionError()
@@ -184,8 +199,7 @@ def _identify_and_validate_file(filename, project, file_format, output,
         else:
             metadata['project'] = project
 
-        cell_measures = ['areacella', 'areacello', 'volcello']
-        if metadata['cmor_name'] in cell_measures:
+        if 'fx' in metadata['table']:
             cf = iris.fileformats.cf.CFReader(filename)
             metadata.update(identify_cell_measures_metadata(cf, filename))
             validate_cell_measures_contents(cf, metadata)
@@ -282,6 +296,9 @@ def verify_fk_relationships(metadata):
                    format(metadata['basename']))
             logger.error(msg)
             raise FileValidationError(msg)
+        elif dreq_matches.count() == 1:
+            metadata['data_request'] = dreq_matches[0]
+            metadata['variable'] = dreq_matches[0].variable_request
         else:
             try:
                 plev_name = _guess_plev_name(metadata)
@@ -592,16 +609,20 @@ def run_prepare(file_paths, num_processes):
     manager = Manager()
     params = manager.Queue()
     file_failed = manager.Event()
-    for i in range(num_processes):
-        p = Process(target=_run_prepare, args=(params, file_failed))
-        jobs.append(p)
-        p.start()
+    if num_processes != 1:
+        for i in range(num_processes):
+            p = Process(target=_run_prepare, args=(params, file_failed))
+            jobs.append(p)
+            p.start()
 
     for item in itertools.chain(file_paths, (None,) * num_processes):
         params.put(item)
 
-    for j in jobs:
-        j.join()
+    if num_processes == 1:
+        _run_prepare(params, file_failed)
+    else:
+        for j in jobs:
+            j.join()
 
     if file_failed.is_set():
         logger.error('Not all files passed PrePARE')
@@ -857,6 +878,11 @@ def main(args):
     """
     Main entry point
     """
+    if args.processes == 1 and not iris.__version__.startswith('1.'):
+        # if not multiprocessing then limit the number of Dask threads
+        # this can't seem to be limited when using multiprocessing
+        dask.config.set(pool=ThreadPool(2))
+
     submission_dir = os.path.normpath(args.directory)
     logger.debug('Submission directory: %s', submission_dir)
     logger.debug('Project: %s', args.mip_era)

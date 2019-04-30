@@ -5,6 +5,11 @@ make_rose_task_names.py
 This script is used to generate a JSON list of the task names that
 should be run by the rose suite that performs submissions to the CREPP
 system.
+
+All task names are added to the specified JSON file, e.g. `filename.json`, but
+an additional file called `filename_name.json` is created containing the task
+names that have been added to the JSON file. Any existing `filename_new.json`
+file is renamed to `filename_new.json.YYmmddHHMM`.
 """
 import argparse
 import datetime
@@ -69,16 +74,17 @@ def main(args):
     hadgem3_gc31_lm_amip_amon = DataRequest.objects.filter(
         climate_model__short_name='HadGEM3-GC31-LM',
         experiment__short_name='highresSST-present',
-        variant_label='r1i1p1f1',
+        rip_code='r1i1p1f1',
         variable_request__table_name='Amon',
         datafile__isnull=False
     ).distinct()
 
+    # task querysets can be ORed together with |
     all_tasks = hadgem3_gc31_lm_amip_amon
     task_name_list = [
         '{}_{}_{}_{}_{}'.format(dr.climate_model.short_name,
                                 dr.experiment.short_name,
-                                dr.variant_label,
+                                dr.rip_code,
                                 dr.variable_request.table_name,
                                 dr.variable_request.cmor_name)
         for dr in all_tasks

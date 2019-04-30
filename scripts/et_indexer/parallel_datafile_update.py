@@ -65,7 +65,7 @@ def parse_args():
     parser.add_argument('-p', '--processes', help='the number of parallel '
         'processes to use (default: %(default)s)', default=8, type=int)
     parser.add_argument("--checksum", type=str,
-        default="/group_workspaces/jasmin2/primavera1/tools/adler32/adler32",
+        default="/gws/nopw/j04/primavera1/tools/adler32/adler32",
         help="checksum routine to use")
     parser.add_argument("--overwrite", action="store_true",
         help="Overwrite existing checksums (USE WITH CARE)")

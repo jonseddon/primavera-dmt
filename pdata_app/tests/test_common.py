@@ -15,7 +15,8 @@ from pdata_app.utils.common import (make_partial_date_time,
                                     calc_last_day_in_month, pdt2num,
                                     is_same_gws, get_gws, construct_filename,
                                     construct_time_string, get_request_size,
-                                    date_filter_files)
+                                    date_filter_files, grouper,
+                                    directories_spanned)
 from pdata_app.utils import dbapi
 from .common import make_example_files
 
@@ -160,12 +161,25 @@ class TestIsSameGws(TestCase):
 
         self.assertFalse(is_same_gws(path1, path2))
 
+    def test_new_same(self):
+        path1 = '/gws/nopw/j04/primavera1/some/dir'
+        path2 = '/gws/nopw/j04/primavera1/another/dir'
+
+        self.assertTrue(is_same_gws(path1, path2))
+
+    def test_new_diff(self):
+        path1 = '/gws/nopw/j04/primavera1/some/dir'
+        path2 = '/gws/nopw/j04/primavera5/another/dir'
+
+        self.assertFalse(is_same_gws(path1, path2))
+
     def test_bad_path(self):
         path1 = 'primavera1/some/dir'
         path2 = '/group_workspaces/jasmin2/primavera2/some/dir'
 
-        six.assertRaisesRegex(self, RuntimeError, 'Cannot determine group '
-            'workspace name from primavera1/some/dir', is_same_gws,
+        six.assertRaisesRegex(self, ValueError,
+                              'path1 format is not a recognised group workspace'
+                              ' pattern: primavera1/some/dir', is_same_gws,
                                 path1, path2)
 
     def test_slightly_bad_path(self):
@@ -393,6 +407,52 @@ class TestDateFilterFiles(TestCase):
         self.assertEqual(['test4', 'test8'],
                          _assertable(date_filter_files(data_files,
                                                        1975, 1985)))
+
+
+class TestGrouper(TestCase):
+    def test_exact_multiple(self):
+        actual = [list(chunk) for chunk in grouper(range(8), 4)]
+        expected = [[0, 1, 2, 3], [4, 5, 6, 7]]
+        self.assertEqual(actual, expected)
+
+    def test_non_exact_multiple(self):
+        actual = [list(chunk) for chunk in grouper(range(10), 4)]
+        expected = [[0, 1, 2, 3], [4, 5, 6, 7], [8, 9]]
+        self.assertEqual(actual, expected)
+
+    def test_n_is_one(self):
+        actual = [list(chunk) for chunk in grouper(range(3), 1)]
+        expected = [[0], [1], [2]]
+        self.assertEqual(actual, expected)
+
+    def test_other_type(self):
+        actual = [list(chunk) for chunk in grouper(list(range(10)), 4)]
+        expected = [[0, 1, 2, 3], [4, 5, 6, 7], [8, 9]]
+        self.assertEqual(actual, expected)
+
+
+class TestDirectoriesSpanned(TestCase):
+    def setUp(self):
+        make_example_files(self)
+        self.dreq = models.DataRequest.objects.get(
+            variable_request__var_name='var1'
+        )
+
+    def test_correct_order(self):
+        dirs_list = directories_spanned(self.dreq)
+        expected = [
+            {'dir_name': '/some/dir1', 'num_files': 1, 'dir_size': 1},
+            {'dir_name': '/some/dir2', 'num_files': 2, 'dir_size': 12}
+        ]
+        self.assertEqual(dirs_list, expected)
+
+    def test_wrong_order(self):
+        dirs_list = directories_spanned(self.dreq)
+        expected = [
+            {'dir_name': '/some/dir2', 'num_files': 2, 'dir_size': 12},
+            {'dir_name': '/some/dir1', 'num_files': 1, 'dir_size': 1}
+        ]
+        self.assertNotEqual(dirs_list, expected)
 
 
 def _assertable(queryset, list_item='name'):

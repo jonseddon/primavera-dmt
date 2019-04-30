@@ -455,7 +455,12 @@ class ESGFDataset(DataFileAggregationBase):
                 values('activity_id__short_name').
                 first()['activity_id__short_name'],
             self.data_request.institute.short_name,
-            self.data_request.climate_model.short_name
+            self.data_request.climate_model.short_name,
+            self.data_request.experiment.short_name,
+            self.data_request.rip_code,
+            self.data_request.variable_request.table_name,
+            self.data_request.variable_request.cmor_name,
+            self.data_request.datafile_set.values('grid').first()['grid']
         ]
         return '.'.join(components)
 
@@ -555,6 +560,7 @@ class DataFile(models.Model):
                                  verbose_name="Current directory",
                                  null=True, blank=True)
     size = models.BigIntegerField(null=False, verbose_name="File size")
+    tape_size = models.BigIntegerField(null=True, verbose_name='Size on Tape')
 
     # This is the file's version
     version = models.CharField(max_length=10, verbose_name='File Version',
@@ -746,6 +752,21 @@ class DataIssue(models.Model):
 class Checksum(models.Model):
     """
     A checksum
+    """
+    data_file = models.ForeignKey(DataFile, null=False, blank=False,
+        on_delete=CASCADE)
+    checksum_value = models.CharField(max_length=200, null=False, blank=False)
+    checksum_type = models.CharField(max_length=20, choices=list(CHECKSUM_TYPES.items()), null=False,
+                                     blank=False)
+
+    def __str__(self):
+        return "%s: %s (%s)" % (self.checksum_type, self.checksum_value,
+                                self.data_file.name)
+
+
+class TapeChecksum(models.Model):
+    """
+    A checksum for the version of a file on tape
     """
     data_file = models.ForeignKey(DataFile, null=False, blank=False,
         on_delete=CASCADE)

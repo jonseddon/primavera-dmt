@@ -48,7 +48,7 @@ def make_example_files(parent_obj):
                                 cell_methods='time:mean',
                                 positive='optimistic',
                                 variable_type=VARIABLE_TYPES['real'],
-                                dimensions='massive', cmor_name='var1',
+                                dimensions='massive', cmor_name='var2',
                                 modeling_realm='atmos',
                                 frequency=FREQUENCY_VALUES['ann'],
                                 cell_measures='', uid='123abc')
@@ -80,7 +80,7 @@ def make_example_files(parent_obj):
                                directory='/some/dir', user=parent_obj.user)
     data_file1 = dbapi.get_or_create(models.DataFile, name='test1',
                                      incoming_directory='/some/dir',
-                                     directory='/some/dir', size=1,
+                                     directory='/some/dir1', size=1,
                                      project=project,
                                      climate_model=clim_mod,
                                      institute=institute,
@@ -97,7 +97,7 @@ def make_example_files(parent_obj):
                                      version='v12345678')
     data_file4 = dbapi.get_or_create(models.DataFile, name='test4',
                                      incoming_directory='/some/dir',
-                                     directory='/some/dir', size=4,
+                                     directory='/some/dir2', size=4,
                                      project=project,
                                      climate_model=clim_mod,
                                      institute=institute,
@@ -113,7 +113,7 @@ def make_example_files(parent_obj):
                                      time_units='days since 1950-01-01')
     data_file8 = dbapi.get_or_create(models.DataFile, name='test8',
                                      incoming_directory='/some/dir',
-                                     directory='/some/dir', size=8,
+                                     directory='/some/dir2', size=8,
                                      project=project,
                                      climate_model=clim_mod,
                                      institute=institute,

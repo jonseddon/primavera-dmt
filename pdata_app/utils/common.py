@@ -9,6 +9,7 @@ import os
 import random
 import re
 from subprocess import check_output, CalledProcessError
+from six.moves import zip_longest
 from tempfile import gettempdir
 
 from iris.time import PartialDateTime
@@ -17,10 +18,10 @@ import cf_units
 
 from django.db.models import Sum
 
+
 PAUSE_FILES = {
-    'et:': '/group_workspaces/jasmin2/primavera5/.tape_pause/pause_et',
-    'moose:':
-        '/group_workspaces/jasmin2/primavera5/.tape_pause/pause_moose',
+    'et:': '/gws/nopw/j04/primavera5/.tape_pause/pause_et',
+    'moose:': '/gws/nopw/j04/primavera5/.tape_pause/pause_moose',
 }
 
 logger = logging.getLogger(__name__)
@@ -281,12 +282,21 @@ def is_same_gws(path1, path2):
     """
     Check that two paths both start with the same group workspace name.
 
+    It's assumed that both paths are both in either the old-style or both
+    in the new-style format.
+
     :param str path1: The first path
     :param str path2: The second path
     :returns: True if both paths are in the same group workspace
     :raises RuntimeError: if the paths aren't recognised
     """
-    gws_pattern = r'^/group_workspaces/jasmin2/primavera\d'
+    if path1.startswith('/group_workspaces'):
+        gws_pattern = r'^/group_workspaces/jasmin2/primavera\d'
+    elif path1.startswith('/gws'):
+        gws_pattern = r'^/gws/nopw/j04/primavera\d'
+    else:
+        raise ValueError('path1 format is not a recognised group workspace '
+                         'pattern: {}'.format(path1))
     gws1 = re.match(gws_pattern, path1)
     gws2 = re.match(gws_pattern, path2)
 
@@ -525,3 +535,47 @@ def delete_drs_dir(directory, mip_eras=('PRIMAVERA', 'CMIP6')):
             not directory.endswith(mip_eras)):
         # parent is empty so delete it
         delete_drs_dir(parent_dir)
+
+
+def grouper(iterable, n):
+    """
+    Group an iterable into chunks of length `n` with the final chunk containing
+    any remaining values and so possibly being less than length n.
+
+    Taken from:
+    https://docs.python.org/3.6/library/itertools.html#itertools-recipes
+
+    :param Iterable iterable: the input iterable to chunk
+    :param int n: return chunks of this length
+    :returns: iterables of length n
+    :rtype: Iterable
+    """
+    args = [iter(iterable)] * n
+    for chunk in zip_longest(*args):
+        yield filter(lambda x: x is not None, chunk)
+
+
+def directories_spanned(data_req):
+    """
+    Find all of the directories containing files from the specified data
+    request.
+
+    :param pdata_app.models.DataRequest data_req: the data request to query
+    :return: a list of dictionaries containing the directories containing data
+        for the specified data request
+    """
+    dirs_list = []
+
+    for data_dir in data_req.directories():
+        # ignore Nones
+        if data_dir:
+            dfs = data_req.datafile_set.filter(directory=data_dir)
+            dirs_list.append({
+                'dir_name': data_dir,
+                'num_files': dfs.count(),
+                'dir_size': dfs.aggregate(Sum('size'))['size__sum']
+            })
+
+    dirs_list.sort(key=lambda dd: dd['dir_name'])
+
+    return dirs_list

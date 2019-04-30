@@ -579,6 +579,220 @@ members r1i[2,3,14,15]p1f1.
 This file adds additional data_requests for the additional MOHC AMIP MM and HM
 ensemble members r1i[23]p1f1.
 </td></tr>
+<tr><td>update_dreqs_0117.py</td><td>
+Update the paths and sym links that changed as a result of the move of the
+group workspaces to new storage.
+</td></tr>
+<tr><td>update_dreqs_0118.py</td><td>
+To test update_dreqs_0117.py it is necessary to have some test data in a
+different directory that has been copied from the main data area.
+
+This script copies the data from its current directory to the test area.
+
+THIS SCRIPT SHOULD NOT BE RUN AGAINST THE LIVE DATABASE!!!
+</td></tr>
+<tr><td>update_dreqs_0119.py</td><td>
+One large elastic tape retrieval failed when the server had to be rebooted
+80% of the way through a large retrieval. This script identfies files in this
+retrieval, checks their checksum and if they are fine then copies them into
+teh DRS directory structure (hardcoded to primavera5 and so no symbolic links
+are required) and updates the file's status in the DMT.
+</td></tr>
+<tr><td>update_dreqs_0120.py</td><td>
+This file adds data requests for mrsol for the r1i1p2f1 EC-Earth3P-HR hist-1950
+experiment.
+</td></tr>
+<tr><td>update_dreqs_0121.py</td><td>
+This file updates all CERFACS CNRM-CM6-1-HR hist-1950 and control-1950 r1i1p1f1
+and r21i1p1f2 data requests to the variant_label r1i1p1f2.
+</td></tr>
+<tr><td>update_dreqs_0122.py</td><td>
+This file adds data requests for CERFACS for the high res model
+for all the coupled experiments for variant_label r1i1p1f2.
+</td></tr>
+<tr><td>update_dreqs_0123.py</td><td>
+This file runs on mass-cli1 and for HadGEM3-GC31-HM control-1950 r1i1p1f1 Amon
+in 1967 it reads the correct checksum for a file from MASS and applies this to
+the database.
+</td></tr>
+<tr><td>update_dreqs_0124.py</td><td>
+This copies the CERFACS LR control-1950 and hist-1950 r2i1p1f2 data requests and adds
+new ones with a variant label of r1i1p1f2.
+</td></tr>
+<tr><td>update_dreqs_0125.py</td><td>
+Create a custom retrieval request for Yohan Ruprich-Robert at BSC.
+</td></tr>
+<tr><td>update_dreqs_0126.py</td><td>
+This file removes all CERFACS highresSST-present files from:
+
+CNRM-CM6-1-HR r1i1p1f2 v20180823
+and
+CNRM-CM6-1 r21i1p1f2 v20180718
+</td></tr>
+<tr><td>update_dreqs_0127.py</td><td>
+This file updates all CERFACS CNRM-CM6-1 highresSST-present r21i1p1f2
+data requests to the variant_label r1i1p1f2.
+</td></tr>
+<tr><td>update_dreqs_0128.py</td><td>
+This file creates data requests for BSC's EC-Earth contribution to WP5.
+</td></tr>
+<tr><td>update_dreqs_0129.py</td><td>
+This file adds variable requests for Ofx variables required by ESMValTool.
+
+Adds data requests for two of these for the Met Office models.
+</td></tr>
+<tr><td>update_dreqs_0130.py</td><td>
+This file replaces any CMCC control-1950 or hist-1950 files for Lmon mrfso. It is assumed that
+all files are offline and so don't need physically deleting.
+</td></tr>
+<tr><td>update_dreqs_0131.py</td><td>
+This file adds a sea ice data requests to CMCC coupled models.
+</td></tr>
+<tr><td>update_dreqs_0132.py</td><td>
+Copy all existing EC-Earth3P hist-1950 r1i1p2f1 data requests to r3i1p2f1.
+</td></tr>
+<tr><td>update_dreqs_0133.py</td><td>
+Copy all existing EC-Earth3P hist-1950 r1i1p1f1 data requests to r1i1p2f1.
+</td></tr>
+<tr><td>update_dreqs_0134.py</td><td>
+Create data requests for HadGEM3-GC31-LL highres-future r1i[23]p1f1.
+</td></tr>
+<tr><td>update_dreqs_0135.py</td><td>
+This file adds a data request for CERFACS for the AMIP models.
+</td></tr>
+<tr><td>update_dreqs_0136.py</td><td>
+This file adds a data request for simassacrossline_PrimSIday the CERFACS coupled HR models.
+</td></tr>
+<tr><td>update_dreqs_0137.py</td><td>
+Create a custom retrieval request for Yohan Ruprich-Robert at BSC.
+</td></tr>
+<tr><td>update_dreqs_0138.py</td><td>
+This file adds data requests for CERFACS for the AMIP models for Prim6hr.
+</td></tr>
+<tr><td>update_dreqs_0139.py</td><td>
+Create data requests for HadGEM3-GC31-HM hist-1950 r1i2p1f1.
+</td></tr>
+<tr><td>update_dreqs_0140.py</td><td>
+This file adds an issue to CNRM-CERFACS LR coupled:
+
+spinup-1950: r1i1p1f2, v20180906
+control-1950: r2i1p1f2, v20180904
+hist-1950: r2i1p1f2, v20181004
+
+To indicate that there was a problem with the initialization.
+</td></tr>
+<tr><td>update_dreqs_0141.py</td><td>
+This file updates all CERFACS highres-future and highresSST-future
+data requests to the variant_label r1i1p1f2.
+</td></tr>
+<tr><td>update_dreqs_0142.py</td><td>
+This file adds an issue to ECMWF experiments that may have an aliasing of the
+diurnal cycle in time mean values.
+</td></tr>
+<tr><td>update_dreqs_0143.py</td><td>
+This file adds an issue to mrlsl and mrso soil moisture variables in all ECMWF simulations.
+</td></tr>
+<tr><td>update_dreqs_0144.py</td><td>
+This file adds an issue to ECMWF experiments that may have an aliasing of the
+diurnal cycle in time mean values for the DCPP data.
+</td></tr>
+<tr><td>update_dreqs_0145.py</td><td>
+Create a custom retrieval request for Yohan Ruprich-Robert at BSC.
+</td></tr>
+<tr><td>update_dreqs_0146.py</td><td>
+Remove all HadGEM3-GC31 tasmax, tasmin, epfluxdiv files.
+</td></tr>
+<tr><td>update_dreqs_0147.py</td><td>
+This file adds monthly data requests for CERFACS for the AMIP models.
+</td></tr>
+<tr><td>update_dreqs_0148.py</td><td>
+Create a custom retrieval request for Jon so that ESMValTool can be run on the
+AMIP data.
+</td></tr>
+<tr><td>update_dreqs_0149.py</td><td>
+This file adds data requests for CERFACS for the AMIP models.
+</td></tr>
+<tr><td>update_dreqs_0150.py</td><td>
+This file adds data requests for CERFACS for the highres-future models.
+</td></tr>
+<tr><td>update_dreqs_0151.py</td><td>
+This file creates data requests for EC-Earth's HR contributions to WP5.
+</td></tr>
+<tr><td>update_dreqs_0152.py</td><td>
+This file creates an additional data request for the ECMWF contribution to WP5
+for thetao_Omon.
+</td></tr>
+<tr><td>update_dreqs_0153.py</td><td>
+Create a custom retrieval request for Yohan Ruprich-Robert at BSC.
+</td></tr>
+<tr><td>update_dreqs_0154.py</td><td>
+This file removes all CERFACS files that were initialized with WOA13 from:
+
+CNRM-CM6-1 spinup-1950 r1i1p1f2 v20180906
+CNRM-CM6-1 control-1950 r2i1p1f2 v20180904
+CNRM-CM6-1 hist-1950 r2i1p1f2 v20181004
+</td></tr>
+<tr><td>update_dreqs_0155.py</td><td>
+This file creates variable and data requests for CERFACS' contributions to WP5.
+</td></tr>
+<tr><td>update_dreqs_0156.py</td><td>
+This file corrects data requests for CERFACS' contributions to WP5.
+</td></tr>
+<tr><td>update_dreqs_0157.py</td><td>
+This file adds monthly and daily data requests for CERFACS for the spin-up.
+</td></tr>
+<tr><td>update_dreqs_0158.py</td><td>
+This file creates some additional data requests for EC-Earth's HR
+contributions to WP5.
+</td></tr>
+<tr><td>update_dreqs_0159.py</td><td>
+This file adds monthly data requests for the CERFACS LR coupled.
+</td></tr>
+<tr><td>update_dreqs_0160.py</td><td>
+This file adds daily variable and  data requests for the CERFACS
+coupled future.
+</td></tr>
+<tr><td>update_dreqs_0161.py</td><td>
+Restore all HadGEM3-GC31 day tasmax and tasmin files.
+</td></tr>
+<tr><td>update_dreqs_0162.py</td><td>
+Create data requests for HadGEM3-GC31-hist-1950 LL, MM and HM members.
+</td></tr>
+<tr><td>update_dreqs_0163.py</td><td>
+This file creates data requests for additional members of CERFACS'
+contributions to WP5.
+</td></tr>
+<tr><td>update_dreqs_0164.py</td><td>
+This file creates data requests for additional members for EC-Earth's HR
+contributions to WP5.
+</td></tr>
+<tr><td>update_dreqs_0165.py</td><td>
+This file creates data requests for additional variables for EC-Earth's HR
+contributions to WP5.
+</td></tr>
+<tr><td>update_dreqs_0166.py</td><td>
+Update all EC-Earth highresSST-future and highres-future simulations from
+r1i1p1f1 to r1i1p2f1.
+</td></tr>
+<tr><td>update_dreqs_0167.py</td><td>
+This file adds data requests for mrsol for the r1i1p2f1 EC-Earth future
+simulations.
+</td></tr>
+<tr><td>update_dreqs_0168.py</td><td>
+This file adds an issue to all HadGEM3-GC31 ocean files explaining that
+the grid in the file may be incorrect.
+</td></tr>
+<tr><td>update_dreqs_0169.py</td><td>
+This file creates additional data requests for MPI's contribution to WP5.
+</td></tr>
+<tr><td>update_dreqs_0170.py</td><td>
+This file removes an issue from all HadGEM3-GC31 ice files explaining that
+the grid in the file may be incorrect.
+</td></tr>
+<tr><td>update_dreqs_0171.py</td><td>
+Called from a cron job. It submits jobs to LOTUS to fully check all files
+in the CERFACS WP5 submissions as many contain HDF errors.
+</td></tr>
 
 </table>
 </body>
