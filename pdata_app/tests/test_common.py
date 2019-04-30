@@ -13,7 +13,8 @@ from pdata_app import models
 from pdata_app.utils.common import (make_partial_date_time,
                                     standardise_time_unit,
                                     calc_last_day_in_month, pdt2num,
-                                    is_same_gws, get_gws, construct_filename,
+                                    is_same_gws, get_gws, construct_drs_path,
+                                    construct_filename,
                                     construct_time_string, get_request_size,
                                     date_filter_files, grouper,
                                     directories_spanned)
@@ -194,13 +195,13 @@ class TestIsSameGws(TestCase):
 class TestGetGws(TestCase):
     """Test pdata_app.utils.common.get_gws()"""
     def test_gws1(self):
-        path = '/group_workspaces/jasmin2/primavera1/stream1/drs/path/blah'
+        path = '/gws/nopw/j04/primavera1/stream1/drs/path/blah'
 
         self.assertEqual(get_gws(path),
-                         '/group_workspaces/jasmin2/primavera1/stream1')
+                         '/gws/nopw/j04/primavera1/stream1')
 
     def test_missing_stream(self):
-        path = '/group_workspaces/jasmin2/primavera1/drs/path/blah'
+        path = '/gws/nopw/j04/primavera1/drs/path/blah'
 
         self.assertRaises(RuntimeError, get_gws, path)
 
@@ -208,6 +209,16 @@ class TestGetGws(TestCase):
         path = '/rabbits'
 
         self.assertRaises(RuntimeError, get_gws, path)
+
+
+class TestConstructDrsPath(TestCase):
+    """Test pdata_app.utils.common.construct_drs_path()"""
+    def setUp(self):
+        make_example_files(self)
+
+    def test_success(self):
+        expected = 't/HighResMIP/MOHC/t/t/r1i1p1/Amon/var1/gn/v12345678'
+        self.assertEqual(construct_drs_path(self.data_file1), expected)
 
 
 class TestConstructFilename(TestCase):

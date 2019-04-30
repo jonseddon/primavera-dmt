@@ -78,7 +78,7 @@ def make_example_files(parent_obj):
                                status=STATUS_VALUES['EXPECTED'],
                                incoming_directory='/some/dir',
                                directory='/some/dir', user=parent_obj.user)
-    data_file1 = dbapi.get_or_create(models.DataFile, name='test1',
+    parent_obj.data_file1 = dbapi.get_or_create(models.DataFile, name='test1',
                                      incoming_directory='/some/dir',
                                      directory='/some/dir1', size=1,
                                      project=project,

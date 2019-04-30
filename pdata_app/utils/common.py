@@ -312,14 +312,14 @@ def is_same_gws(path1, path2):
 
 def get_gws(path):
     """
-    Find the group workspace path at the start of `path`.
+    Find the group workspace path at the start of a stream 1 `path`.
 
     :param str path:
     :returns: the path identified
     :rtype: str
     :raises RuntimeError: if the the path isn't a gws path
     """
-    gws_pattern = r'^/group_workspaces/jasmin2/primavera\d/stream1'
+    gws_pattern = r'^/gws/nopw/j04/primavera\d/stream1'
     gws = re.match(gws_pattern, path)
 
     if not gws:

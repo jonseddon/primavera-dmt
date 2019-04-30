@@ -6,12 +6,9 @@ This script is called by the pre-proc tool to update metadata in the
 Data Management Tool.
 """
 from __future__ import print_function, division
-from abc import ABCMeta, abstractmethod
 import argparse
-import json
 import logging
 import os
-import six
 import sys
 
 import django
@@ -22,9 +19,8 @@ from pdata_site.settings import DATABASES
 if DATABASES['default']['HOST'] != '':
     raise ValueError('Do nut run attribute_update.py on the live database!!!')
 
-from pdata_app.models import ClimateModel, DataFile
-from pdata_app.utils.common import (construct_drs_path, construct_filename,
-                                    get_gws)
+from pdata_app.models import DataFile
+from pdata_app.utils.attribute_update import SourceIdUpdate, VariantLabelUpdate
 
 __version__ = '0.1.0b'
 
@@ -32,101 +28,6 @@ DEFAULT_LOG_LEVEL = logging.WARNING
 DEFAULT_LOG_FORMAT = '%(levelname)s: %(message)s'
 
 logger = logging.getLogger(__name__)
-
-@six.add_metaclass(ABCMeta)
-class DmtUpdate(object):
-    """
-    Abstract base class for all DMT metadata updates.
-    """
-    def __init__(self, datafile, new_value):
-        """
-        Initialise the class
-
-        :param pdata_apps.models.DataFile datafile: the file to update
-        :param str new_value: the new value to apply
-        """
-        self.datafile = datafile
-        self.new_value = new_value
-        self.new_filename = None
-        self.new_directory = None
-
-    def update(self):
-        """
-        Update everything.
-        """
-        self._update_attribute()
-        self.datafile.refresh_from_db()
-        self._update_filename()
-        self._update_directory()
-        self._report_results()
-
-    @abstractmethod
-    def _update_attribute(self):
-        """
-        Update the attribute in the database.
-        """
-        pass
-
-    def _update_filename(self):
-        """
-        Update the file's name in the database.
-        """
-        self.new_filename = construct_filename(self.datafile)
-        self.datafile.name = self.new_filename
-        self.datafile.save()
-
-    def _update_directory(self):
-        """
-        Update the file's directory.
-        """
-        self.new_directory = os.path.join(get_gws(self.datafile.directory),
-                                          construct_drs_path(self.datafile))
-        self.datafile.directory = self.new_directory
-        self.datafile.save()
-
-    def _report_results(self):
-        """
-        Report the new filename and directory on stdout
-        """
-        print(json.dumps({'filename': self.new_filename,
-                          'directory': self.new_directory}))
-
-
-class SourceIdUpdate(DmtUpdate):
-    """
-    Update a DataFile's source_id (climate model).
-    """
-    def __init__(self, datafile, new_value):
-        """
-        Initialise the class
-        """
-        super(SourceIdUpdate, self).__init__(datafile, new_value)
-
-    def _update_attribute(self):
-        """
-        Update the source_id
-        """
-        new_source_id = ClimateModel.objects.get(short_name=self.new_value)
-        self.datafile.climate_model = new_source_id
-        self.datafile.save()
-
-
-class VariantLabelUpdate(DmtUpdate):
-    """
-    Update a DataFile's variant_label (rip_code).
-    """
-    def __init__(self, datafile, new_value):
-        """
-        Initialise the class
-        """
-        super(VariantLabelUpdate, self).__init__(datafile, new_value)
-
-    def _update_attribute(self):
-        """
-        Update the variant label
-        """
-        self.datafile.rip_code = self.new_value
-        self.datafile.save()
 
 
 def parse_args():
