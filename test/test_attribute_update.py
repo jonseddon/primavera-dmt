@@ -1,7 +1,7 @@
 """
 test_attribute_update.py
 
-Test of attribute_update.py
+Test of pdata_app/utils/attribute_update.py
 """
 try:
     from unittest import mock
@@ -13,7 +13,7 @@ django.setup()
 
 from django.test import TestCase
 
-from pdata_app.models import ClimateModel, DataFile, Settings
+from pdata_app.models import ClimateModel, DataFile
 from pdata_app.tests.common import make_example_files
 
 from pdata_app.utils.attribute_update import (SourceIdUpdate,
@@ -21,7 +21,6 @@ from pdata_app.utils.attribute_update import (SourceIdUpdate,
                                               FileOfflineError,
                                               FileNotOnDiskError)
 import pdata_app.utils.attribute_update
-from scripts.attribute_update import main as att_update_main
 
 
 class TestSourceIdUpdate(TestCase):
@@ -214,56 +213,6 @@ class TestVariantLabelUpdate(TestCase):
         desired_dir = ('/gws/nopw/j04/primavera9/stream1/t/'
                        'HighResMIP/MOHC/t/t/r9i9p9f9/Amon/var1/gn/v12345678')
         self.assertEqual(self.test_file.directory, desired_dir)
-
-
-# class TestIntegration(TestCase):
-#     """Test scripts.attribute_update.main"""
-#     def setUp(self):
-#         make_example_files(self)
-#         self.test_file = DataFile.objects.get(name='test1')
-#         _make_files_realistic()
-#         self.test_file.refresh_from_db()
-#
-#     def test_variant_label(self):
-#         new_var_label = 'r1i1p2f1'
-#
-#         class ArgparseNamespace(object):
-#             file_path = ('/gws/nopw/j04/primavera9/stream1/path/var_table_'
-#                          'model_expt_varlab_gn_1-2.nc')
-#             attribute_name = 'variant_label'
-#             new_value = new_var_label
-#         ns = ArgparseNamespace()
-#
-#         att_update_main(ns)
-#         self.test_file.refresh_from_db()
-#         self.assertEqual(self.test_file.rip_code, new_var_label)
-#
-#     def test_climate_model(self):
-#         new_model = 'bestest-ever-model'
-#         ClimateModel.objects.create(short_name=new_model)
-#
-#         class ArgparseNamespace(object):
-#             file_path = ('/gws/nopw/j04/primavera9/stream1/path/var_table_'
-#                          'model_expt_varlab_gn_1-2.nc')
-#             attribute_name = 'source_id'
-#             new_value = new_model
-#         ns = ArgparseNamespace()
-#
-#         att_update_main(ns)
-#         self.test_file.refresh_from_db()
-#         self.assertEqual(self.test_file.climate_model.short_name, new_model)
-#
-#     @mock.patch('scripts.attribute_update.logger')
-#     def test_some_other_option(self, mock_logger):
-#
-#         class ArgparseNamespace(object):
-#             file_path = ('/gws/nopw/j04/primavera9/stream1/path/var_table_'
-#                          'model_expt_varlab_gn_1-2.nc')
-#             attribute_name = 'other-option'
-#             new_value = 'new-model'
-#         ns = ArgparseNamespace()
-#
-#         self.assertRaises(SystemExit, att_update_main, ns)
 
 
 def _make_files_realistic():
