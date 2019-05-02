@@ -1,33 +1,30 @@
 #!/usr/bin/env python
 """
-update_dreqs_0118.py
+update_dreqs_0173.py
 
-To test update_dreqs_0117.py it is necessary to have some test data in a
-different directory that has been copied from the main data area.
-
-This script copies the data from its current directory to the test area.
-
-THIS SCRIPT SHOULD NOT BE RUN AGAINST THE LIVE DATABASE!!!
+Update the source_id in MPI AMIP files. DON'T RUN ON LIVE DB YET!
 """
+from __future__ import (unicode_literals, division, absolute_import,
+                        print_function)
 import argparse
 import logging.config
 import os
-import shutil
 import sys
 
 import django
 django.setup()
-import pdata_site
-from pdata_app.models import DataRequest
-from pdata_app.utils.common import construct_drs_path
 
-__version__ = '0.1.0b'
+from pdata_app.models import DataRequest
+from pdata_app.utils.attribute_update import SourceIdUpdate
+import pdata_site
+
+
+__version__ = '0.1.0b1'
 
 DEFAULT_LOG_LEVEL = logging.WARNING
 DEFAULT_LOG_FORMAT = '%(levelname)s: %(message)s'
 
 logger = logging.getLogger(__name__)
-
 
 TEST_DATA_DIR = '/gws/nopw/j04/primavera3/cache/jseddon/test_stream1'
 
@@ -36,21 +33,20 @@ def parse_args():
     """
     Parse command-line arguments
     """
-    parser = argparse.ArgumentParser(description='Copy some test data and '
-                                                 'update its path in the test '
-                                                 'database.')
+    parser = argparse.ArgumentParser(description='Add additional data requests')
     parser.add_argument('-l', '--log-level', help='set logging level to one of '
-                                                  'debug, info, warn (the '
-                                                  'default), or error')
+        'debug, info, warn (the default), or error')
     parser.add_argument('--version', action='version',
-                        version='%(prog)s {}'.format(__version__))
+        version='%(prog)s {}'.format(__version__))
     args = parser.parse_args()
 
     return args
 
 
-def main():
-    """Main entry point"""
+def main(args):
+    """
+    Main entry point
+    """
     data_reqs = DataRequest.objects.filter(
         institute__short_name='MPI-M',
         experiment__short_name='highresSST-present',
@@ -60,20 +56,29 @@ def main():
     )
     logger.debug('{} data requests found'.format(data_reqs.count()))
 
-    for data_req in data_reqs:
-        for data_file in data_req.datafile_set.all():
-            if not data_file.online:
-                raise ValueError('{} is not online'.format(data_file.name))
-            src_path = os.path.join(data_file.directory, data_file.name)
-            dest_dir = os.path.join(TEST_DATA_DIR,
-                                    construct_drs_path(data_file))
-            if not os.path.exists(dest_dir):
-                os.makedirs(dest_dir)
-            dest_path = os.path.join(dest_dir, data_file.name)
-            shutil.copyfile(src_path, dest_path)
-            data_file.directory = os.path.join(TEST_DATA_DIR,
-                                               construct_drs_path(data_file))
-            data_file.save()
+    for dreq in data_reqs:
+        logger.debug('Updating {}'.format(dreq))
+        for data_file in dreq.datafile_set.order_by('name'):
+            # TEST THAT WE ARE NOT ON THE LIVE SYSTEM
+            if not data_file.directory.startswith(TEST_DATA_DIR):
+                raise ValueError('File is not in {}'.format(TEST_DATA_DIR))
+
+            logger.debug('Processing {}'.format(data_file.name))
+
+            if data_file.climate_model.short_name == 'MPIESM-1-2-HR':
+                new_source_id = 'MPI-ESM1-2-HR'
+            elif data_file.climate_model.short_name == 'MPIESM-1-2-XR':
+                new_source_id = 'MPI-ESM1-2-XR'
+            else:
+                raise ValueError('Unknown source_id {}'.
+                                 format(data_file.climate_model.short_name))
+
+            updater = SourceIdUpdate(
+                os.path.join(data_file.directory, data_file.name),
+                new_source_id
+            )
+            updater.update()
+            break
 
 
 if __name__ == "__main__":
@@ -125,4 +130,4 @@ if __name__ == "__main__":
     })
 
     # run the code
-    main()
+    main(cmd_args)
