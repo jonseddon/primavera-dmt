@@ -30,7 +30,7 @@ class DataFileTable(tables.Table):
                    'time_units', 'calendar', 'data_submission', 'esgf_dataset',
                    'ceda_dataset', 'ceda_download_url', 'ceda_opendap_url',
                    'esgf_download_url', 'esgf_opendap_url', 'data_request',
-                   'tape_size', 'activity_id')
+                   'tape_size', 'activity_id', 'incoming_name')
         sequence = ['name', 'directory', 'version', 'online', 'num_dataissues',
                     'tape_url', 'institute', 'climate_model', 'experiment',
                     'mip_table', 'rip_code', 'cmor_name', 'grid', 'size',
