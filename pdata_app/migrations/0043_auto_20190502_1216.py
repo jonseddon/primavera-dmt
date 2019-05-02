@@ -15,7 +15,7 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name='datafile',
             name='incoming_name',
-            field=models.CharField(default='filename.nc', max_length=200, verbose_name='Original file name'),
+            field=models.CharField(max_length=200, verbose_name='Original file name', null=True,),
             preserve_default=False,
         ),
         migrations.AlterField(

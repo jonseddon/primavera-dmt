@@ -5,6 +5,16 @@ from __future__ import unicode_literals
 from django.db import migrations
 
 
+def copy_name(apps, schema_editor):
+    """
+    Copy DataFile.name to DataFile.incoming_name
+    """
+    DataFile = apps.get_model('pdata_app', 'DataFile')
+    for row in DataFile.objects.all():
+        row.incoming_name = row.name
+        row.save(update_fields=['incoming_name'])
+
+
 class Migration(migrations.Migration):
 
     dependencies = [
@@ -12,4 +22,5 @@ class Migration(migrations.Migration):
     ]
 
     operations = [
+        migrations.RunPython(copy_name, reverse_code=migrations.RunPython.noop),
     ]
