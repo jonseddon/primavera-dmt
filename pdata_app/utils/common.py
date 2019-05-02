@@ -412,7 +412,7 @@ def construct_time_string(time_point, time_units, calendar, frequency):
         msg = 'No time format known for frequency string {}'.format(frequency)
         raise NotImplementedError(msg)
 
-    datetime = netcdftime.num2date(time_point, time_units, calendar)
+    datetime = cf_units.num2date(time_point, time_units, calendar)
 
     return datetime.strftime(time_fmt)
 
