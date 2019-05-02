@@ -35,13 +35,13 @@ class Settings(SingletonModel):
     base_output_dir = models.CharField(max_length=300,
                                        verbose_name='Base directory for '
                                                     'retrieved files',
-                                       default='/group_workspaces/jasmin2/'
-                                               'primavera5/stream1')
+                                       default='/gws/nopw/j04/primavera5/'
+                                               'stream1')
     current_stream1_dir = models.CharField(
         max_length=300,
         verbose_name='The directory that retrievals are currently being '
                      'retrieved to.',
-        default='/group_workspaces/jasmin2/primavera4/stream1'
+        default='/gws/nopw/j04/primavera4/stream1'
     )
 
     class Meta:
