@@ -73,10 +73,7 @@ def main(args):
                 raise ValueError('Unknown source_id {}'.
                                  format(data_file.climate_model.short_name))
 
-            updater = SourceIdUpdate(
-                os.path.join(data_file.directory, data_file.name),
-                new_source_id
-            )
+            updater = SourceIdUpdate(data_file, new_source_id)
             updater.update()
             break
 
