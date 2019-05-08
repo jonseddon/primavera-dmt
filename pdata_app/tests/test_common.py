@@ -4,6 +4,11 @@ test_common.py - unit tests for pdata_app.utils.common.py
 from __future__ import unicode_literals, division, absolute_import
 import six
 
+try:
+    from unittest import mock
+except ImportError:
+    import mock
+
 from iris.time import PartialDateTime
 from numpy.testing import assert_almost_equal
 
@@ -17,7 +22,7 @@ from pdata_app.utils.common import (make_partial_date_time,
                                     construct_filename,
                                     construct_time_string, get_request_size,
                                     date_filter_files, grouper,
-                                    directories_spanned)
+                                    directories_spanned, run_ncatted)
 from pdata_app.utils import dbapi
 from .common import make_example_files
 
@@ -464,6 +469,38 @@ class TestDirectoriesSpanned(TestCase):
             {'dir_name': '/some/dir1', 'num_files': 1, 'dir_size': 1}
         ]
         self.assertNotEqual(dirs_list, expected)
+
+
+class TestRunNcatted(TestCase):
+    def setUp(self):
+        patch = mock.patch('pdata_app.utils.common.run_command')
+        self.mock_run_cmd = patch.start()
+        self.addCleanup(patch.stop)
+
+    def test_global_attr(self):
+        run_ncatted('/a', 'b.nc', 'source_id', 'global', 'c', 'better-model')
+        self.mock_run_cmd.assert_called_once_with(
+            "ncatted -h -a source_id,global,o,c,'better-model' /a/b.nc"
+        )
+
+    def test_var_attr(self):
+        run_ncatted('/a', 'b.nc', 'cell_methods', 'tas', 'c', 'better-method')
+        self.mock_run_cmd.assert_called_once_with(
+            "ncatted -h -a cell_methods,tas,o,c,'better-method' /a/b.nc"
+        )
+
+    def test_int(self):
+        run_ncatted('/a', 'b.nc', 'source_id', 'global', 'd', 123)
+        self.mock_run_cmd.assert_called_once_with(
+            "ncatted -h -a source_id,global,o,d,123 /a/b.nc"
+        )
+
+    def test_with_history(self):
+        run_ncatted('/a', 'b.nc', 'source_id', 'global', 'c', 'better-model',
+                    suppress_history=False)
+        self.mock_run_cmd.assert_called_once_with(
+            "ncatted -a source_id,global,o,c,'better-model' /a/b.nc"
+        )
 
 
 def _assertable(queryset, list_item='name'):

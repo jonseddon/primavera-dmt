@@ -8,7 +8,7 @@ import logging
 import os
 import random
 import re
-from subprocess import check_output, CalledProcessError
+from subprocess import check_output, CalledProcessError, STDOUT
 from six.moves import zip_longest
 from tempfile import gettempdir
 
@@ -579,3 +579,61 @@ def directories_spanned(data_req):
     dirs_list.sort(key=lambda dd: dd['dir_name'])
 
     return dirs_list
+
+
+def run_command(command):
+    """
+    Run the command specified and return any output to stdout or stderr as
+    a list of strings.
+
+    :param str command: The complete command to run.
+    :returns: Any output from the command as a list of strings.
+    :raises RuntimeError: If the command did not complete successfully.
+    """
+    cmd_out = None
+    try:
+        cmd_out = check_output(command, stderr=STDOUT,
+                                          shell=True).decode('utf-8')
+    except CalledProcessError as exc:
+        if exc.returncode == 17:
+            pass
+        else:
+            msg = ('Command did not complete sucessfully.\ncommmand:\n{}\n'
+                   'produced error:\n{}'.format(command, exc.output))
+            logger.warning(msg)
+            raise RuntimeError(msg)
+
+    if isinstance(cmd_out, str):
+        return cmd_out.rstrip().split('\n')
+    else:
+        return None
+
+
+def run_ncatted(directory, filename, attribute_name, attribute_visibility,
+                attribute_type, new_value, suppress_history=True):
+    """
+    Run ncatted on a file.
+
+    :param str directory: the file's directory.
+    :param str filename: the files's name.
+    :param str attribute_name: the attribute to edit.
+    :param str attribute_visibility: global or a variable name.
+    :param str attribute_type: the `ncatted` type.
+    :param new_value: the attribute's new value.
+    """
+    # Aiming for:
+    # ncatted -h -a branch_time_in_parent,global,o,d,10800.0
+    quote_mark = "'" if isinstance(new_value, str) else ""
+
+    cmd = 'ncatted {}-a {},{},{},{},{}{}{} {}'.format(
+        '-h ' if suppress_history else '',
+        attribute_name,
+        attribute_visibility,
+        'o',
+        attribute_type,
+        quote_mark,
+        new_value,
+        quote_mark,
+        os.path.join(directory, filename)
+    )
+    run_command(cmd)

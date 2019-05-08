@@ -36,6 +36,10 @@ class TestSourceIdUpdate(TestCase):
         mock.patch.object(pdata_app.utils.attribute_update, 'BASE_OUTPUT_DIR',
                           return_value = '/gws/nopw/j04/primavera5/stream1')
 
+        patch = mock.patch('pdata_app.utils.common.run_command')
+        self.mock_run_cmd = patch.start()
+        self.addCleanup(patch.stop)
+
     def test_online(self):
         self.test_file.online = False
         self.test_file.save()
@@ -48,7 +52,7 @@ class TestSourceIdUpdate(TestCase):
 
     @mock.patch('pdata_app.utils.attribute_update.DmtUpdate._check_available')
     @mock.patch('pdata_app.utils.attribute_update.DmtUpdate._rename_file')
-    def test_source_id_updated(self, mock_reanme, mock_available):
+    def test_source_id_updated(self, mock_rename, mock_available):
         updater = SourceIdUpdate(self.test_file, self.desired_source_id)
         updater.update()
         self.test_file.refresh_from_db()
@@ -57,7 +61,7 @@ class TestSourceIdUpdate(TestCase):
 
     @mock.patch('pdata_app.utils.attribute_update.DmtUpdate._check_available')
     @mock.patch('pdata_app.utils.attribute_update.DmtUpdate._rename_file')
-    def test_filename_updated(self, mock_reanme, mock_available):
+    def test_filename_updated(self, mock_rename, mock_available):
         updater = SourceIdUpdate(self.test_file, self.desired_source_id)
         updater.update()
         self.test_file.refresh_from_db()
@@ -66,7 +70,7 @@ class TestSourceIdUpdate(TestCase):
 
     @mock.patch('pdata_app.utils.attribute_update.DmtUpdate._check_available')
     @mock.patch('pdata_app.utils.attribute_update.DmtUpdate._rename_file')
-    def test_directory_updated(self, mock_reanme, mock_available):
+    def test_directory_updated(self, mock_rename, mock_available):
         updater = SourceIdUpdate(self.test_file, self.desired_source_id)
         updater.update()
         self.test_file.refresh_from_db()
@@ -74,6 +78,23 @@ class TestSourceIdUpdate(TestCase):
                        'HighResMIP/MOHC/better-model/t/r1i1p1/Amon/var1/gn/'
                        'v12345678')
         self.assertEqual(self.test_file.directory, desired_dir)
+
+    @mock.patch('pdata_app.utils.attribute_update.DmtUpdate._check_available')
+    @mock.patch('pdata_app.utils.attribute_update.DmtUpdate._rename_file')
+    def test_update_attributes(self, mock_rename, mock_available):
+        updater = SourceIdUpdate(self.test_file, self.desired_source_id)
+        updater.update()
+        calls = [
+            mock.call("ncatted -a source_id,global,o,c,'better-model' "
+                      "/gws/nopw/j04/primavera9/stream1/path/"
+                      "var1_table_model_expt_varlab_gn_1-2.nc"),
+            mock.call("ncatted -a further_info_url,global,o,c,"
+                      "'https://furtherinfo.es-doc.org/t.MOHC.better-model."
+                      "t.r1i1p1' "
+                      "/gws/nopw/j04/primavera9/stream1/path/"
+                      "var1_table_model_expt_varlab_gn_1-2.nc"),
+        ]
+        self.mock_run_cmd.assert_has_calls(calls)
 
     @mock.patch('pdata_app.utils.attribute_update.DmtUpdate._check_available')
     @mock.patch('pdata_app.utils.attribute_update.os.makedirs')
@@ -187,9 +208,13 @@ class TestVariantLabelUpdate(TestCase):
         self.test_file.refresh_from_db()
         self.desired_variant_label = 'r9i9p9f9'
 
+        patch = mock.patch('pdata_app.utils.common.run_command')
+        self.mock_run_cmd = patch.start()
+        self.addCleanup(patch.stop)
+
     @mock.patch('pdata_app.utils.attribute_update.DmtUpdate._check_available')
     @mock.patch('pdata_app.utils.attribute_update.DmtUpdate._rename_file')
-    def test_variant_label_updated(self, mock_reanme, mock_available):
+    def test_variant_label_updated(self, mock_rename, mock_available):
         updater = VariantLabelUpdate(self.test_file, self.desired_variant_label)
         updater.update()
         self.test_file.refresh_from_db()
@@ -197,7 +222,7 @@ class TestVariantLabelUpdate(TestCase):
 
     @mock.patch('pdata_app.utils.attribute_update.DmtUpdate._check_available')
     @mock.patch('pdata_app.utils.attribute_update.DmtUpdate._rename_file')
-    def test_filename_updated(self, mock_reanme, mock_available):
+    def test_filename_updated(self, mock_rename, mock_available):
         updater = VariantLabelUpdate(self.test_file, self.desired_variant_label)
         updater.update()
         self.test_file.refresh_from_db()
@@ -206,13 +231,41 @@ class TestVariantLabelUpdate(TestCase):
 
     @mock.patch('pdata_app.utils.attribute_update.DmtUpdate._check_available')
     @mock.patch('pdata_app.utils.attribute_update.DmtUpdate._rename_file')
-    def test_directory_updated(self, mock_reanme, mock_available):
+    def test_directory_updated(self, mock_rename, mock_available):
         updater = VariantLabelUpdate(self.test_file, self.desired_variant_label)
         updater.update()
         self.test_file.refresh_from_db()
         desired_dir = ('/gws/nopw/j04/primavera9/stream1/t/'
                        'HighResMIP/MOHC/t/t/r9i9p9f9/Amon/var1/gn/v12345678')
         self.assertEqual(self.test_file.directory, desired_dir)
+
+    @mock.patch('pdata_app.utils.attribute_update.DmtUpdate._check_available')
+    @mock.patch('pdata_app.utils.attribute_update.DmtUpdate._rename_file')
+    def test_update_attributes(self, mock_rename, mock_available):
+        updater = VariantLabelUpdate(self.test_file, 'r1i2p3f4')
+        updater.update()
+        calls = [
+            mock.call("ncatted -a variant_label,global,o,c,'r1i2p3f4' "
+                      "/gws/nopw/j04/primavera9/stream1/path/"
+                      "var1_table_model_expt_varlab_gn_1-2.nc"),
+            mock.call("ncatted -a realization_index,global,o,s,1 "
+                      "/gws/nopw/j04/primavera9/stream1/path/"
+                      "var1_table_model_expt_varlab_gn_1-2.nc"),
+            mock.call("ncatted -a initialization_index,global,o,s,2 "
+                      "/gws/nopw/j04/primavera9/stream1/path/"
+                      "var1_table_model_expt_varlab_gn_1-2.nc"),
+            mock.call("ncatted -a physics_index,global,o,s,3 "
+                      "/gws/nopw/j04/primavera9/stream1/path/"
+                      "var1_table_model_expt_varlab_gn_1-2.nc"),
+            mock.call("ncatted -a forcing_index,global,o,s,4 "
+                      "/gws/nopw/j04/primavera9/stream1/path/"
+                      "var1_table_model_expt_varlab_gn_1-2.nc"),
+            mock.call("ncatted -a further_info_url,global,o,c,"
+                      "'https://furtherinfo.es-doc.org/t.MOHC.t.t.r1i2p3f4' "
+                      "/gws/nopw/j04/primavera9/stream1/path/"
+                      "var1_table_model_expt_varlab_gn_1-2.nc"),
+        ]
+        self.mock_run_cmd.assert_has_calls(calls)
 
 
 def _make_files_realistic():

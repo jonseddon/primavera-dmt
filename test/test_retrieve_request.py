@@ -36,7 +36,7 @@ class TestIntegrationTests(TestCase):
                           return_value = '/gws/nopw/j04/primavera5/stream1')
 
         # mock any external calls
-        patch = mock.patch('scripts.retrieve_request._run_command')
+        patch = mock.patch('scripts.retrieve_request.run_command')
         self.mock_run_cmd = patch.start()
         self.addCleanup(patch.stop)
 

@@ -124,7 +124,7 @@ def make_example_files(parent_obj):
                                      rip_code='r1i1p1',
                                      data_submission=dsub, online=False,
                                      start_time=10800,  # 1980-01-01 00:00:00
-                                     end_time=10800,  # 1990-01-01 00:00:00
+                                     end_time=14400,  # 1990-01-01 00:00:00
                                      calendar='360_day',
                                      time_units='days since 1950-01-01')
     data_file2 = dbapi.get_or_create(models.DataFile, name='test2',

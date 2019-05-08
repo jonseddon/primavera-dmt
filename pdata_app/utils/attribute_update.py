@@ -6,11 +6,13 @@ from __future__ import unicode_literals, division, absolute_import
 from abc import ABCMeta, abstractmethod
 import logging
 import os
+import re
 import six
 
 from pdata_app.models import ClimateModel, Settings
 from pdata_app.utils.common import (construct_drs_path, construct_filename,
-                                    get_gws, delete_drs_dir, is_same_gws)
+                                    get_gws, delete_drs_dir, is_same_gws,
+                                    run_ncatted)
 
 logger = logging.getLogger(__name__)
 
@@ -80,8 +82,8 @@ class DmtUpdate(object):
         Update everything.
         """
         self._check_available()
-        self._update_attribute()
-        self.datafile.refresh_from_db()
+        self._update_database_attribute()
+        self._update_file_attribute()
         self._update_filename()
         self._update_directory()
         self._rename_file()
@@ -103,9 +105,16 @@ class DmtUpdate(object):
             raise FileNotOnDiskError(self.old_directory, self.old_filename)
 
     @abstractmethod
-    def _update_attribute(self):
+    def _update_database_attribute(self):
         """
         Update the attribute in the database.
+        """
+        pass
+
+    @abstractmethod
+    def _update_file_attribute(self):
+        """
+        Update the metadata attribute in the file.
         """
         pass
 
@@ -175,13 +184,31 @@ class SourceIdUpdate(DmtUpdate):
         """
         super(SourceIdUpdate, self).__init__(datafile, new_value)
 
-    def _update_attribute(self):
+    def _update_database_attribute(self):
         """
         Update the source_id
         """
         new_source_id = ClimateModel.objects.get(short_name=self.new_value)
         self.datafile.climate_model = new_source_id
         self.datafile.save()
+
+    def _update_file_attribute(self):
+        """
+        Update the source_id and make the same change in the further_info_url.
+        """
+        # source_id
+        run_ncatted(self.datafile.directory, self.datafile.name,
+                    'source_id', 'global', 'c', self.new_value, False)
+
+        # further_info_url
+        further_info_url = ('https://furtherinfo.es-doc.org/{}.{}.{}.{}.{}'.
+                            format(self.datafile.project.short_name,
+                                   self.datafile.institute.short_name,
+                                   self.new_value,
+                                   self.datafile.experiment.short_name,
+                                   self.datafile.rip_code))
+        run_ncatted(self.datafile.directory, self.datafile.name,
+                    'further_info_url', 'global', 'c', further_info_url, False)
 
 
 class VariantLabelUpdate(DmtUpdate):
@@ -194,9 +221,43 @@ class VariantLabelUpdate(DmtUpdate):
         """
         super(VariantLabelUpdate, self).__init__(datafile, new_value)
 
-    def _update_attribute(self):
+    def _update_database_attribute(self):
         """
         Update the variant label
         """
         self.datafile.rip_code = self.new_value
         self.datafile.save()
+
+    def _update_file_attribute(self):
+        """
+        Update the variant_label and make the same change in its constituent
+        parts and the further_info_url.
+        """
+        # variant_label
+        run_ncatted(self.datafile.directory, self.datafile.name,
+                    'variant_label', 'global', 'c', self.new_value, False)
+
+        # indexes
+        ripf = re.match('^r(\d+)i(\d+)p(\d+)f(\d+)$', self.new_value)
+        run_ncatted(self.datafile.directory, self.datafile.name,
+                    'realization_index', 'global', 's', int(ripf.group(1)),
+                    False)
+        run_ncatted(self.datafile.directory, self.datafile.name,
+                    'initialization_index', 'global', 's', int(ripf.group(2)),
+                    False)
+        run_ncatted(self.datafile.directory, self.datafile.name,
+                    'physics_index', 'global', 's', int(ripf.group(3)),
+                    False)
+        run_ncatted(self.datafile.directory, self.datafile.name,
+                    'forcing_index', 'global', 's', int(ripf.group(4)),
+                    False)
+
+        # further_info_url
+        further_info_url = ('https://furtherinfo.es-doc.org/{}.{}.{}.{}.{}'.
+                            format(self.datafile.project.short_name,
+                                   self.datafile.institute.short_name,
+                                   self.datafile.climate_model.short_name,
+                                   self.datafile.experiment.short_name,
+                                   self.new_value))
+        run_ncatted(self.datafile.directory, self.datafile.name,
+                    'further_info_url', 'global', 'c', further_info_url, False)
