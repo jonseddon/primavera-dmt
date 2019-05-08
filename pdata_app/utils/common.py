@@ -10,6 +10,7 @@ import random
 import re
 from subprocess import check_output, CalledProcessError, STDOUT
 from six.moves import zip_longest
+from six import string_types
 from tempfile import gettempdir
 
 from iris.time import PartialDateTime
@@ -623,7 +624,7 @@ def run_ncatted(directory, filename, attribute_name, attribute_visibility,
     """
     # Aiming for:
     # ncatted -h -a branch_time_in_parent,global,o,d,10800.0
-    quote_mark = "'" if isinstance(new_value, str) else ""
+    quote_mark = "'" if isinstance(new_value, string_types) else ""
 
     cmd = 'ncatted {}-a {},{},{},{},{}{}{} {}'.format(
         '-h ' if suppress_history else '',
