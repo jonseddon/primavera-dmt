@@ -30,6 +30,8 @@ DEFAULT_LOG_FORMAT = '%(levelname)s: %(message)s'
 
 logger = logging.getLogger(__name__)
 
+# the path to the CEDA archive
+CEDA_ARCHIVE = '/badc'
 
 def parse_args():
     """
@@ -119,6 +121,9 @@ def main(args):
                 # list the parts of the data request that are still required
                 logger.debug("{} {} to {} won't be deleted".format(
                     data_req, ret_req.start_year, ret_req.end_year))
+
+        # don't (try to) delete anything that's in the CEDA archive
+        files_to_delete.exclude(directory__startswith=CEDA_ARCHIVE)
 
         # do the deleting
         if args.dryrun:
