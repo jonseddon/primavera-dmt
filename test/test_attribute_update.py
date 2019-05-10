@@ -94,7 +94,7 @@ class TestSourceIdUpdate(TestCase):
                       "var1_table_model_expt_varlab_gn_1-2.nc"),
             mock.call("ncatted -a further_info_url,global,o,c,"
                       "'https://furtherinfo.es-doc.org/t.MOHC.better-model."
-                      "t.r1i1p1' "
+                      "t.none.r1i1p1' "
                       "/gws/nopw/j04/primavera9/stream1/path/"
                       "var1_table_model_expt_varlab_gn_1-2.nc"),
         ]
@@ -286,8 +286,8 @@ class TestVariantLabelUpdate(TestCase):
                       "/gws/nopw/j04/primavera9/stream1/path/"
                       "var1_table_model_expt_varlab_gn_1-2.nc"),
             mock.call("ncatted -a further_info_url,global,o,c,"
-                      "'https://furtherinfo.es-doc.org/t.MOHC.t.t.r1i2p3f4' "
-                      "/gws/nopw/j04/primavera9/stream1/path/"
+                      "'https://furtherinfo.es-doc.org/t.MOHC.t.t.none."
+                      "r1i2p3f4' /gws/nopw/j04/primavera9/stream1/path/"
                       "var1_table_model_expt_varlab_gn_1-2.nc"),
         ]
         self.mock_run_cmd.assert_has_calls(calls)

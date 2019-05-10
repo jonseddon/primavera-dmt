@@ -251,7 +251,7 @@ class SourceIdUpdate(DmtUpdate):
                     'source_id', 'global', 'c', self.new_value, False)
 
         # further_info_url
-        further_info_url = ('https://furtherinfo.es-doc.org/{}.{}.{}.{}.{}'.
+        further_info_url = ('https://furtherinfo.es-doc.org/{}.{}.{}.{}.none.{}'.
                             format(self.datafile.project.short_name,
                                    self.datafile.institute.short_name,
                                    self.new_value,
@@ -305,7 +305,7 @@ class VariantLabelUpdate(DmtUpdate):
                     False)
 
         # further_info_url
-        further_info_url = ('https://furtherinfo.es-doc.org/{}.{}.{}.{}.{}'.
+        further_info_url = ('https://furtherinfo.es-doc.org/{}.{}.{}.{}.none.{}'.
                             format(self.datafile.project.short_name,
                                    self.datafile.institute.short_name,
                                    self.datafile.climate_model.short_name,
