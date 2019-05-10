@@ -81,14 +81,17 @@ def main(args):
                                                        new_source_id),
                 experiment=dreq.experiment,
                 variable_request=dreq.variable_request,
-                rip_code=dreq.rip_code
+                rip_code=dreq.rip_code,
+                request_start_time=dreq.request_start_time,
+                request_end_time=dreq.request_end_time,
+                time_units=dreq.time_units,
+                calendar=dreq.calendar
             )
             if created:
                 logger.debug('Created {}'.format(new_dreq))
 
             updater = SourceIdUpdate(data_file, new_source_id)
             updater.update()
-            break
 
 
 if __name__ == "__main__":
