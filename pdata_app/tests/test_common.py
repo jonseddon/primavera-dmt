@@ -451,7 +451,9 @@ class TestDirectoriesSpanned(TestCase):
     def setUp(self):
         make_example_files(self)
         self.dreq = models.DataRequest.objects.get(
-            variable_request__var_name='var1'
+            variable_request__var_name='var1',
+            climate_model__short_name='t',
+            rip_code='r1i1p1f1'
         )
 
     def test_correct_order(self):

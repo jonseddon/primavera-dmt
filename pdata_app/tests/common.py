@@ -24,6 +24,9 @@ def make_example_files(parent_obj):
                                   full_name='test')
     clim_mod = dbapi.get_or_create(models.ClimateModel, short_name='t',
                                    full_name='test')
+    clim_mod_2 = dbapi.get_or_create(models.ClimateModel,
+                                     short_name='better-model',
+                                     full_name='better-model')
     institute = dbapi.get_or_create(models.Institute, short_name='MOHC',
                                     full_name='Met Office Hadley Centre')
     expt = dbapi.get_or_create(models.Experiment, short_name='t',
@@ -66,6 +69,25 @@ def make_example_files(parent_obj):
                                            climate_model=clim_mod, experiment=expt,
                                            variable_request=vble2,
                                            rip_code='r1i1p1f1',
+                                           request_start_time=0.0,
+                                           request_end_time=23400.0,
+                                           time_units='days since 1950-01-01',
+                                           calendar='360_day')
+    parent_obj.dreq3 = dbapi.get_or_create(models.DataRequest, project=project,
+                                           institute=institute,
+                                           climate_model=clim_mod_2,
+                                           experiment=expt,
+                                           variable_request=vble1,
+                                           rip_code='r1i1p1f1',
+                                           request_start_time=0.0,
+                                           request_end_time=23400.0,
+                                           time_units='days since 1950-01-01',
+                                           calendar='360_day')
+    parent_obj.dreq4 = dbapi.get_or_create(models.DataRequest, project=project,
+                                           institute=institute,
+                                           climate_model=clim_mod, experiment=expt,
+                                           variable_request=vble1,
+                                           rip_code='r1i2p3f4',
                                            request_start_time=0.0,
                                            request_end_time=23400.0,
                                            time_units='days since 1950-01-01',

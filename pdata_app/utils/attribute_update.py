@@ -9,7 +9,9 @@ import os
 import re
 import six
 
-from pdata_app.models import ClimateModel, Settings
+import django
+
+from pdata_app.models import ClimateModel, DataRequest, Settings
 from pdata_app.utils.common import (construct_drs_path, construct_filename,
                                     get_gws, delete_drs_dir, is_same_gws,
                                     run_ncatted)
@@ -77,6 +79,10 @@ class DmtUpdate(object):
         self.new_filename = None
         self.new_directory = None
 
+        # The name and value of the data_request attribute being modified
+        self.data_req_attribute_name = None
+        self.data_req_attribute_value = None
+
     def update(self):
         """
         Update everything.
@@ -87,6 +93,7 @@ class DmtUpdate(object):
         self._update_filename()
         self._update_directory()
         self._rename_file()
+        self._move_dreq()
 
     def _check_available(self):
         """
@@ -173,6 +180,35 @@ class DmtUpdate(object):
             os.symlink(os.path.join(self.new_directory, self.new_filename),
                        os.path.join(new_link_dir, self.new_filename))
 
+    def _move_dreq(self):
+        """
+        Move the data file to the new data request
+        """
+        if self.data_req_attribute_name is None:
+            raise NotImplementedError("data_req_attribute_name hasn't been "
+                                      "set.")
+        if self.data_req_attribute_value is None:
+            raise NotImplementedError("data_req_attribute_value hasn't been "
+                                      "set.")
+
+        # the default values from the existing data request
+        dreq_dict = {
+            'project': self.datafile.data_request.project,
+            'institute': self.datafile.data_request.institute,
+            'climate_model': self.datafile.data_request.climate_model,
+            'experiment': self.datafile.data_request.experiment,
+            'variable_request': self.datafile.data_request.variable_request,
+            'rip_code': self.datafile.data_request.rip_code
+        }
+        # overwrite with the new value
+        dreq_dict[self.data_req_attribute_name] = self.data_req_attribute_value
+
+        # find the data request
+        new_dreq = DataRequest.objects.get(**dreq_dict)
+        # move the file to the new data request
+        self.datafile.data_request = new_dreq
+        self.datafile.save()
+
 
 class SourceIdUpdate(DmtUpdate):
     """
@@ -183,6 +219,10 @@ class SourceIdUpdate(DmtUpdate):
         Initialise the class
         """
         super(SourceIdUpdate, self).__init__(datafile, new_value)
+        self.data_req_attribute_name = 'climate_model'
+        self.data_req_attribute_value = ClimateModel.objects.get(
+            short_name=self.new_value
+        )
 
     def _update_database_attribute(self):
         """
@@ -220,6 +260,8 @@ class VariantLabelUpdate(DmtUpdate):
         Initialise the class
         """
         super(VariantLabelUpdate, self).__init__(datafile, new_value)
+        self.data_req_attribute_name = 'rip_code'
+        self.data_req_attribute_value = self.new_value
 
     def _update_database_attribute(self):
         """

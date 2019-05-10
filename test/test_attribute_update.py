@@ -31,7 +31,6 @@ class TestSourceIdUpdate(TestCase):
         _make_files_realistic()
         self.test_file.refresh_from_db()
         self.desired_source_id = 'better-model'
-        ClimateModel.objects.create(short_name=self.desired_source_id)
 
         mock.patch.object(pdata_app.utils.attribute_update, 'BASE_OUTPUT_DIR',
                           return_value = '/gws/nopw/j04/primavera5/stream1')
@@ -95,6 +94,17 @@ class TestSourceIdUpdate(TestCase):
                       "var1_table_model_expt_varlab_gn_1-2.nc"),
         ]
         self.mock_run_cmd.assert_has_calls(calls)
+
+    @mock.patch('pdata_app.utils.attribute_update.DmtUpdate._check_available')
+    @mock.patch('pdata_app.utils.attribute_update.DmtUpdate._rename_file')
+    def test_move_dreq(self, mock_rename, mock_available):
+        df = DataFile.objects.get(name='var1_table_model_expt_varlab_gn_1-2.nc')
+        self.assertEqual(df.data_request.climate_model.short_name, 't')
+        updater = SourceIdUpdate(self.test_file, self.desired_source_id)
+        updater.update()
+        df.refresh_from_db()
+        self.assertEqual(df.data_request.climate_model.short_name,
+                         'better-model')
 
     @mock.patch('pdata_app.utils.attribute_update.DmtUpdate._check_available')
     @mock.patch('pdata_app.utils.attribute_update.os.makedirs')
@@ -206,7 +216,7 @@ class TestVariantLabelUpdate(TestCase):
         self.test_file = DataFile.objects.get(name='test1')
         _make_files_realistic()
         self.test_file.refresh_from_db()
-        self.desired_variant_label = 'r9i9p9f9'
+        self.desired_variant_label = 'r1i2p3f4'
 
         patch = mock.patch('pdata_app.utils.common.run_command')
         self.mock_run_cmd = patch.start()
@@ -226,7 +236,7 @@ class TestVariantLabelUpdate(TestCase):
         updater = VariantLabelUpdate(self.test_file, self.desired_variant_label)
         updater.update()
         self.test_file.refresh_from_db()
-        desired_filename = 'var1_Amon_t_t_r9i9p9f9_gn_1950-1960.nc'
+        desired_filename = 'var1_Amon_t_t_r1i2p3f4_gn_1950-1960.nc'
         self.assertEqual(self.test_file.name, desired_filename)
 
     @mock.patch('pdata_app.utils.attribute_update.DmtUpdate._check_available')
@@ -236,13 +246,23 @@ class TestVariantLabelUpdate(TestCase):
         updater.update()
         self.test_file.refresh_from_db()
         desired_dir = ('/gws/nopw/j04/primavera9/stream1/t/'
-                       'HighResMIP/MOHC/t/t/r9i9p9f9/Amon/var1/gn/v12345678')
+                       'HighResMIP/MOHC/t/t/r1i2p3f4/Amon/var1/gn/v12345678')
         self.assertEqual(self.test_file.directory, desired_dir)
 
     @mock.patch('pdata_app.utils.attribute_update.DmtUpdate._check_available')
     @mock.patch('pdata_app.utils.attribute_update.DmtUpdate._rename_file')
+    def test_move_dreq(self, mock_rename, mock_available):
+        df = DataFile.objects.get(name='var1_table_model_expt_varlab_gn_1-2.nc')
+        self.assertEqual(df.data_request.rip_code, 'r1i1p1f1')
+        updater = VariantLabelUpdate(self.test_file, self.desired_variant_label)
+        updater.update()
+        df.refresh_from_db()
+        self.assertEqual(df.data_request.rip_code, 'r1i2p3f4')
+
+    @mock.patch('pdata_app.utils.attribute_update.DmtUpdate._check_available')
+    @mock.patch('pdata_app.utils.attribute_update.DmtUpdate._rename_file')
     def test_update_attributes(self, mock_rename, mock_available):
-        updater = VariantLabelUpdate(self.test_file, 'r1i2p3f4')
+        updater = VariantLabelUpdate(self.test_file, self.desired_variant_label)
         updater.update()
         calls = [
             mock.call("ncatted -a variant_label,global,o,c,'r1i2p3f4' "
