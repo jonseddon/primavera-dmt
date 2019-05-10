@@ -14,7 +14,7 @@ import sys
 import django
 django.setup()
 
-from pdata_app.models import DataRequest
+from pdata_app.models import ClimateModel, DataRequest
 from pdata_app.utils.attribute_update import SourceIdUpdate
 import pdata_site
 
@@ -47,16 +47,17 @@ def main(args):
     """
     Main entry point
     """
-    data_reqs = DataRequest.objects.filter(
+    old_data_reqs = DataRequest.objects.filter(
         institute__short_name='MPI-M',
+        climate_model__short_name__in=['MPIESM-1-2-HR', 'MPIESM-1-2-XR'],
         experiment__short_name='highresSST-present',
-        rip_code__in=['r1i1p1f1'],
+        rip_code='r1i1p1f1',
         variable_request__table_name='Amon',
         variable_request__cmor_name__in=['tas', 'ts', 'psl']
     )
-    logger.debug('{} data requests found'.format(data_reqs.count()))
+    logger.debug('{} data requests found'.format(old_data_reqs.count()))
 
-    for dreq in data_reqs:
+    for dreq in old_data_reqs:
         logger.debug('Updating {}'.format(dreq))
         for data_file in dreq.datafile_set.order_by('name'):
             # TEST THAT WE ARE NOT ON THE LIVE SYSTEM
@@ -72,6 +73,18 @@ def main(args):
             else:
                 raise ValueError('Unknown source_id {}'.
                                  format(data_file.climate_model.short_name))
+
+            new_dreq, created = DataRequest.objects.get_or_create(
+                project=dreq.project,
+                institute=dreq.institute,
+                climate_model=ClimateModel.objects.get(short_name=
+                                                       new_source_id),
+                experiment=dreq.experiment,
+                variable_request=dreq.variable_request,
+                rip_code=dreq.rip_code
+            )
+            if created:
+                logger.debug('Created {}'.format(new_dreq))
 
             updater = SourceIdUpdate(data_file, new_source_id)
             updater.update()

@@ -13,7 +13,7 @@ django.setup()
 
 from django.test import TestCase
 
-from pdata_app.models import ClimateModel, DataFile
+from pdata_app.models import DataFile, DataRequest
 from pdata_app.tests.common import make_example_files
 
 from pdata_app.utils.attribute_update import (SourceIdUpdate,
@@ -38,6 +38,11 @@ class TestSourceIdUpdate(TestCase):
         patch = mock.patch('pdata_app.utils.common.run_command')
         self.mock_run_cmd = patch.start()
         self.addCleanup(patch.stop)
+
+    def test_exit_if_no_dreq(self):
+        self.dreq3.delete()
+        updater = SourceIdUpdate(self.test_file, self.desired_source_id)
+        self.assertRaises(Exception, updater.update)
 
     def test_online(self):
         self.test_file.online = False

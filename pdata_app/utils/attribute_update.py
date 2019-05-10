@@ -83,10 +83,14 @@ class DmtUpdate(object):
         self.data_req_attribute_name = None
         self.data_req_attribute_value = None
 
+        # The destination data_request
+        self.new_dreq = None
+
     def update(self):
         """
         Update everything.
         """
+        self._find_new_dreq()
         self._check_available()
         self._update_database_attribute()
         self._update_file_attribute()
@@ -94,6 +98,34 @@ class DmtUpdate(object):
         self._update_directory()
         self._rename_file()
         self._move_dreq()
+
+    def _find_new_dreq(self):
+        """
+        Find the new data request. If it can't be find the data request (or
+        there are multiple ones) then Django will raise an exception so that we
+        don't make any changes to the files or DB.
+        """
+        if self.data_req_attribute_name is None:
+            raise NotImplementedError("data_req_attribute_name hasn't been "
+                                      "set.")
+        if self.data_req_attribute_value is None:
+            raise NotImplementedError("data_req_attribute_value hasn't been "
+                                      "set.")
+
+        # the default values from the existing data request
+        dreq_dict = {
+            'project': self.datafile.data_request.project,
+            'institute': self.datafile.data_request.institute,
+            'climate_model': self.datafile.data_request.climate_model,
+            'experiment': self.datafile.data_request.experiment,
+            'variable_request': self.datafile.data_request.variable_request,
+            'rip_code': self.datafile.data_request.rip_code
+        }
+        # overwrite with the new value
+        dreq_dict[self.data_req_attribute_name] = self.data_req_attribute_value
+
+        # find the data request
+        self.new_dreq = DataRequest.objects.get(**dreq_dict)
 
     def _check_available(self):
         """
@@ -184,29 +216,7 @@ class DmtUpdate(object):
         """
         Move the data file to the new data request
         """
-        if self.data_req_attribute_name is None:
-            raise NotImplementedError("data_req_attribute_name hasn't been "
-                                      "set.")
-        if self.data_req_attribute_value is None:
-            raise NotImplementedError("data_req_attribute_value hasn't been "
-                                      "set.")
-
-        # the default values from the existing data request
-        dreq_dict = {
-            'project': self.datafile.data_request.project,
-            'institute': self.datafile.data_request.institute,
-            'climate_model': self.datafile.data_request.climate_model,
-            'experiment': self.datafile.data_request.experiment,
-            'variable_request': self.datafile.data_request.variable_request,
-            'rip_code': self.datafile.data_request.rip_code
-        }
-        # overwrite with the new value
-        dreq_dict[self.data_req_attribute_name] = self.data_req_attribute_value
-
-        # find the data request
-        new_dreq = DataRequest.objects.get(**dreq_dict)
-        # move the file to the new data request
-        self.datafile.data_request = new_dreq
+        self.datafile.data_request = self.new_dreq
         self.datafile.save()
 
 
