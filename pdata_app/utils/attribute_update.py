@@ -63,12 +63,14 @@ class DmtUpdate(object):
     """
     Abstract base class for all DMT metadata updates.
     """
-    def __init__(self, datafile, new_value):
+    def __init__(self, datafile, new_value, update_file_only=False):
         """
         Initialise the class
 
         :param pdata_apps.models.DataFile datafile: the file to update
         :param str new_value: the new value to apply
+        :param bool update_file_only: if true then update just the file and
+            don't make any changes to the database or file paths.
         """
         self.datafile = datafile
         self.new_value = new_value
@@ -78,6 +80,8 @@ class DmtUpdate(object):
                                              construct_drs_path(self.datafile))
         self.new_filename = None
         self.new_directory = None
+
+        self.update_file_only = update_file_only
 
         # The name and value of the data_request attribute being modified
         self.data_req_attribute_name = None
@@ -90,14 +94,18 @@ class DmtUpdate(object):
         """
         Update everything.
         """
-        self._find_new_dreq()
-        self._check_available()
-        self._update_database_attribute()
-        self._update_file_attribute()
-        self._update_filename()
-        self._update_directory()
-        self._rename_file()
-        self._move_dreq()
+        if not self.update_file_only:
+            self._find_new_dreq()
+            self._check_available()
+            self._update_database_attribute()
+            self._update_file_attribute()
+            self._update_filename()
+            self._update_directory()
+            self._rename_file()
+            self._move_dreq()
+        else:
+            self._check_available()
+            self._update_file_attribute()
 
     def _find_new_dreq(self):
         """
@@ -224,11 +232,12 @@ class SourceIdUpdate(DmtUpdate):
     """
     Update a DataFile's source_id (climate model).
     """
-    def __init__(self, datafile, new_value):
+    def __init__(self, datafile, new_value, update_file_only=False):
         """
         Initialise the class
         """
-        super(SourceIdUpdate, self).__init__(datafile, new_value)
+        super(SourceIdUpdate, self).__init__(datafile, new_value,
+                                             update_file_only)
         self.data_req_attribute_name = 'climate_model'
         self.data_req_attribute_value = ClimateModel.objects.get(
             short_name=self.new_value
@@ -265,11 +274,12 @@ class VariantLabelUpdate(DmtUpdate):
     """
     Update a DataFile's variant_label (rip_code).
     """
-    def __init__(self, datafile, new_value):
+    def __init__(self, datafile, new_value, update_file_only=False):
         """
         Initialise the class
         """
-        super(VariantLabelUpdate, self).__init__(datafile, new_value)
+        super(VariantLabelUpdate, self).__init__(datafile, new_value,
+                                                 update_file_only)
         self.data_req_attribute_name = 'rip_code'
         self.data_req_attribute_value = self.new_value
 

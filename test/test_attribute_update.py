@@ -101,6 +101,22 @@ class TestSourceIdUpdate(TestCase):
         self.mock_run_cmd.assert_has_calls(calls)
 
     @mock.patch('pdata_app.utils.attribute_update.DmtUpdate._check_available')
+    def test_update_file_only(self, mock_available):
+        updater = SourceIdUpdate(self.test_file, self.desired_source_id, True)
+        updater.update()
+        calls = [
+            mock.call("ncatted -a source_id,global,o,c,'better-model' "
+                      "/gws/nopw/j04/primavera9/stream1/path/"
+                      "var1_table_model_expt_varlab_gn_1-2.nc"),
+            mock.call("ncatted -a further_info_url,global,o,c,"
+                      "'https://furtherinfo.es-doc.org/t.MOHC.better-model."
+                      "t.none.r1i1p1' "
+                      "/gws/nopw/j04/primavera9/stream1/path/"
+                      "var1_table_model_expt_varlab_gn_1-2.nc"),
+        ]
+        self.mock_run_cmd.assert_has_calls(calls)
+
+    @mock.patch('pdata_app.utils.attribute_update.DmtUpdate._check_available')
     @mock.patch('pdata_app.utils.attribute_update.DmtUpdate._rename_file')
     def test_move_dreq(self, mock_rename, mock_available):
         df = DataFile.objects.get(name='var1_table_model_expt_varlab_gn_1-2.nc')
