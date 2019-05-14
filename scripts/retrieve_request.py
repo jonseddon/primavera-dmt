@@ -35,7 +35,7 @@ from django.utils import timezone
 
 from pdata_app.models import Settings, RetrievalRequest, EmailQueue, DataFile
 from pdata_app.utils.common import (md5, sha256, adler32, construct_drs_path,
-                                    get_temp_filename, is_same_gws,
+                                    get_temp_filename, is_same_gws, run_command,
                                     date_filter_files, PAUSE_FILES, grouper)
 from pdata_app.utils.dbapi import match_one
 
@@ -211,7 +211,7 @@ def get_moose_url(tape_url, data_files, args):
     logger.debug('MOOSE command is:\n{}'.format(cmd))
 
     try:
-        cmd_out = _run_command(cmd)
+        cmd_out = run_command(cmd)
     except RuntimeError as exc:
         logger.error('MOOSE command failed\n{}'.
                      format(exc.__str__()))
@@ -294,7 +294,7 @@ def get_et_url(tape_url, data_files, args):
     logger.debug('et_get.py command is:\n{}'.format(cmd))
 
     try:
-        cmd_out = _run_command(cmd)
+        cmd_out = run_command(cmd)
         pass
     except RuntimeError as exc:
         logger.error('et_get.py command failed\n{}'.format(exc.__str__()))
@@ -413,33 +413,6 @@ def _check_file_checksum(data_file, file_path):
                checksum_obj.checksum_type, checksum_obj.checksum_value))
         logger.warning(msg)
         raise ChecksumError(msg)
-
-
-def _run_command(command):
-    """
-    Run the command specified and return any output to stdout or stderr as
-    a list of strings.
-    :param str command: The complete command to run.
-    :returns: Any output from the command as a list of strings.
-    :raises RuntimeError: If the command did not complete successfully.
-    """
-    cmd_out = None
-    try:
-        cmd_out = subprocess.check_output(command, stderr=subprocess.STDOUT,
-                                          shell=True).decode('utf-8')
-    except subprocess.CalledProcessError as exc:
-        if exc.returncode == 17:
-            pass
-        else:
-            msg = ('Command did not complete sucessfully.\ncommmand:\n{}\n'
-                   'produced error:\n{}'.format(command, exc.output))
-            logger.warning(msg)
-            raise RuntimeError(msg)
-
-    if isinstance(cmd_out, str):
-        return cmd_out.rstrip().split('\n')
-    else:
-        return None
 
 
 def _email_user_success(retrieval):

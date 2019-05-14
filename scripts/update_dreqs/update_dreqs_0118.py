@@ -29,7 +29,7 @@ DEFAULT_LOG_FORMAT = '%(levelname)s: %(message)s'
 logger = logging.getLogger(__name__)
 
 
-TEST_DATA_DIR = ('/gws/nopw/j04/primavera3/cache/jseddon/test_stream1')
+TEST_DATA_DIR = '/gws/nopw/j04/primavera3/cache/jseddon/test_stream1'
 
 
 def parse_args():
@@ -52,11 +52,11 @@ def parse_args():
 def main():
     """Main entry point"""
     data_reqs = DataRequest.objects.filter(
-        climate_model__short_name='HadGEM3-GC31-LM',
+        institute__short_name='MPI-M',
         experiment__short_name='highresSST-present',
-        rip_code__in=['r1i2p1f1'],
+        rip_code__in=['r1i1p1f1'],
         variable_request__table_name='Amon',
-        variable_request__cmor_name__in=['rlut']
+        variable_request__cmor_name__in=['tas', 'ts', 'psl']
     )
     logger.debug('{} data requests found'.format(data_reqs.count()))
 
@@ -71,9 +71,7 @@ def main():
                 os.makedirs(dest_dir)
             dest_path = os.path.join(dest_dir, data_file.name)
             shutil.copyfile(src_path, dest_path)
-            data_file.directory = os.path.join('/group_workspaces/jasmin2/'
-                                               'primavera3/cache/jseddon/'
-                                               'test_stream1',
+            data_file.directory = os.path.join(TEST_DATA_DIR,
                                                construct_drs_path(data_file))
             data_file.save()
 

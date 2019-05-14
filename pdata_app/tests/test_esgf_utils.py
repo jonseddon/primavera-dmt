@@ -9,7 +9,7 @@ except ImportError:
 
 from django.test import TestCase
 from pdata_app.utils.esgf_utils import add_data_request, parse_rose_stream_name
-from .test_common import make_example_files
+from .common import make_example_files
 
 
 class TestParseRoseStreamName(TestCase):

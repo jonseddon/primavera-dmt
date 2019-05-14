@@ -8,8 +8,9 @@ import logging
 import os
 import random
 import re
-from subprocess import check_output, CalledProcessError
+from subprocess import check_output, CalledProcessError, STDOUT
 from six.moves import zip_longest
+from six import string_types
 from tempfile import gettempdir
 
 from iris.time import PartialDateTime
@@ -288,6 +289,7 @@ def is_same_gws(path1, path2):
     :param str path1: The first path
     :param str path2: The second path
     :returns: True if both paths are in the same group workspace
+    :raises RuntimeError: if the paths aren't recognised
     """
     if path1.startswith('/group_workspaces'):
         gws_pattern = r'^/group_workspaces/jasmin2/primavera\d'
@@ -309,11 +311,30 @@ def is_same_gws(path1, path2):
     return True if gws1.group(0) == gws2.group(0) else False
 
 
+def get_gws(path):
+    """
+    Find the group workspace path at the start of a stream 1 `path`.
+
+    :param str path:
+    :returns: the path identified
+    :rtype: str
+    :raises RuntimeError: if the the path isn't a gws path
+    """
+    gws_pattern = r'^/gws/nopw/j04/primavera\d/stream1'
+    gws = re.match(gws_pattern, path)
+
+    if not gws:
+        msg = 'Cannot determine group workspace name from {}'.format(path)
+        raise RuntimeError(msg)
+
+    return gws.group(0)
+
+
 def construct_drs_path(data_file):
     """
     Make the CMIP6 DRS directory path for the specified file.
 
-    :param pdata_app.models.DataFile data_file:
+    :param pdata_app.models.DataFile data_file: the file
     :returns: A string containing the DRS directory structure
     """
     return os.path.join(
@@ -328,6 +349,73 @@ def construct_drs_path(data_file):
         data_file.grid,
         data_file.version
     )
+
+
+def construct_filename(data_file):
+    """
+    Calculate the CMIP6 filename for the specified file.
+
+    The grid code cannot be determined using any other method and so is taken
+    from the existing file name.
+
+    :param pdata_app.models.DataFile data_file: the file
+    :returns: A string containing the file's name
+    :raises NotImplementedError: if the frequency isn't known
+    """
+    components = [
+        data_file.variable_request.cmor_name,
+        data_file.variable_request.table_name,
+        data_file.climate_model.short_name,
+        data_file.experiment.short_name,
+        data_file.rip_code,
+        data_file.grid,
+    ]
+
+    if data_file.frequency != 'fx':
+        start_str = construct_time_string(data_file.start_time,
+                                          data_file.time_units,
+                                          data_file.calendar,
+                                          data_file.frequency)
+        end_str = construct_time_string(data_file.end_time,
+                                        data_file.time_units,
+                                        data_file.calendar,
+                                        data_file.frequency)
+        components.append(start_str + '-' + end_str)
+
+    return '_'.join(components) + '.nc'
+
+
+def construct_time_string(time_point, time_units, calendar, frequency):
+    """
+    Calculate the time string to the appropriate resolution for use in CMIP6
+    filenames according to http://goo.gl/v1drZl
+
+    :param float time_point: the start time
+    :param str time_units: the time's units
+    :param str calendar: the time's calendar
+    :param str frequency: the variables' frequnecy string
+    :returns: the time point
+    :rtype: str
+    :raises NotImplementedError: if the frequency isn't known
+    """
+    formats = {
+        'ann': '%Y',
+        'mon': '%Y%m',
+        'day': '%Y%m%d',
+        '6hr': '%Y%m%d%H%M',
+        '3hr': '%Y%m%d%H%M',
+        '1hr': '%Y%m%d%H%M',
+    }
+
+    try:
+        time_fmt = formats[frequency]
+    except KeyError:
+        msg = 'No time format known for frequency string {}'.format(frequency)
+        raise NotImplementedError(msg)
+
+    datetime = cf_units.num2date(time_point, time_units, calendar)
+
+    return datetime.strftime(time_fmt)
 
 
 def get_request_size(data_reqs, start_year, end_year,
@@ -492,3 +580,61 @@ def directories_spanned(data_req):
     dirs_list.sort(key=lambda dd: dd['dir_name'])
 
     return dirs_list
+
+
+def run_command(command):
+    """
+    Run the command specified and return any output to stdout or stderr as
+    a list of strings.
+
+    :param str command: The complete command to run.
+    :returns: Any output from the command as a list of strings.
+    :raises RuntimeError: If the command did not complete successfully.
+    """
+    cmd_out = None
+    try:
+        cmd_out = check_output(command, stderr=STDOUT,
+                                          shell=True).decode('utf-8')
+    except CalledProcessError as exc:
+        if exc.returncode == 17:
+            pass
+        else:
+            msg = ('Command did not complete sucessfully.\ncommmand:\n{}\n'
+                   'produced error:\n{}'.format(command, exc.output))
+            logger.warning(msg)
+            raise RuntimeError(msg)
+
+    if isinstance(cmd_out, str):
+        return cmd_out.rstrip().split('\n')
+    else:
+        return None
+
+
+def run_ncatted(directory, filename, attribute_name, attribute_visibility,
+                attribute_type, new_value, suppress_history=True):
+    """
+    Run ncatted on a file.
+
+    :param str directory: the file's directory.
+    :param str filename: the files's name.
+    :param str attribute_name: the attribute to edit.
+    :param str attribute_visibility: global or a variable name.
+    :param str attribute_type: the `ncatted` type.
+    :param new_value: the attribute's new value.
+    """
+    # Aiming for:
+    # ncatted -h -a branch_time_in_parent,global,o,d,10800.0
+    quote_mark = "'" if isinstance(new_value, string_types) else ""
+
+    cmd = 'ncatted {}-a {},{},{},{},{}{}{} {}'.format(
+        '-h ' if suppress_history else '',
+        attribute_name,
+        attribute_visibility,
+        'o',
+        attribute_type,
+        quote_mark,
+        new_value,
+        quote_mark,
+        os.path.join(directory, filename)
+    )
+    run_command(cmd)

@@ -423,7 +423,9 @@ def create_database_file_object(metadata, data_submission, file_online=True,
     # slightly different metadata then django.db.utils.IntegrityError is
     # raised
     try:
-        data_file = DataFile.objects.create(name=metadata['basename'],
+        data_file = DataFile.objects.create(
+            name=metadata['basename'],
+            incoming_name=metadata['basename'],
             incoming_directory=metadata['directory'],
             directory=directory, size=metadata['filesize'],
             project=metadata['project'],

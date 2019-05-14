@@ -35,13 +35,13 @@ class Settings(SingletonModel):
     base_output_dir = models.CharField(max_length=300,
                                        verbose_name='Base directory for '
                                                     'retrieved files',
-                                       default='/group_workspaces/jasmin2/'
-                                               'primavera5/stream1')
+                                       default='/gws/nopw/j04/primavera5/'
+                                               'stream1')
     current_stream1_dir = models.CharField(
         max_length=300,
         verbose_name='The directory that retrievals are currently being '
                      'retrieved to.',
-        default='/group_workspaces/jasmin2/primavera4/stream1'
+        default='/gws/nopw/j04/primavera4/stream1'
     )
 
     class Meta:
@@ -552,8 +552,14 @@ class DataFile(models.Model):
     # ManyToMany relationships:
     # DataIssues: DataIssue - multiple is OK
 
-    name = models.CharField(max_length=200, verbose_name="File name", null=False, blank=False)
-    incoming_directory = models.CharField(max_length=500, verbose_name="Incoming directory", null=False, blank=False)
+    name = models.CharField(max_length=200, verbose_name="File name",
+                            null=False, blank=False)
+    incoming_name = models.CharField(max_length=200,
+                                     verbose_name="Original file name",
+                                     null=False, blank=False)
+    incoming_directory = models.CharField(max_length=500,
+                                          verbose_name="Incoming directory",
+                                          null=False, blank=False)
 
     # This is where the datafile is now
     directory = models.CharField(max_length=500,

@@ -3,7 +3,10 @@ test_validate_data_submission.py - unit tests for retrieve_request.py
 """
 from __future__ import unicode_literals, division, absolute_import
 import datetime
-import mock
+try:
+    from unittest import mock
+except ImportError:
+    import mock
 
 import django
 django.setup()
@@ -21,12 +24,19 @@ from vocabs.vocabs import (CALENDARS, FREQUENCY_VALUES, STATUS_VALUES,
                            VARIABLE_TYPES)
 
 from scripts.retrieve_request import main, get_tape_url
+import scripts.retrieve_request
+
 
 class TestIntegrationTests(TestCase):
     """Integration tests run through the unittest framework and mock"""
     def setUp(self):
+        # set the base output directory to something appropriate for these
+        # paths
+        mock.patch.object(scripts.retrieve_request, 'BASE_OUTPUT_DIR',
+                          return_value = '/gws/nopw/j04/primavera5/stream1')
+
         # mock any external calls
-        patch = mock.patch('scripts.retrieve_request._run_command')
+        patch = mock.patch('scripts.retrieve_request.run_command')
         self.mock_run_cmd = patch.start()
         self.addCleanup(patch.stop)
 
@@ -162,15 +172,15 @@ class TestIntegrationTests(TestCase):
         self.assertIsNotNone(df)
 
         self.mock_rename.assert_called_once_with(
-            '/group_workspaces/jasmin2/primavera5/.et_retrievals/ret_999999/'
+            '/gws/nopw/j04/primavera5/.et_retrievals/ret_999999/'
             'batch_01234/gws/MOHC/MY-MODEL/incoming/v12345678/file_one.nc',
-            '/group_workspaces/jasmin2/primavera5/stream1/CMIP6/HighResMIP/'
+            '/gws/nopw/j04/primavera5/stream1/CMIP6/HighResMIP/'
             'MOHC/MY-MODEL/experiment/r1i1p1f1/my-table/my-var/gn/v12345678/'
             'file_one.nc'
         )
 
         self.assertTrue(df.online)
-        self.assertEqual(df.directory, '/group_workspaces/jasmin2/primavera5/'
+        self.assertEqual(df.directory, '/gws/nopw/j04/primavera5/'
                                        'stream1/CMIP6/HighResMIP/MOHC/'
                                        'MY-MODEL/experiment/r1i1p1f1/'
                                        'my-table/my-var/gn/v12345678')
@@ -215,10 +225,10 @@ class TestIntegrationTests(TestCase):
         for data_file in DataFile.objects.all():
             self.assertTrue(data_file.online)
             self.assertIn(data_file.directory, [
-                '/group_workspaces/jasmin2/primavera5/stream1/CMIP6/'
+                '/gws/nopw/j04/primavera5/stream1/CMIP6/'
                 'HighResMIP/MOHC/MY-MODEL/experiment/r1i1p1f1/my-table/'
                 'my-var/gn/v12345678',
-                '/group_workspaces/jasmin2/primavera5/stream1/CMIP6/HighResMIP/'
+                '/gws/nopw/j04/primavera5/stream1/CMIP6/HighResMIP/'
                 'MOHC/MY-MODEL/experiment/r1i1p1f1/your-table/your-var/'
                 'gn/v12345678'
             ])
@@ -271,7 +281,7 @@ class TestIntegrationTests(TestCase):
             retrieval_id = ret_req.id
             no_restore = False
             skip_checksums = True
-            alternative = '/group_workspaces/jasmin2/primavera3/spare_dir'
+            alternative = '/gws/nopw/j04/primavera3/spare_dir'
 
         self.mock_exists.side_effect = [
             False,  # if os.path.exists(retrieval_dir):
@@ -285,18 +295,18 @@ class TestIntegrationTests(TestCase):
         get_tape_url('et:1234', [self.df1], ns)
 
         self.mock_rename.assert_called_once_with(
-            '/group_workspaces/jasmin2/primavera3/.et_retrievals/ret_999999/'
+            '/gws/nopw/j04/primavera3/.et_retrievals/ret_999999/'
             'batch_01234/gws/MOHC/MY-MODEL/incoming/v12345678/file_one.nc',
-            '/group_workspaces/jasmin2/primavera3/spare_dir/CMIP6/HighResMIP/'
+            '/gws/nopw/j04/primavera3/spare_dir/CMIP6/HighResMIP/'
             'MOHC/MY-MODEL/experiment/r1i1p1f1/my-table/my-var/gn/'
             'v12345678/file_one.nc'
         )
 
         self.mock_symlink.assert_called_once_with(
-            '/group_workspaces/jasmin2/primavera3/spare_dir/CMIP6/HighResMIP/'
+            '/gws/nopw/j04/primavera3/spare_dir/CMIP6/HighResMIP/'
             'MOHC/MY-MODEL/experiment/r1i1p1f1/my-table/my-var/gn/'
             'v12345678/file_one.nc',
-            '/group_workspaces/jasmin2/primavera5/stream1/CMIP6/HighResMIP/'
+            '/gws/nopw/j04/primavera5/stream1/CMIP6/HighResMIP/'
             'MOHC/MY-MODEL/experiment/r1i1p1f1/my-table/my-var/gn/v12345678/'
             'file_one.nc'
         )
