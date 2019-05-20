@@ -53,8 +53,6 @@ def main(args):
         climate_model__short_name='MPIESM-1-2-HR',
         experiment__short_name='highresSST-present',
         rip_code='r1i1p1f1',
-        variable_request__table_name='Amon',
-        variable_request__cmor_name__in=['tas', 'ts', 'psl']
     )
     logger.debug('{} data requests found'.format(old_data_reqs.count()))
 
