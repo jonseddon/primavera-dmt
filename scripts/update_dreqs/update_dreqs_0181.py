@@ -67,24 +67,24 @@ def main(args):
             raise ValueError('Unknown source_id {}'.
                              format(data_file.climate_model.short_name))
 
-        # new_dreq, created = DataRequest.objects.get_or_create(
-        #     project=dreq.project,
-        #     institute=dreq.institute,
-        #     climate_model=ClimateModel.objects.get(short_name=
-        #                                            new_source_id),
-        #     experiment=dreq.experiment,
-        #     variable_request=dreq.variable_request,
-        #     rip_code=dreq.rip_code,
-        #     request_start_time=dreq.request_start_time,
-        #     request_end_time=dreq.request_end_time,
-        #     time_units=dreq.time_units,
-        #     calendar=dreq.calendar
-        # )
-        # if created:
-        #     logger.debug('Created {}'.format(new_dreq))
-        #
-        # updater = SourceIdUpdate(data_file, new_source_id)
-        # updater.update()
+        new_dreq, created = DataRequest.objects.get_or_create(
+            project=dreq.project,
+            institute=dreq.institute,
+            climate_model=ClimateModel.objects.get(short_name=
+                                                   new_source_id),
+            experiment=dreq.experiment,
+            variable_request=dreq.variable_request,
+            rip_code=dreq.rip_code,
+            request_start_time=dreq.request_start_time,
+            request_end_time=dreq.request_end_time,
+            time_units=dreq.time_units,
+            calendar=dreq.calendar
+        )
+        if created:
+            logger.debug('Created {}'.format(new_dreq))
+
+        updater = SourceIdUpdate(data_file, new_source_id)
+        updater.update()
 
 
 if __name__ == "__main__":
