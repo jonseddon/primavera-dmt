@@ -53,7 +53,8 @@ def main(args):
         climate_model__short_name='MPIESM-1-2-HR',
         experiment__short_name='highresSST-present',
         rip_code='r1i1p1f1',
-    )
+        datafile__isnull=False
+    ).distinct()
     logger.debug('{} data requests found'.format(old_data_reqs.count()))
 
     reqs_list = [
