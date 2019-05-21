@@ -155,7 +155,8 @@ def main(args):
                     sym_link = os.path.join(sym_link_dir, data_file.name)
                     if not os.path.islink(sym_link):
                         logger.error("Expected {} to be a link but it isn't. "
-                                     "Leaving this file in place.")
+                                     "Leaving this file in place.".
+                                     format(sym_link))
                         problems_encountered = True
                     else:
                         try:
