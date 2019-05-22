@@ -49,8 +49,15 @@ def main(args):
     """
     model, expt, var_lab, table, var = args.request_id.split('_')
 
+    if model == 'MPIESM-1-2-HR':
+        new_model = 'MPI-ESM1-2-HR'
+    elif model == 'MPIESM-1-2-XR':
+        new_model = 'MPI-ESM1-2-XR'
+    else:
+        raise ValueError('Unknown source_id {}'.format(model))
+
     dreq = DataRequest.objects.get(
-        climate_model__short_name=model,
+        climate_model__short_name=new_model,
         experiment__short_name=expt,
         rip_code=var_lab,
         variable_request__table_name=table,
