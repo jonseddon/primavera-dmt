@@ -152,6 +152,11 @@ def main(args):
     """
     logger.debug('Starting db_netcdf_housekeeping')
 
+    ceda_base = '/badc/cmip6/data'
+    if not os.path.exists(ceda_base):
+        logger.error("{} isn't mounted on this server".format(ceda_base))
+        sys.exit(1)
+
     if not args.no_file_structure:
         scan_file_structure(args.top_level)
 
