@@ -36,7 +36,6 @@ def parse_args():
     parser = argparse.ArgumentParser(description='Add additional data requests')
     parser.add_argument('-l', '--log-level', help='set logging level to one of '
         'debug, info, warn (the default), or error')
-    parser.add_argument('request_id', help='to request id to update')
     parser.add_argument('--version', action='version',
         version='%(prog)s {}'.format(__version__))
     args = parser.parse_args()
