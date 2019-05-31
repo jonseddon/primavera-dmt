@@ -9,12 +9,11 @@ import os
 import re
 import six
 
-import django
-
-from pdata_app.models import ClimateModel, DataRequest, Settings
-from pdata_app.utils.common import (construct_drs_path, construct_filename,
-                                    get_gws, delete_drs_dir, is_same_gws,
-                                    run_ncatted)
+from pdata_app.models import (Checksum, ClimateModel, DataRequest, Settings,
+                              TapeChecksum)
+from pdata_app.utils.common import (adler32, construct_drs_path,
+                                    construct_filename, get_gws,
+                                    delete_drs_dir, is_same_gws, run_ncatted)
 
 logger = logging.getLogger(__name__)
 
@@ -100,6 +99,7 @@ class DmtUpdate(object):
             self._update_database_attribute()
             self._update_file_attribute()
             self._update_filename()
+            self._update_checksum()
             self._update_directory()
             self._rename_file()
             self._move_dreq()
@@ -171,6 +171,37 @@ class DmtUpdate(object):
         """
         self.new_filename = construct_filename(self.datafile)
         self.datafile.name = self.new_filename
+        self.datafile.save()
+
+    def _update_checksum(self):
+        """
+        Update the checksum and size of the file in the database, preserving
+        the original values.
+        """
+        # Archive the checksum and calculate its new value
+        cs = self.datafile.checksum_set.first()
+        if not cs:
+            logger.warning('No checksum for {}'.format(self.datafile.name))
+        else:
+            if self.datafile.tapechecksum_set.count() == 0:
+                TapeChecksum.objects.create(
+                    data_file=self.datafile,
+                    checksum_value=cs.checksum_value,
+                    checksum_type=cs.checksum_type
+                )
+            # Remove the original checksum now that the tape checksum's
+            # been created
+            cs.delete()
+        new_path = os.path.join(self.old_directory, self.new_filename)
+        Checksum.objects.create(
+            data_file=self.datafile,
+            checksum_type='ADLER32',
+            checksum_value=adler32(new_path)
+        )
+        # Update the file's size
+        if self.datafile.tape_size is None:
+            self.datafile.tape_size = self.datafile.size
+        self.datafile.size = os.path.getsize(new_path)
         self.datafile.save()
 
     def _update_directory(self):

@@ -13,7 +13,7 @@ django.setup()
 
 from django.test import TestCase
 
-from pdata_app.models import DataFile, DataRequest
+from pdata_app.models import Checksum, DataFile
 from pdata_app.tests.common import make_example_files
 
 from pdata_app.utils.attribute_update import (SourceIdUpdate,
@@ -56,7 +56,9 @@ class TestSourceIdUpdate(TestCase):
 
     @mock.patch('pdata_app.utils.attribute_update.DmtUpdate._check_available')
     @mock.patch('pdata_app.utils.attribute_update.DmtUpdate._rename_file')
-    def test_source_id_updated(self, mock_rename, mock_available):
+    @mock.patch('pdata_app.utils.attribute_update.DmtUpdate._update_checksum')
+    def test_source_id_updated(self, mock_checksum, mock_rename,
+                               mock_available):
         updater = SourceIdUpdate(self.test_file, self.desired_source_id)
         updater.update()
         self.test_file.refresh_from_db()
@@ -65,7 +67,9 @@ class TestSourceIdUpdate(TestCase):
 
     @mock.patch('pdata_app.utils.attribute_update.DmtUpdate._check_available')
     @mock.patch('pdata_app.utils.attribute_update.DmtUpdate._rename_file')
-    def test_filename_updated(self, mock_rename, mock_available):
+    @mock.patch('pdata_app.utils.attribute_update.DmtUpdate._update_checksum')
+    def test_filename_updated(self, mock_checksum, mock_rename,
+                              mock_available):
         updater = SourceIdUpdate(self.test_file, self.desired_source_id)
         updater.update()
         self.test_file.refresh_from_db()
@@ -74,7 +78,9 @@ class TestSourceIdUpdate(TestCase):
 
     @mock.patch('pdata_app.utils.attribute_update.DmtUpdate._check_available')
     @mock.patch('pdata_app.utils.attribute_update.DmtUpdate._rename_file')
-    def test_directory_updated(self, mock_rename, mock_available):
+    @mock.patch('pdata_app.utils.attribute_update.DmtUpdate._update_checksum')
+    def test_directory_updated(self, mock_checksum, mock_rename,
+                               mock_available):
         updater = SourceIdUpdate(self.test_file, self.desired_source_id)
         updater.update()
         self.test_file.refresh_from_db()
@@ -85,7 +91,9 @@ class TestSourceIdUpdate(TestCase):
 
     @mock.patch('pdata_app.utils.attribute_update.DmtUpdate._check_available')
     @mock.patch('pdata_app.utils.attribute_update.DmtUpdate._rename_file')
-    def test_update_attributes(self, mock_rename, mock_available):
+    @mock.patch('pdata_app.utils.attribute_update.DmtUpdate._update_checksum')
+    def test_update_attributes(self, mock_checksum, mock_rename,
+                               mock_available):
         updater = SourceIdUpdate(self.test_file, self.desired_source_id)
         updater.update()
         calls = [
@@ -101,7 +109,8 @@ class TestSourceIdUpdate(TestCase):
         self.mock_run_cmd.assert_has_calls(calls)
 
     @mock.patch('pdata_app.utils.attribute_update.DmtUpdate._check_available')
-    def test_update_file_only(self, mock_available):
+    @mock.patch('pdata_app.utils.attribute_update.DmtUpdate._update_checksum')
+    def test_update_file_only(self, mock_checksum, mock_available):
         updater = SourceIdUpdate(self.test_file, self.desired_source_id, True)
         updater.update()
         calls = [
@@ -118,7 +127,8 @@ class TestSourceIdUpdate(TestCase):
 
     @mock.patch('pdata_app.utils.attribute_update.DmtUpdate._check_available')
     @mock.patch('pdata_app.utils.attribute_update.DmtUpdate._rename_file')
-    def test_move_dreq(self, mock_rename, mock_available):
+    @mock.patch('pdata_app.utils.attribute_update.DmtUpdate._update_checksum')
+    def test_move_dreq(self, mock_checksum, mock_rename, mock_available):
         df = DataFile.objects.get(name='var1_table_model_expt_varlab_gn_1-2.nc')
         self.assertEqual(df.data_request.climate_model.short_name, 't')
         updater = SourceIdUpdate(self.test_file, self.desired_source_id)
@@ -128,6 +138,26 @@ class TestSourceIdUpdate(TestCase):
                          'better-model')
 
     @mock.patch('pdata_app.utils.attribute_update.DmtUpdate._check_available')
+    @mock.patch('pdata_app.utils.attribute_update.DmtUpdate._rename_file')
+    @mock.patch('pdata_app.utils.attribute_update.adler32')
+    @mock.patch('pdata_app.utils.attribute_update.os.path.getsize')
+    def test_checksum(self, mock_size, mock_adler, mock_rename,
+                      mock_available):
+        mock_size.return_value = 256
+        mock_adler.return_value = '9876543210'
+        df = DataFile.objects.get(name='var1_table_model_expt_varlab_gn_1-2.nc')
+        self.assertEqual(df.data_request.climate_model.short_name, 't')
+        updater = SourceIdUpdate(self.test_file, self.desired_source_id)
+        updater.update()
+        df.refresh_from_db()
+        self.assertEqual(df.size, 256)
+        self.assertEqual(df.tape_size, 1)
+        self.assertEqual(df.checksum_set.first().checksum_value, '9876543210')
+        self.assertEqual(df.tapechecksum_set.first().checksum_value,
+                         '1234567890')
+
+    @mock.patch('pdata_app.utils.attribute_update.DmtUpdate._check_available')
+    @mock.patch('pdata_app.utils.attribute_update.DmtUpdate._update_checksum')
     @mock.patch('pdata_app.utils.attribute_update.os.makedirs')
     @mock.patch('pdata_app.utils.attribute_update.os.rename')
     @mock.patch('pdata_app.utils.attribute_update.os.listdir')
@@ -138,7 +168,7 @@ class TestSourceIdUpdate(TestCase):
     @mock.patch('pdata_app.utils.attribute_update.os.remove')
     def test_renaming(self, mock_rm, mock_islink, mock_lexists, mock_symlink,
                       mock_del_drs_dir, mock_ls, mock_rename, mock_mkdirs,
-                      mock_available):
+                      mock_checksum, mock_available):
         mock_islink.return_vale = True
         mock_lexists.return_vale = True
         mock_ls.return_value = False
@@ -159,6 +189,7 @@ class TestSourceIdUpdate(TestCase):
         )
 
     @mock.patch('pdata_app.utils.attribute_update.DmtUpdate._check_available')
+    @mock.patch('pdata_app.utils.attribute_update.DmtUpdate._update_checksum')
     @mock.patch('pdata_app.utils.attribute_update.os.makedirs')
     @mock.patch('pdata_app.utils.attribute_update.os.rename')
     @mock.patch('pdata_app.utils.attribute_update.os.listdir')
@@ -169,7 +200,7 @@ class TestSourceIdUpdate(TestCase):
     @mock.patch('pdata_app.utils.attribute_update.os.remove')
     def test_sym_link(self, mock_rm, mock_islink, mock_lexists, mock_symlink,
                       mock_del_drs_dir, mock_ls, mock_rename, mock_mkdirs,
-                      mock_available):
+                      mock_checksum, mock_available):
         mock_islink.return_vale = True
         mock_lexists.return_vale = True
         mock_ls.return_value = False
@@ -196,6 +227,7 @@ class TestSourceIdUpdate(TestCase):
         )
 
     @mock.patch('pdata_app.utils.attribute_update.DmtUpdate._check_available')
+    @mock.patch('pdata_app.utils.attribute_update.DmtUpdate._update_checksum')
     @mock.patch('pdata_app.utils.attribute_update.os.makedirs')
     @mock.patch('pdata_app.utils.attribute_update.os.rename')
     @mock.patch('pdata_app.utils.attribute_update.os.listdir')
@@ -206,7 +238,8 @@ class TestSourceIdUpdate(TestCase):
     @mock.patch('pdata_app.utils.attribute_update.os.remove')
     def test_sym_link_not_required(self, mock_rm, mock_islink, mock_lexists,
                                    mock_symlink, mock_del_drs_dir, mock_ls,
-                                   mock_rename, mock_mkdirs, mock_available):
+                                   mock_rename, mock_mkdirs, mock_checksum,
+                                   mock_available):
         mock_islink.return_vale = True
         mock_lexists.return_vale = True
         mock_ls.return_value = False
@@ -245,7 +278,9 @@ class TestVariantLabelUpdate(TestCase):
 
     @mock.patch('pdata_app.utils.attribute_update.DmtUpdate._check_available')
     @mock.patch('pdata_app.utils.attribute_update.DmtUpdate._rename_file')
-    def test_variant_label_updated(self, mock_rename, mock_available):
+    @mock.patch('pdata_app.utils.attribute_update.DmtUpdate._update_checksum')
+    def test_variant_label_updated(self, mock_checksum, mock_rename,
+                                   mock_available):
         updater = VariantLabelUpdate(self.test_file, self.desired_variant_label)
         updater.update()
         self.test_file.refresh_from_db()
@@ -253,7 +288,9 @@ class TestVariantLabelUpdate(TestCase):
 
     @mock.patch('pdata_app.utils.attribute_update.DmtUpdate._check_available')
     @mock.patch('pdata_app.utils.attribute_update.DmtUpdate._rename_file')
-    def test_filename_updated(self, mock_rename, mock_available):
+    @mock.patch('pdata_app.utils.attribute_update.DmtUpdate._update_checksum')
+    def test_filename_updated(self, mock_checksum, mock_rename,
+                              mock_available):
         updater = VariantLabelUpdate(self.test_file, self.desired_variant_label)
         updater.update()
         self.test_file.refresh_from_db()
@@ -262,7 +299,9 @@ class TestVariantLabelUpdate(TestCase):
 
     @mock.patch('pdata_app.utils.attribute_update.DmtUpdate._check_available')
     @mock.patch('pdata_app.utils.attribute_update.DmtUpdate._rename_file')
-    def test_directory_updated(self, mock_rename, mock_available):
+    @mock.patch('pdata_app.utils.attribute_update.DmtUpdate._update_checksum')
+    def test_directory_updated(self, mock_checksum, mock_rename,
+                               mock_available):
         updater = VariantLabelUpdate(self.test_file, self.desired_variant_label)
         updater.update()
         self.test_file.refresh_from_db()
@@ -272,7 +311,9 @@ class TestVariantLabelUpdate(TestCase):
 
     @mock.patch('pdata_app.utils.attribute_update.DmtUpdate._check_available')
     @mock.patch('pdata_app.utils.attribute_update.DmtUpdate._rename_file')
-    def test_move_dreq(self, mock_rename, mock_available):
+    @mock.patch('pdata_app.utils.attribute_update.DmtUpdate._update_checksum')
+    def test_move_dreq(self, mock_checksum, mock_rename,
+                       mock_available):
         df = DataFile.objects.get(name='var1_table_model_expt_varlab_gn_1-2.nc')
         self.assertEqual(df.data_request.rip_code, 'r1i1p1f1')
         updater = VariantLabelUpdate(self.test_file, self.desired_variant_label)
@@ -282,7 +323,9 @@ class TestVariantLabelUpdate(TestCase):
 
     @mock.patch('pdata_app.utils.attribute_update.DmtUpdate._check_available')
     @mock.patch('pdata_app.utils.attribute_update.DmtUpdate._rename_file')
-    def test_update_attributes(self, mock_rename, mock_available):
+    @mock.patch('pdata_app.utils.attribute_update.DmtUpdate._update_checksum')
+    def test_update_attributes(self, mock_checksum, mock_rename,
+                               mock_available):
         updater = VariantLabelUpdate(self.test_file, self.desired_variant_label)
         updater.update()
         calls = [
@@ -318,3 +361,5 @@ def _make_files_realistic():
     datafile.name = 'var1_table_model_expt_varlab_gn_1-2.nc'
     datafile.directory = '/gws/nopw/j04/primavera9/stream1/path'
     datafile.save()
+    Checksum.objects.create(data_file=datafile, checksum_value='1234567890',
+                            checksum_type='ADLER32')
