@@ -99,9 +99,9 @@ class DmtUpdate(object):
             self._update_database_attribute()
             self._update_file_attribute()
             self._update_filename()
-            self._update_checksum()
             self._update_directory()
             self._rename_file()
+            self._update_checksum()
             self._move_dreq()
         else:
             self._check_available()
@@ -192,7 +192,7 @@ class DmtUpdate(object):
             # Remove the original checksum now that the tape checksum's
             # been created
             cs.delete()
-        new_path = os.path.join(self.old_directory, self.new_filename)
+        new_path = os.path.join(self.new_directory, self.new_filename)
         Checksum.objects.create(
             data_file=self.datafile,
             checksum_type='ADLER32',
