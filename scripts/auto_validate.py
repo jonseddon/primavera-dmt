@@ -178,15 +178,21 @@ def main():
         if is_max_jobs_reached(VALIDATE_SCRIPT, MAX_VALIDATE_SCRIPTS):
             logger.debug('Maximum number of jobs reached.')
             sys.exit(0)
-        if not are_files_chowned(submission):
-            logger.debug('Skipping {} as all files not owned by {}.'.
-                         format(submission.incoming_directory,
-                                ADMIN_USER))
+        if not os.path.exists(submission.incoming_directory):
+            msg = 'Skipping {} as it does not appear to exist.'.format(
+                submission.incoming_directory
+            )
+            logger.error(msg)
         else:
-            logger.debug('Processing {}'.format(submission))
-            submission.status = STATUS_VALUES['ARRIVED']
-            submission.save()
-            submit_validation(submission.incoming_directory)
+            if not are_files_chowned(submission):
+                logger.debug('Skipping {} as all files not owned by {}.'.
+                             format(submission.incoming_directory,
+                                    ADMIN_USER))
+            else:
+                logger.debug('Processing {}'.format(submission))
+                submission.status = STATUS_VALUES['ARRIVED']
+                submission.save()
+                submit_validation(submission.incoming_directory)
 
 
 if __name__ == "__main__":
