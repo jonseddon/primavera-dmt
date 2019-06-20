@@ -74,9 +74,7 @@ def main(args):
         institute__short_name='CNRM-CERFACS',
         variable_request__table_name='Amon',
         variable_request__cmor_name='o3'
-    ).exclude(
-        experiment__short_name_startswith='primWP5-amv'
-    ).distinct()
+    )
 
     cf = DataFile.objects.filter(
         institute__short_name='CNRM-CERFACS',
