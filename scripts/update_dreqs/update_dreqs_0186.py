@@ -85,12 +85,9 @@ def main(args):
     affected_files = o3 | cf
 
     logger.debug('{} affected files found'.format(affected_files.count()))
-    for df in affected_files.distinct().order_by('climate_model',
-                                                 'experiment', 'name'):
-        print(df.name)
 
-    # delete_files(affected_files)
-    # replace_files(affected_files)
+    delete_files(affected_files)
+    replace_files(affected_files)
 
 
 if __name__ == "__main__":
