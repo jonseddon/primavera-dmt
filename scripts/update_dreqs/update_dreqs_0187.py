@@ -70,16 +70,16 @@ def main(args):
     """
     Main entry point
     """
-    # lp = User.objects.get(username='lpcaron')
-    # hist_txt = (
-    #     'An issue has been identified with the way the GHGs were ingested by '
-    #     'EC-Earth for years 2013 and 2014. For those two years, the GHG '
-    #     'concentrations were too low, which led to a sudden drop in surface '
-    #     'thermal radiation and in a noticeable decrease in global surface '
-    #     'temperature. '
-    # )
-    # hist_issue, _created = DataIssue.objects.get_or_create(issue=hist_txt,
-    #                                                        reporter=lp)
+    lp = User.objects.get(username='lpcaron')
+    hist_txt = (
+        'An issue has been identified with the way the GHGs were ingested by '
+        'EC-Earth for years 2013 and 2014. For those two years, the GHG '
+        'concentrations were too low, which led to a sudden drop in surface '
+        'thermal radiation and in a noticeable decrease in global surface '
+        'temperature. '
+    )
+    hist_issue, _created = DataIssue.objects.get_or_create(issue=hist_txt,
+                                                           reporter=lp)
 
     affected_files = DataFile.objects.filter(
         climate_model__short_name='EC-Earth3P-HR',
@@ -93,15 +93,10 @@ def main(args):
 
     logger.debug('{} affected files found'.format(affected_files.count()))
 
-    for df in affected_files.order_by('climate_model', 'experiment',
-                                      'experiment', 'variable_request'):
-        print(df.name)
+    hist_issue.data_file.add(*affected_files)
 
-    # hist_issue.data_file.add(*affected_files)
-    #
-    # delete_files(affected_files)
-    # replace_files(affected_files)
-
+    delete_files(affected_files)
+    replace_files(affected_files)
 
 
 if __name__ == "__main__":
