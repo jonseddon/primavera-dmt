@@ -51,11 +51,13 @@ def main(args):
         variable_request__table_name__startswith='Prim'
     )
 
+    num_files_checked = 0
     num_offline = 0
     num_not_found = 0
     num_errors = 0
     for data_req in data_reqs:
         for data_file in data_req.datafile_set.all():
+            num_files_checked += 1
             if not data_file.online:
                 logger.error('Not online {}'.format(data_file.name))
                 num_offline += 1
@@ -70,6 +72,7 @@ def main(args):
                 logger.error("Sizes don't match {}".format(data_file.name))
                 num_errors += 1
 
+    logger.debug('{} files checked'.format(num_files_checked))
     logger.debug('{} found offline'.format(num_offline))
     logger.debug('{} not found'.format(num_not_found))
     logger.debug('{} with incorrect sizes'.format(num_errors))
