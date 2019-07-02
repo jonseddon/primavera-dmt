@@ -59,10 +59,11 @@ def main(args):
             if not data_file.online:
                 logger.error('Not online {}'.format(data_file.name))
                 num_offline += 1
+            actual_size = 0
             try:
                 actual_size = os.path.getsize(
                     os.path.join(data_file.directory, data_file.name))
-            except OSError:
+            except (OSError, TypeError):
                 logger.error("Not found {}".format(data_file.name))
                 num_not_found += 1
             if not actual_size == data_file.size:
