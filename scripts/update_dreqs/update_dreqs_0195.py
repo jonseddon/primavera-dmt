@@ -1,10 +1,8 @@
 #!/usr/bin/env python
 """
-update_dreqs_0194.py
+update_dreqs_0193.py
 
-Create an issue for EC-Earth3P-HR highresSST-future r1i1p1f1 v20190514 about
-a metadata issue.
-
+Restore EC-Earth3P-HR highresSST-future r1i1p1f1 v20190514.
 """
 import argparse
 import logging.config
@@ -15,10 +13,8 @@ from cf_units import date2num, CALENDAR_GREGORIAN
 
 import django
 django.setup()
-from django.contrib.auth.models import User
-from pdata_app.utils.replace_file import replace_files
-from pdata_app.models import DataFile, DataIssue
-from pdata_app.utils.common import delete_drs_dir
+from pdata_app.utils.replace_file import restore_files
+from pdata_app.models import ReplacedFile
 
 __version__ = '0.1.0b1'
 
@@ -26,29 +22,6 @@ DEFAULT_LOG_LEVEL = logging.WARNING
 DEFAULT_LOG_FORMAT = '%(levelname)s: %(message)s'
 
 logger = logging.getLogger(__name__)
-
-
-def delete_files(query_set):
-    """
-    Delete any files online from the specified queryset
-    """
-    directories_found = []
-    for df in query_set.filter(online=True):
-        try:
-            os.remove(os.path.join(df.directory, df.name))
-        except OSError as exc:
-            logger.error(str(exc))
-        else:
-            if df.directory not in directories_found:
-                directories_found.append(df.directory)
-        df.online = False
-        df.directory = None
-        df.save()
-
-    for directory in directories_found:
-        if not os.listdir(directory):
-            delete_drs_dir(directory)
-    logger.debug('{} directories removed'.format(len(directories_found)))
 
 
 def parse_args():
@@ -69,25 +42,18 @@ def main(args):
     """
     Main entry point
     """
-    gijs = User.objects.get(username='gvdoord')
-    hist_txt = (
-        'The parent_source_id attribute in these files should be EC-Earth3P-'
-        'HR. This is a purely a metadata issue and the data itself is '
-        'not affected. This will be corrected before publication to ESGF.'
-    )
-    hist_issue, _created = DataIssue.objects.get_or_create(issue=hist_txt,
-                                                           reporter=gijs)
-
-    affected_files = DataFile.objects.filter(
+    files = ReplacedFile.objects.filter(
         climate_model__short_name='EC-Earth3P-HR',
         experiment__short_name='highresSST-future',
         rip_code='r1i1p1f1',
         version='v20190514',
     )
+    if files.count() != 7454:
+        logger.error('{} affected files found'.format(files.count()))
+    else:
+        logger.debug('{} affected files found'.format(files.count()))
 
-    logger.debug('{} affected files found'.format(affected_files.count()))
-
-    hist_issue.data_file.add(*affected_files)
+    restore_files(files)
 
 
 if __name__ == "__main__":
