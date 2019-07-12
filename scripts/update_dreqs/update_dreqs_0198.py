@@ -146,7 +146,7 @@ def main(args):
 
     affected_files = DataFile.objects.filter(name__in=filenames)
 
-    if affected_files.count != 70: # no ap8_3 E3hr prw, prcsh, rsutcs or psl
+    if affected_files.count() != 70: # no ap8_3 E3hr prw, prcsh, rsutcs or psl
         logger.error('{} affected files found'.format(affected_files.count()))
         sys.exit(1)
     else:
