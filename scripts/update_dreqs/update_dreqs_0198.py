@@ -106,14 +106,48 @@ def main(args):
         "prsn_3hr_HadGEM3-GC31-HM_highresSST-present_r1i3p1f1_gn_200607010130-200612302230.nc",
         "huss_3hr_HadGEM3-GC31-HM_highresSST-present_r1i3p1f1_gn_200607010000-200612302100.nc",
         "mrsos_3hr_HadGEM3-GC31-HM_highresSST-present_r1i3p1f1_gn_200607010000-200612302100.nc",
-        "rsus_3hr_HadGEM3-GC31-HM_highresSST-present_r1i3p1f1_gn_200607010130-200612302230.nc"
+        "rsus_3hr_HadGEM3-GC31-HM_highresSST-present_r1i3p1f1_gn_200607010130-200612302230.nc",
+        "vortmean_Prim3hrPt_HadGEM3-GC31-HM_highresSST-present_r1i3p1f1_gn_200608010000-200608302100.nc",
+        "zg7h_Prim3hrPt_HadGEM3-GC31-HM_highresSST-present_r1i3p1f1_gn_200608010000-200608302100.nc",
+        "hus_E3hrPt_HadGEM3-GC31-HM_highresSST-present_r1i3p1f1_gn_200608010000-200608302100.nc",
+        "va_E3hrPt_HadGEM3-GC31-HM_highresSST-present_r1i3p1f1_gn_200608010000-200608302100.nc",
+        "ua_E3hrPt_HadGEM3-GC31-HM_highresSST-present_r1i3p1f1_gn_200608010000-200608302100.nc",
+        "wap_E3hrPt_HadGEM3-GC31-HM_highresSST-present_r1i3p1f1_gn_200608010000-200608302100.nc",
+        "ta_E3hrPt_HadGEM3-GC31-HM_highresSST-present_r1i3p1f1_gn_200608010000-200608302100.nc",
+        "vortmean_Prim3hrPt_HadGEM3-GC31-HM_highresSST-present_r1i3p1f1_gn_200609010000-200609302100.nc",
+        "zg7h_Prim3hrPt_HadGEM3-GC31-HM_highresSST-present_r1i3p1f1_gn_200609010000-200609302100.nc",
+        "hus_E3hrPt_HadGEM3-GC31-HM_highresSST-present_r1i3p1f1_gn_200609010000-200609302100.nc",
+        "va_E3hrPt_HadGEM3-GC31-HM_highresSST-present_r1i3p1f1_gn_200609010000-200609302100.nc",
+        "ua_E3hrPt_HadGEM3-GC31-HM_highresSST-present_r1i3p1f1_gn_200609010000-200609302100.nc",
+        "wap_E3hrPt_HadGEM3-GC31-HM_highresSST-present_r1i3p1f1_gn_200609010000-200609302100.nc",
+        "ta_E3hrPt_HadGEM3-GC31-HM_highresSST-present_r1i3p1f1_gn_200609010000-200609302100.nc",
+        "vortmean_Prim3hrPt_HadGEM3-GC31-HM_highresSST-present_r1i3p1f1_gn_200610010000-200610302100.nc",
+        "zg7h_Prim3hrPt_HadGEM3-GC31-HM_highresSST-present_r1i3p1f1_gn_200610010000-200610302100.nc",
+        "vortmean_Prim3hrPt_HadGEM3-GC31-HM_highresSST-present_r1i3p1f1_gn_200611010000-200611302100.nc",
+        "zg7h_Prim3hrPt_HadGEM3-GC31-HM_highresSST-present_r1i3p1f1_gn_200611010000-200611302100.nc",
+        "hus_E3hrPt_HadGEM3-GC31-HM_highresSST-present_r1i3p1f1_gn_200611010000-200611302100.nc",
+        "va_E3hrPt_HadGEM3-GC31-HM_highresSST-present_r1i3p1f1_gn_200611010000-200611302100.nc",
+        "ua_E3hrPt_HadGEM3-GC31-HM_highresSST-present_r1i3p1f1_gn_200611010000-200611302100.nc",
+        "wap_E3hrPt_HadGEM3-GC31-HM_highresSST-present_r1i3p1f1_gn_200611010000-200611302100.nc",
+        "ta_E3hrPt_HadGEM3-GC31-HM_highresSST-present_r1i3p1f1_gn_200611010000-200611302100.nc",
+        "hus_E3hrPt_HadGEM3-GC31-HM_highresSST-present_r1i3p1f1_gn_200610010000-200610302100.nc",
+        "va_E3hrPt_HadGEM3-GC31-HM_highresSST-present_r1i3p1f1_gn_200610010000-200610302100.nc",
+        "ua_E3hrPt_HadGEM3-GC31-HM_highresSST-present_r1i3p1f1_gn_200610010000-200610302100.nc",
+        "wap_E3hrPt_HadGEM3-GC31-HM_highresSST-present_r1i3p1f1_gn_200610010000-200610302100.nc",
+        "ta_E3hrPt_HadGEM3-GC31-HM_highresSST-present_r1i3p1f1_gn_200610010000-200610302100.nc",
+        "vortmean_Prim3hrPt_HadGEM3-GC31-HM_highresSST-present_r1i3p1f1_gn_200612010000-200612302100.nc",
+        "zg7h_Prim3hrPt_HadGEM3-GC31-HM_highresSST-present_r1i3p1f1_gn_200612010000-200612302100.nc",
+        "hus_E3hrPt_HadGEM3-GC31-HM_highresSST-present_r1i3p1f1_gn_200612010000-200612302100.nc",
+        "va_E3hrPt_HadGEM3-GC31-HM_highresSST-present_r1i3p1f1_gn_200612010000-200612302100.nc",
+        "ua_E3hrPt_HadGEM3-GC31-HM_highresSST-present_r1i3p1f1_gn_200612010000-200612302100.nc",
+        "wap_E3hrPt_HadGEM3-GC31-HM_highresSST-present_r1i3p1f1_gn_200612010000-200612302100.nc",
+        "ta_E3hrPt_HadGEM3-GC31-HM_highresSST-present_r1i3p1f1_gn_200612010000-200612302100.nc",
     ]
 
     affected_files = DataFile.objects.filter(name__in=filenames)
 
-    if affected_files.count != 39:
+    if affected_files.count != 70: # no ap8_3 E3hr prw, prcsh, rsutcs or psl
         logger.error('{} affected files found'.format(affected_files.count()))
-        # todo for files in affected files: if files.name not in filenames.....
         sys.exit(1)
     else:
         logger.debug('{} affected files found'.format(affected_files.count()))
