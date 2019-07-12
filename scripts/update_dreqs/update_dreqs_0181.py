@@ -3,7 +3,8 @@
 update_dreqs_0181.py
 
 ESGF AttributeUpdate
-Called from a Rose suite to update the source_id in MPI AMIP files.
+Called from a Rose suite to update the source_id in MPI and EC-Earth AMIP
+files.
 """
 from __future__ import (unicode_literals, division, absolute_import,
                         print_function)
@@ -63,6 +64,10 @@ def main(args):
             new_source_id = 'MPI-ESM1-2-HR'
         elif data_file.climate_model.short_name == 'MPIESM-1-2-XR':
             new_source_id = 'MPI-ESM1-2-XR'
+        elif data_file.climate_model.short_name == 'EC-Earth3':
+            new_source_id = 'EC-Earth3P'
+        elif data_file.climate_model.short_name == 'EC-Earth3-HR':
+            new_source_id = 'EC-Earth3P-HR'
         else:
             raise ValueError('Unknown source_id {}'.
                              format(data_file.climate_model.short_name))
