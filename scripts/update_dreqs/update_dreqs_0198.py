@@ -67,52 +67,53 @@ def main(args):
     """
     Main entry point
     """
-    affected_files = DataFile.objects.filter(
-        name__in = [
-            "vortmean_Prim3hrPt_HadGEM3-GC31-HM_highresSST-present_r1i3p1f1_gn_200607010000-200607302100.nc",
-            "zg7h_Prim3hrPt_HadGEM3-GC31-HM_highresSST-present_r1i3p1f1_gn_200607010000-200607302100.nc",
-            "va100m_Prim3hrPt_HadGEM3-GC31-HM_highresSST-present_r1i3p1f1_gn_200607010000-200612302100.nc",
-            "ua50m_Prim3hrPt_HadGEM3-GC31-HM_highresSST-present_r1i3p1f1_gn_200607010000-200612302100.nc",
-            "va50m_Prim3hrPt_HadGEM3-GC31-HM_highresSST-present_r1i3p1f1_gn_200607010000-200612302100.nc",
-            "ua100m_Prim3hrPt_HadGEM3-GC31-HM_highresSST-present_r1i3p1f1_gn_200607010000-200612302100.nc",
-            "sfcWind_Prim3hr_HadGEM3-GC31-HM_highresSST-present_r1i3p1f1_gn_200607010130-200612302230.nc",
-            "sfcWindmax_Prim3hr_HadGEM3-GC31-HM_highresSST-present_r1i3p1f1_gn_200607010130-200612302230.nc",
-            "evspsbl_Prim3hr_HadGEM3-GC31-HM_highresSST-present_r1i3p1f1_gn_200607010130-200612302230.nc",
-            "hus_E3hrPt_HadGEM3-GC31-HM_highresSST-present_r1i3p1f1_gn_200607010000-200607302100.nc",
-            "va_E3hrPt_HadGEM3-GC31-HM_highresSST-present_r1i3p1f1_gn_200607010000-200607302100.nc",
-            "ua_E3hrPt_HadGEM3-GC31-HM_highresSST-present_r1i3p1f1_gn_200607010000-200607302100.nc",
-            "wap_E3hrPt_HadGEM3-GC31-HM_highresSST-present_r1i3p1f1_gn_200607010000-200607302100.nc",
-            "ta_E3hrPt_HadGEM3-GC31-HM_highresSST-present_r1i3p1f1_gn_200607010000-200607302100.nc",
-            "hfls_3hr_HadGEM3-GC31-HM_highresSST-present_r1i3p1f1_gn_200607010130-200612302230.nc",
-            "rlds_3hr_HadGEM3-GC31-HM_highresSST-present_r1i3p1f1_gn_200607010130-200612302230.nc",
-            "tas_3hr_HadGEM3-GC31-HM_highresSST-present_r1i3p1f1_gn_200607010000-200612302100.nc",
-            "hfss_3hr_HadGEM3-GC31-HM_highresSST-present_r1i3p1f1_gn_200607010130-200612302230.nc",
-            "rsds_3hr_HadGEM3-GC31-HM_highresSST-present_r1i3p1f1_gn_200607010130-200612302230.nc",
-            "rlus_3hr_HadGEM3-GC31-HM_highresSST-present_r1i3p1f1_gn_200607010130-200612302230.nc",
-            "pr_3hr_HadGEM3-GC31-HM_highresSST-present_r1i3p1f1_gn_200607010130-200612302230.nc",
-            "clt_3hr_HadGEM3-GC31-HM_highresSST-present_r1i3p1f1_gn_200607010130-200612302230.nc",
-            "ps_3hr_HadGEM3-GC31-HM_highresSST-present_r1i3p1f1_gn_200607010000-200612302100.nc",
-            "mrro_3hr_HadGEM3-GC31-HM_highresSST-present_r1i3p1f1_gn_200607010130-200612302230.nc",
-            "rldscs_3hr_HadGEM3-GC31-HM_highresSST-present_r1i3p1f1_gn_200607010130-200612302230.nc",
-            "rsdsdiff_3hr_HadGEM3-GC31-HM_highresSST-present_r1i3p1f1_gn_200607010130-200612302230.nc",
-            "rsuscs_3hr_HadGEM3-GC31-HM_highresSST-present_r1i3p1f1_gn_200607010130-200612302230.nc",
-            "rsdscs_3hr_HadGEM3-GC31-HM_highresSST-present_r1i3p1f1_gn_200607010130-200612302230.nc",
-            "prw_E3hr_HadGEM3-GC31-HM_highresSST-present_r1i3p1f1_gn_200607010130-200612302230.nc",
-            "rsutcs_E3hr_HadGEM3-GC31-HM_highresSST-present_r1i3p1f1_gn_200607010130-200612302230.nc",
-            "psl_E3hr_HadGEM3-GC31-HM_highresSST-present_r1i3p1f1_gn_200607010000-200612302100.nc",
-            "prcsh_E3hr_HadGEM3-GC31-HM_highresSST-present_r1i3p1f1_gn_200607010130-200612302230.nc",
-            "prc_3hr_HadGEM3-GC31-HM_highresSST-present_r1i3p1f1_gn_200607010130-200612302230.nc",
-            "vas_3hr_HadGEM3-GC31-HM_highresSST-present_r1i3p1f1_gn_200607010000-200612302100.nc",
-            "uas_3hr_HadGEM3-GC31-HM_highresSST-present_r1i3p1f1_gn_200607010000-200612302100.nc",
-            "prsn_3hr_HadGEM3-GC31-HM_highresSST-present_r1i3p1f1_gn_200607010130-200612302230.nc",
-            "huss_3hr_HadGEM3-GC31-HM_highresSST-present_r1i3p1f1_gn_200607010000-200612302100.nc",
-            "mrsos_3hr_HadGEM3-GC31-HM_highresSST-present_r1i3p1f1_gn_200607010000-200612302100.nc",
-            "rsus_3hr_HadGEM3-GC31-HM_highresSST-present_r1i3p1f1_gn_200607010130-200612302230.nc"
-        ]
-    )
+    filenames = [
+        "vortmean_Prim3hrPt_HadGEM3-GC31-HM_highresSST-present_r1i3p1f1_gn_200607010000-200607302100.nc",
+        "zg7h_Prim3hrPt_HadGEM3-GC31-HM_highresSST-present_r1i3p1f1_gn_200607010000-200607302100.nc",
+        "va100m_Prim3hrPt_HadGEM3-GC31-HM_highresSST-present_r1i3p1f1_gn_200607010000-200612302100.nc",
+        "ua50m_Prim3hrPt_HadGEM3-GC31-HM_highresSST-present_r1i3p1f1_gn_200607010000-200612302100.nc",
+        "va50m_Prim3hrPt_HadGEM3-GC31-HM_highresSST-present_r1i3p1f1_gn_200607010000-200612302100.nc",
+        "ua100m_Prim3hrPt_HadGEM3-GC31-HM_highresSST-present_r1i3p1f1_gn_200607010000-200612302100.nc",
+        "sfcWind_Prim3hr_HadGEM3-GC31-HM_highresSST-present_r1i3p1f1_gn_200607010130-200612302230.nc",
+        "sfcWindmax_Prim3hr_HadGEM3-GC31-HM_highresSST-present_r1i3p1f1_gn_200607010130-200612302230.nc",
+        "evspsbl_Prim3hr_HadGEM3-GC31-HM_highresSST-present_r1i3p1f1_gn_200607010130-200612302230.nc",
+        "hus_E3hrPt_HadGEM3-GC31-HM_highresSST-present_r1i3p1f1_gn_200607010000-200607302100.nc",
+        "va_E3hrPt_HadGEM3-GC31-HM_highresSST-present_r1i3p1f1_gn_200607010000-200607302100.nc",
+        "ua_E3hrPt_HadGEM3-GC31-HM_highresSST-present_r1i3p1f1_gn_200607010000-200607302100.nc",
+        "wap_E3hrPt_HadGEM3-GC31-HM_highresSST-present_r1i3p1f1_gn_200607010000-200607302100.nc",
+        "ta_E3hrPt_HadGEM3-GC31-HM_highresSST-present_r1i3p1f1_gn_200607010000-200607302100.nc",
+        "hfls_3hr_HadGEM3-GC31-HM_highresSST-present_r1i3p1f1_gn_200607010130-200612302230.nc",
+        "rlds_3hr_HadGEM3-GC31-HM_highresSST-present_r1i3p1f1_gn_200607010130-200612302230.nc",
+        "tas_3hr_HadGEM3-GC31-HM_highresSST-present_r1i3p1f1_gn_200607010000-200612302100.nc",
+        "hfss_3hr_HadGEM3-GC31-HM_highresSST-present_r1i3p1f1_gn_200607010130-200612302230.nc",
+        "rsds_3hr_HadGEM3-GC31-HM_highresSST-present_r1i3p1f1_gn_200607010130-200612302230.nc",
+        "rlus_3hr_HadGEM3-GC31-HM_highresSST-present_r1i3p1f1_gn_200607010130-200612302230.nc",
+        "pr_3hr_HadGEM3-GC31-HM_highresSST-present_r1i3p1f1_gn_200607010130-200612302230.nc",
+        "clt_3hr_HadGEM3-GC31-HM_highresSST-present_r1i3p1f1_gn_200607010130-200612302230.nc",
+        "ps_3hr_HadGEM3-GC31-HM_highresSST-present_r1i3p1f1_gn_200607010000-200612302100.nc",
+        "mrro_3hr_HadGEM3-GC31-HM_highresSST-present_r1i3p1f1_gn_200607010130-200612302230.nc",
+        "rldscs_3hr_HadGEM3-GC31-HM_highresSST-present_r1i3p1f1_gn_200607010130-200612302230.nc",
+        "rsdsdiff_3hr_HadGEM3-GC31-HM_highresSST-present_r1i3p1f1_gn_200607010130-200612302230.nc",
+        "rsuscs_3hr_HadGEM3-GC31-HM_highresSST-present_r1i3p1f1_gn_200607010130-200612302230.nc",
+        "rsdscs_3hr_HadGEM3-GC31-HM_highresSST-present_r1i3p1f1_gn_200607010130-200612302230.nc",
+        "prw_E3hr_HadGEM3-GC31-HM_highresSST-present_r1i3p1f1_gn_200607010130-200612302230.nc",
+        "rsutcs_E3hr_HadGEM3-GC31-HM_highresSST-present_r1i3p1f1_gn_200607010130-200612302230.nc",
+        "psl_E3hr_HadGEM3-GC31-HM_highresSST-present_r1i3p1f1_gn_200607010000-200612302100.nc",
+        "prcsh_E3hr_HadGEM3-GC31-HM_highresSST-present_r1i3p1f1_gn_200607010130-200612302230.nc",
+        "prc_3hr_HadGEM3-GC31-HM_highresSST-present_r1i3p1f1_gn_200607010130-200612302230.nc",
+        "vas_3hr_HadGEM3-GC31-HM_highresSST-present_r1i3p1f1_gn_200607010000-200612302100.nc",
+        "uas_3hr_HadGEM3-GC31-HM_highresSST-present_r1i3p1f1_gn_200607010000-200612302100.nc",
+        "prsn_3hr_HadGEM3-GC31-HM_highresSST-present_r1i3p1f1_gn_200607010130-200612302230.nc",
+        "huss_3hr_HadGEM3-GC31-HM_highresSST-present_r1i3p1f1_gn_200607010000-200612302100.nc",
+        "mrsos_3hr_HadGEM3-GC31-HM_highresSST-present_r1i3p1f1_gn_200607010000-200612302100.nc",
+        "rsus_3hr_HadGEM3-GC31-HM_highresSST-present_r1i3p1f1_gn_200607010130-200612302230.nc"
+    ]
+
+    affected_files = DataFile.objects.filter(name__in=filenames)
 
     if affected_files.count != 39:
         logger.error('{} affected files found'.format(affected_files.count()))
+        # todo for files in affected files: if files.name not in filenames.....
         sys.exit(1)
     else:
         logger.debug('{} affected files found'.format(affected_files.count()))
