@@ -133,7 +133,8 @@ def main(args):
                             std_units, cmcc_details['calendar']
                         ),
                         time_units=std_units,
-                        calendar=cmcc_details['calendar']
+                        calendar=cmcc_details['calendar'],
+                        rip_code='r1i1p1f1'
                     )
         else:
             msg = ('Unable to find variable request matching '
