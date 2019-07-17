@@ -76,6 +76,7 @@ def main(args):
             if not is_same_gws(df.directory, prim_gws):
                 old_sym_dir = os.path.join(prim_gws, old_drs_path)
                 old_sym = os.path.join(old_sym_dir, df.name)
+                # TODO next line doesn't work as this is now a broken symlink so returns false
                 if os.path.exists(old_sym):
                     if os.path.islink(old_sym):
                         os.remove(old_sym)
