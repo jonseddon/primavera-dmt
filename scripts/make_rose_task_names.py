@@ -71,106 +71,16 @@ def main(args):
         logger.debug('{} existing tasks loaded from file'.
                      format(len(existing_tasks)))
 
-    hadgem3_gc31_amip_amon = DataRequest.objects.filter(
-        climate_model__short_name__startswith='HadGEM3-GC31',
+    hadgem3_gc31_lm_amip_amon = DataRequest.objects.filter(
+        climate_model__short_name='HadGEM3-GC31-LM',
         experiment__short_name='highresSST-present',
         rip_code='r1i1p1f1',
         variable_request__table_name='Amon',
         datafile__isnull=False
     ).distinct()
 
-    ecmwf_amip_all = DataRequest.objects.filter(
-        institute__short_name='ECMWF',
-        experiment__short_name='highresSST-present',
-        rip_code='r1i1p1f1',
-        datafile__isnull=False
-    ).exclude(
-        variable_request__table_name__startswith='Prim'
-    ).distinct()
-
-    cmcc_amip_all = DataRequest.objects.filter(
-        institute__short_name='CMCC',
-        experiment__short_name='highresSST-present',
-        rip_code='r1i1p1f1',
-        datafile__isnull=False
-    ).exclude(
-        variable_request__table_name__startswith='Prim'
-    ).distinct()
-
-    hadgem3_gc31_amip_lm = DataRequest.objects.filter(
-        climate_model__short_name='HadGEM3-GC31-LM',
-        experiment__short_name='highresSST-present',
-        rip_code='r1i1p1f1',
-        datafile__isnull=False
-    ).exclude(
-        variable_request__table_name__startswith='Prim'
-    ).distinct()
-
-    hadgem3_gc31_amip_mm = DataRequest.objects.filter(
-        climate_model__short_name='HadGEM3-GC31-MM',
-        experiment__short_name='highresSST-present',
-        rip_code='r1i1p1f1',
-        datafile__isnull=False
-    ).exclude(
-        variable_request__table_name__startswith='Prim'
-    ).distinct()
-
-    hadgem3_gc31_amip_hm = DataRequest.objects.filter(
-        climate_model__short_name='HadGEM3-GC31-HM',
-        experiment__short_name='highresSST-present',
-        rip_code='r1i1p1f1',
-        variable_request__frequency__in=['mon', 'day', '6hr', '3hr', '1hr'],
-        datafile__isnull=False
-    ).exclude(
-        variable_request__table_name__startswith='Prim'
-    ).distinct()
-
-    mpi_amip_all = DataRequest.objects.filter(
-        institute__short_name='MPI-M',
-        climate_model__short_name__in=['MPI-ESM1-2-HR', 'MPI-ESM1-2-XR'],
-        experiment__short_name='highresSST-present',
-        datafile__isnull=False
-    ).exclude(
-        variable_request__table_name__startswith='Prim'
-    ).distinct()
-
-    cerfacs_amip = DataRequest.objects.filter(
-        climate_model__short_name='CNRM-CM6-1',
-        experiment__short_name='highresSST-present',
-        rip_code='r1i1p1f2',
-    ).exclude(
-        variable_request__table_name__startswith='Prim'
-    ).filter(
-        datafile__isnull=False
-    ).distinct()
-
-    cerfacs_hr_amip = DataRequest.objects.filter(
-        climate_model__short_name='CNRM-CM6-1-HR',
-        experiment__short_name='highresSST-present',
-        rip_code='r1i1p1f2',
-        variable_request__frequency__in=['mon', 'day', '6hr', '3hr'],
-        datafile__isnull=False
-    ).exclude(
-        variable_request__table_name__startswith='Prim'
-    ).distinct()
-
-    mohc_ll_coup = DataRequest.objects.filter(
-        climate_model__short_name='HadGEM3-GC31-LL',
-        experiment__short_name__in=['hist-1950', 'control-1950'],
-        rip_code='r1i1p1f1',
-        variable_request__table_name__in=[
-            '3hr', '6hrPlev', '6hrPlevPt', 'AERday', 'AERmon', 'Amon', 
-            'CF3hr', 'CFday', 'CFmon', 'E1hr', 'E3hr', 'E3hrPt', 'Eday', 
-            'EdayZ', 'Emon', 'EmonZ', 'Esubhr', 'LImon', 'Lmon', 'day'
-        ],
-        datafile__isnull=False
-    ).distinct()
-
-
     # task querysets can be ORed together with |
-    all_tasks = (hadgem3_gc31_amip_amon | ecmwf_amip_all | cmcc_amip_all | hadgem3_gc31_amip_lm |
-                 mpi_amip_all | hadgem3_gc31_amip_mm | hadgem3_gc31_amip_hm | cerfacs_amip | 
-                 cerfacs_hr_amip | mohc_ll_coup)
+    all_tasks = hadgem3_gc31_lm_amip_amon
     task_name_list = [
         '{}_{}_{}_{}_{}'.format(dr.climate_model.short_name,
                                 dr.experiment.short_name,

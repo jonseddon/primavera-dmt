@@ -50,12 +50,10 @@ def main(args):
     """
     old_data_reqs = DataRequest.objects.filter(
         institute__short_name='MPI-M',
-        climate_model__short_name='MPIESM-1-2-XR',
+        climate_model__short_name='MPIESM-1-2-HR',
         experiment__short_name='highresSST-present',
         rip_code='r1i1p1f1',
         datafile__isnull=False
-    ).exclude(
-        variable_request__table_name__startswith='Prim'
     ).distinct()
     logger.debug('{} data requests found'.format(old_data_reqs.count()))
 

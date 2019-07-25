@@ -46,8 +46,7 @@ def parse_args():
 
 def main(args):
     """Main entry point"""
-    # base_dir = Settings.get_solo().base_output_dir
-    base_dir = '/gws/nopw/j04/primavera2/stream1'
+    base_dir = Settings.get_solo().base_output_dir
 
     for extracted_file in ilist_files(args.top_dir):
         found_name = os.path.basename(extracted_file)
