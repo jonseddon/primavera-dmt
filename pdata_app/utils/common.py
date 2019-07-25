@@ -19,11 +19,11 @@ import cf_units
 
 from django.db.models import Sum
 
-
 PAUSE_FILES = {
     'et:': '/gws/nopw/j04/primavera5/.tape_pause/pause_et',
     'moose:': '/gws/nopw/j04/primavera5/.tape_pause/pause_moose',
 }
+
 
 logger = logging.getLogger(__name__)
 
@@ -536,6 +536,50 @@ def delete_drs_dir(directory, mip_eras=('PRIMAVERA', 'CMIP6')):
             not directory.endswith(mip_eras)):
         # parent is empty so delete it
         delete_drs_dir(parent_dir)
+
+
+def delete_files(query_set, base_output_dir):
+    """
+    Delete any files online from the specified queryset
+
+    :param django.db.models.query.QuerySet query_set: the set of DataFiles to
+        delete.
+    :param str base_output_dir: the group workspace that the symbolic links
+        are created under.
+    """
+    directories_found = []
+    for df in query_set.filter(online=True):
+        try:
+            os.remove(os.path.join(df.directory, df.name))
+        except OSError as exc:
+            logger.error(str(exc))
+        else:
+            if df.directory not in directories_found:
+                directories_found.append(df.directory)
+        # remove the associated symbolic link
+        if not is_same_gws(df.directory, base_output_dir):
+            sym_link_dir = os.path.join(base_output_dir,
+                                         construct_drs_path(df))
+            sym_link_path = os.path.join(sym_link_dir, df.name)
+            if os.path.lexists(sym_link_path):
+                try:
+                    os.remove(sym_link_path)
+                except OSError as exc:
+                    logger.error(str(exc))
+                else:
+                    if sym_link_dir not in directories_found:
+                        directories_found.append(sym_link_dir)
+        else:
+            logger.warning('Sym link not found at {}'.format(sym_link_path))
+
+        df.online = False
+        df.directory = None
+        df.save()
+
+    for directory in directories_found:
+        if not os.listdir(directory):
+            delete_drs_dir(directory)
+    logger.debug('{} directories removed'.format(len(directories_found)))
 
 
 def grouper(iterable, n):
