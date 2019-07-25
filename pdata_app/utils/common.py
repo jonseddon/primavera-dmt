@@ -19,8 +19,6 @@ import cf_units
 
 from django.db.models import Sum
 
-from pdata_app.models import *
-
 PAUSE_FILES = {
     'et:': '/gws/nopw/j04/primavera5/.tape_pause/pause_et',
     'moose:': '/gws/nopw/j04/primavera5/.tape_pause/pause_moose',
@@ -540,12 +538,15 @@ def delete_drs_dir(directory, mip_eras=('PRIMAVERA', 'CMIP6')):
         delete_drs_dir(parent_dir)
 
 
-def delete_files(query_set):
+def delete_files(query_set, base_output_dir):
     """
     Delete any files online from the specified queryset
-    """
-    base_output_dir = Settings.get_solo().base_output_dir
 
+    :param django.db.models.query.QuerySet query_set: the set of DataFiles to
+        delete.
+    :param str base_output_dir: the group workspace that the symbolic links
+        are created under.
+    """
     directories_found = []
     for df in query_set.filter(online=True):
         try:

@@ -16,7 +16,7 @@ import sys
 import django
 django.setup()
 
-from pdata_app.models import ESGFDataset
+from pdata_app.models import ESGFDataset, Settings
 from pdata_app.utils.common import delete_files
 
 __version__ = '0.1.0b1'
@@ -56,9 +56,11 @@ def main(args):
 
     logger.debug(f'{bad_sets.count()} data sets found')
 
+    base_output_dir = Settings.get_solo().base_output_dir
+
     for bad_set in bad_sets:
         dr = bad_set.data_request
-        delete_files(dr.datafile_set.all())
+        delete_files(dr.datafile_set.all(), base_output_dir)
 
 
 if __name__ == "__main__":
