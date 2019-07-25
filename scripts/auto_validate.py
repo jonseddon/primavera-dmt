@@ -15,6 +15,7 @@ import pwd
 import stat
 import subprocess
 import sys
+import time
 
 import django
 django.setup()
@@ -35,16 +36,16 @@ ADMIN_USER = Settings.get_solo().contact_user_id
 PARALLEL_SCRIPT = ('/home/users/jseddon/primavera/LIVE-prima-dm/scripts/'
                    'parallel_primavera')
 VALIDATE_SCRIPT = 'validate_data_submission.py'
-MAX_VALIDATE_SCRIPTS = 4
+MAX_VALIDATE_SCRIPTS = 6
 NUM_PROCS_USE_LOTUS = 4
 LOTUS_OPTIONS = ('-o ~/lotus/%J.o -q par-multi -n {} -R "span[hosts=1]" '
-                 '-W 24:00 -R "rusage[mem=262144.0]" -M 262144'.
+                 '-W 03:00 -R "rusage[mem=98304.0]" -M 98304'.
                  format(NUM_PROCS_USE_LOTUS))
 VERSION_STRING = 'v00000000'
 
 # Don't run PrePARE as part of the validation if the following strings
 # are in the submission's dierctory name
-SKIP_PREPARE = ['ECMWF']
+SKIP_PREPARE = ['ECMWF', 'spinup-bsc', 'primWP5', '/gws/nopw/j04/primavera2/upload/EC-Earth-Consortium/EC-Earth-3P-HR/incoming/20190502', 'DCPP', 'WP5', 'MPI-M']
 
 
 def is_max_jobs_reached(job_name, max_num_jobs):
@@ -193,6 +194,7 @@ def main():
                 submission.status = STATUS_VALUES['ARRIVED']
                 submission.save()
                 submit_validation(submission.incoming_directory)
+                time.sleep(10)  # wait ten seconds to allow the job to appear
 
 
 if __name__ == "__main__":

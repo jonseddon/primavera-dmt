@@ -50,14 +50,103 @@ def main(args):
     """
     Main entry point
     """
-    start_year = 1950
-    end_year = 2014
+    start_year = 1948
+    end_year = 2051
 
+    # data_reqs = DataRequest.objects.filter(
+    #     institute__short_name='MOHC',
+    #     climate_model__short_name='HadGEM3-GC31-MM',
+    #     experiment__short_name='highresSST-present',
+    #     rip_code='r1i1p1f1',
+    # )
+    # data_reqs = DataRequest.objects.filter(
+    #     climate_model__short_name__in=['ECMWF-IFS-LR', 'ECMWF-IFS-HR'],
+    #     experiment__short_name='highresSST-present',
+    #     rip_code='r1i1p1f1',
+    # ).exclude(
+    #     variable_request__table_name__startswith='Prim'
+    # )
+    # data_reqs = DataRequest.objects.filter(
+    #     institute__short_name='MOHC',
+    #     climate_model__short_name='HadGEM3-GC31-MM',
+    #     experiment__short_name='highresSST-present',
+    #     rip_code='r1i1p1f1',
+    # )
+    # data_reqs = DataRequest.objects.filter(
+    #     institute__short_name='MOHC',
+    #     climate_model__short_name='HadGEM3-GC31-HM',
+    #     experiment__short_name='highresSST-present',
+    #     rip_code='r1i1p1f1',
+    #     variable_request__frequency__in=['day']
+    # ).exclude(
+    #     variable_request__table_name__startswith='Prim'
+    # )# .exclude(
+    #     variable_request__table_name='CFday'
+    # )
+    # data_reqs = DataRequest.objects.filter(
+    #     institute__short_name='CMCC',
+    #     experiment__short_name='highresSST-present',
+    #     rip_code='r1i1p1f1',
+    # ).exclude(
+    #     variable_request__table_name__startswith='Prim'
+    # )
+    # data_reqs = DataRequest.objects.filter(
+    #     climate_model__short_name='CNRM-CM6-1',
+    #     experiment__short_name='highresSST-present',
+    #     rip_code='r1i1p1f2',
+    # ).exclude(
+    #     variable_request__table_name__startswith='Prim'
+    # )
+    # data_reqs = DataRequest.objects.filter(
+    #    climate_model__short_name='CNRM-CM6-1-HR',
+    #    experiment__short_name='highresSST-present',
+    #    rip_code='r1i1p1f2',
+    #    variable_request__frequency__in=['mon', 'day', '6hr', '3hr'],
+    #    datafile__isnull=False
+    #).exclude(
+    #    variable_request__table_name__startswith='Prim'
+    #).distinct()
     data_reqs = DataRequest.objects.filter(
-        institute__short_name='MPI-M',
-        experiment__short_name='highresSST-present',
-        variable_request__frequency='mon'
-    )
+        climate_model__short_name='HadGEM3-GC31-LL',
+        experiment__short_name='hist-1950',
+        rip_code='r1i1p1f1',
+        variable_request__table_name__in=[
+            '3hr', '6hrPlev', '6hrPlevPt', 'AERday', 'AERmon', 'Amon', 
+            'CF3hr', 'CFday', 'CFmon', 'E1hr', 'E3hr', 'E3hrPt', 'Eday', 
+            'EdayZ', 'Emon', 'EmonZ', 'Esubhr', 'LImon', 'Lmon', 'day'
+        ],
+        datafile__isnull=False
+    ).distinct()
+    # data_reqs = DataRequest.objects.filter(
+    #     climate_model__short_name='HadGEM3-GC31-LL',
+    #     experiment__short_name='control-1950',
+    #     rip_code='r1i1p1f1',
+    #     variable_request__table_name__in=[
+    #         '3hr', '6hrPlev', '6hrPlevPt', 'AERday', 'AERmon', 'Amon', 
+    #         'CF3hr', 'CFday', 'CFmon', 'E1hr', 'E3hr', 'E3hrPt', 'Eday', 
+    #         'EdayZ', 'Emon', 'EmonZ', 'Esubhr', 'LImon', 'Lmon', 'day'
+    #     ],
+    #     datafile__isnull=False
+    # ).distinct()
+    # data_reqs = DataRequest.objects.filter(
+    #     climate_model__short_name__in=['ECMWF-IFS-LR'],
+    #     experiment__short_name='hist-1950',
+    #     rip_code='r1i1p1f1',
+    # ).exclude(
+    #     variable_request__table_name__startswith='Prim'
+    # )
+    # data_reqs = DataRequest.objects.filter(
+    #     climate_model__short_name='HadGEM3-GC31-MM',
+    #     experiment__short_name='hist-1950',
+    #     rip_code='r1i1p1f1',
+    #     variable_request__table_name__in=[
+    #         '3hr', '6hrPlev', '6hrPlevPt', 'AERday', 'AERmon', 'Amon', 
+    #         'CF3hr', 'CFday', 'CFmon', 'E1hr', 'E3hr', 'E3hrPt', 'Eday', 
+    #         'EdayZ', 'Emon', 'EmonZ', 'Esubhr', 'LImon', 'Lmon', 'day'
+    #     ],
+    #     datafile__isnull=False
+    # ).distinct()
+ 
     logger.debug('Total data volume: {} Volume to restore: {}'.format(
         filesizeformat(get_request_size(data_reqs, start_year, end_year)).
             replace('\xa0', ' '),
@@ -67,8 +156,8 @@ def main(args):
 
     if args.create:
         jon = User.objects.get(username='jseddon')
-        rr = RetrievalRequest.objects.create(requester=jon, start_year=1950,
-                                             end_year=2014)
+        rr = RetrievalRequest.objects.create(requester=jon, start_year=start_year,
+                                             end_year=end_year)
         time_zone = datetime.timezone(datetime.timedelta())
         rr.date_created = datetime.datetime(2000, 1, 1, 0, 0, tzinfo=time_zone)
         rr.save()
