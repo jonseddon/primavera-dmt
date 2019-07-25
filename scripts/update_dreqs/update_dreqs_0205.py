@@ -50,8 +50,6 @@ def main(args):
         data_request__climate_model__short_name='HadGEM3-GC31-LL',
         data_request__experiment__short_name='hist-1950',
         data_request__rip_code='r1i1p1f1',
-        data_request__variable_request__table_name='Amon',
-        data_request__variable_request__cmor_name='hus'
     ).distinct()
 
     logger.debug(f'{bad_sets.count()} data sets found')
