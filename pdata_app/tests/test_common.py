@@ -20,6 +20,7 @@ from pdata_app.utils.common import (make_partial_date_time,
                                     calc_last_day_in_month, pdt2num,
                                     is_same_gws, get_gws, construct_drs_path,
                                     construct_filename,
+                                    construct_cylc_task_name,
                                     construct_time_string, get_request_size,
                                     date_filter_files, grouper,
                                     directories_spanned, run_ncatted)
@@ -248,6 +249,17 @@ class TestConstructFilename(TestCase):
         datafile.save()
         actual = construct_filename(datafile)
         expected = 'var1_Amon_t_t_r1i1p1_gn.nc'
+        self.assertEqual(actual, expected)
+
+
+class TestConstructCylcTaskName(TestCase):
+    """Test pdata_app.utils.common.construct_cylc_task_name()"""
+    def setUp(self):
+        make_example_files(self)
+
+    def test_basic(self):
+        actual = construct_cylc_task_name(self.esgf_dataset, 'crepp_monitor')
+        expected = 'crepp_monitor_t_t_r1i1p1f1_Amon_var1'
         self.assertEqual(actual, expected)
 
 

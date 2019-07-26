@@ -385,6 +385,26 @@ def construct_filename(data_file):
     return '_'.join(components) + '.nc'
 
 
+def construct_cylc_task_name(dataset, task_prefix):
+    """
+    Calculate the name of the Rose task from the ESGF publication Rose suite
+    from an dataset.
+
+    :param pdata_app.models.EGFDataset dataset: the dataset
+    :param str task_prefix: the task's common name
+    :returns: the task name
+    :rtype: str
+    """
+    return '_'.join([
+        task_prefix,
+        dataset.data_request.climate_model.short_name,
+        dataset.data_request.experiment.short_name,
+        dataset.data_request.rip_code,
+        dataset.data_request.variable_request.table_name,
+        dataset.data_request.variable_request.cmor_name,
+    ])
+
+
 def construct_time_string(time_point, time_units, calendar, frequency):
     """
     Calculate the time string to the appropriate resolution for use in CMIP6
