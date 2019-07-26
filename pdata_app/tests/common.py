@@ -92,6 +92,10 @@ def make_example_files(parent_obj):
                                            request_end_time=23400.0,
                                            time_units='days since 1950-01-01',
                                            calendar='360_day')
+    parent_obj.esgf_dataset = dbapi.get_or_create(models.ESGFDataset,
+                                                  status='PUBLISHED',
+                                                  version='v12345678',
+                                                  data_request=parent_obj.dreq1)
     parent_obj.user = dbapi.get_or_create(User, username='fred')
     act_id = dbapi.get_or_create(models.ActivityId,
                                  short_name='HighResMIP',
