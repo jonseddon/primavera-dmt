@@ -589,8 +589,8 @@ def delete_files(query_set, base_output_dir):
                 else:
                     if sym_link_dir not in directories_found:
                         directories_found.append(sym_link_dir)
-        else:
-            logger.warning('Sym link not found at {}'.format(sym_link_path))
+            else:
+                logger.warning('Sym link not found at {}'.format(sym_link_path))
 
         df.online = False
         df.directory = None
