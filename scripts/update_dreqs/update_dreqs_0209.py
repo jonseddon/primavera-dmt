@@ -16,7 +16,7 @@ from cf_units import date2num, CALENDAR_GREGORIAN
 import django
 django.setup()
 
-from pdata_app.models import DataSubmission
+from pdata_app.models import DataSubmission, Settings
 from pdata_app.utils.common import delete_files
 from pdata_app.utils.replace_file import replace_files
 
@@ -54,9 +54,11 @@ def main(args):
         '/gws/nopw/j04/primavera4/upload/EC-Earth-Consortium/EC-Earth3P-HR/'
         'control-1950/r3i1p2f1/1950-1952/Rest'
     ])
+    
+    base_output_dir = Settings.get_solo().base_output_dir
 
     for ds in dss:
-        delete_files(ds.datafile_set.all())
+        delete_files(ds.datafile_set.all(), base_output_dir)
         replace_files(ds.datafile_set.all())
 
 
