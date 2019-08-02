@@ -51,18 +51,10 @@ def main(args):
     rr.save()
 
     drs = DataRequest.objects.filter(
-        climate_model__short_name__in=['ECMWF-IFS-LR', 'ECMWF-IFS-HR'],
+        climate_model__short_name='EC-Earth3P-HR',
         experiment__short_name__in=['primWP5-amv-neg', 'primWP5-amv-pos'],
-        variable_request__table_name='Omon',
-        variable_request__cmor_name='thetao'
-    )
-    rr.data_request.add(*drs)
-
-    drs = DataRequest.objects.filter(
-        climate_model__short_name__in=['MPI-ESM1-2-HR', 'MPI-ESM1-2-XR'],
-        experiment__short_name__in=['dcppc-amv-pos', 'dcppc-amv-neg'],
-        variable_request__table_name='Omon',
-        variable_request__cmor_name='mlotst'
+        variable_request__cmor_name__in=['thetao', 'uo', 'vo', 'mlotst',
+                                         'evspsbl', 'wap']
     )
     rr.data_request.add(*drs)
 
