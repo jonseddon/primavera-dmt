@@ -15,8 +15,8 @@ import sys
 import django
 django.setup()
 from pdata_app.models import DataFile, Settings
-from pdata_app.utils.common import (adler32, construct_drs_path, get_gws,
-                                    ilist_files)
+from pdata_app.utils.common import (adler32, construct_drs_path,
+                                    get_gws_any_dir, ilist_files)
 
 __version__ = '0.1.0b'
 
@@ -64,7 +64,7 @@ def main(args):
                            format(found_name))
             continue
 
-        dest_dir = os.path.join(get_gws(extracted_file),
+        dest_dir = os.path.join(get_gws_any_dir(extracted_file), 'stream1',
                                 construct_drs_path(data_file))
         dest_path = os.path.join(dest_dir, found_name)
         if os.path.exists(dest_path):
