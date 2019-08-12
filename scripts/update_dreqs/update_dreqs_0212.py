@@ -51,13 +51,13 @@ def main(args):
 
     for vr in r3_dreqs.values_list('variable_request__cmor_name',
                                    'variable_request__table_name').distinct():
-        var_dreqs = (r3_dreqs.filter(variable_request__cmor_name='vr[0]',
-                                     variable_request__table_name='vr[1]').
+        var_dreqs = (r3_dreqs.filter(variable_request__cmor_name=vr[0],
+                                     variable_request__table_name=vr[1]).
                      order_by('id'))
         if var_dreqs.last().datafile_set.count() != 0:
             logger.error(f'{vr[0]}_{vr[1]} has files')
         else:
-            var_dreqs.last.delete()
+            var_dreqs.last().delete()
             logger.debug(f'{vr[0]}_{vr[1]} deleted')
 
 
