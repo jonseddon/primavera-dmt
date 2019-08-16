@@ -135,7 +135,7 @@ def main(args):
                 institute = data_reqs.first().institute.short_name
             fh.write(f'PRIMAVERA/HighResMIP/{institute}/{upload[0]}/'
                      f'{upload[1]}/{upload[2]}/{upload[3]} '
-                     f'{total_volume:.10}\n')
+                     f'{total_volume:.10f}\n')
 
 
 if __name__ == "__main__":
