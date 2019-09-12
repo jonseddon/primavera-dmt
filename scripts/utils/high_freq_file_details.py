@@ -60,8 +60,12 @@ def main(args):
             file_path = (os.path.join(df.directory, df.name)
                          if df.online else df.name)
             checksum = df.checksum_set.first()
-            fh.write(f'{file_path} {df.size} '
-                     f'{checksum.checksum_type}:{checksum.checksum_value}\n')
+            if checksum:
+                checksum_text = (f'{checksum.checksum_type}:'
+                                 f'{checksum.checksum_value}')
+            else:
+                logger.warning(f'No checksum found for file {df.name}')
+            fh.write(f'{file_path} {df.size} {checksum_text}\n')
 
 
 if __name__ == "__main__":
