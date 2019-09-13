@@ -55,7 +55,7 @@ def main(args):
     else:
         logger.debug('{} affected files found'.format(affected_files.count()))
 
-    delete_files(affected_files)
+    delete_files(affected_files, '/gws/nopw/j04/primavera5/stream1')
     replace_files(affected_files)
 
 
