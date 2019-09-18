@@ -53,9 +53,13 @@ def main(args):
 
     for dataset in datasets:
         for datafile in dataset.data_request.datafile_set.all():
+            dest_dir = os.path.join(TAPE_WRITE_DIR,
+                                    construct_drs_path(datafile))
+            if not os.path.exists(dest_dir):
+                os.makedirs(dest_dir)
             shutil.copy(
                 os.path.join(datafile.directory, datafile.name),
-                os.path.join(TAPE_WRITE_DIR, construct_drs_path(datafile))
+                dest_dir
             )
         logger.debug(f'Copied {dataset}')
 
