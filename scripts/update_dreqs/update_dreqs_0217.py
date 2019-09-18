@@ -7,13 +7,14 @@ directory structure that can be backed-up to tape.
 """
 import argparse
 import logging.config
+import os
+import shutil
 import sys
 
 import django
 django.setup()
-from pdata_app.utils.replace_file import replace_files
-from pdata_app.models import DataFile, ESGFDataset
-from pdata_app.utils.common import delete_files
+from pdata_app.models import ESGFDataset
+from pdata_app.utils.common import construct_drs_path
 
 __version__ = '0.1.0b1'
 
@@ -22,6 +23,7 @@ DEFAULT_LOG_FORMAT = '%(levelname)s: %(message)s'
 
 logger = logging.getLogger(__name__)
 
+TAPE_WRITE_DIR = '/gws/nopw/j04/primavera3/cache/jseddon/backup/'
 
 def parse_args():
     """
@@ -43,15 +45,19 @@ def main(args):
     """
     datasets = ESGFDataset.objects.filter(
         data_request__institute__short_name='MPI-M',
-        data_request__experiment__short_name='highresSST-present'
+        data_request__experiment__short_name='highresSST-present',
+        status='PUBLISHED'
     )
+
+    logger.debug(f'Found {datasets.count()} datasets')
 
     for dataset in datasets:
         for datafile in dataset.data_request.datafile_set.all():
-            pass
-
-    # delete_files(affected_files, '/gws/nopw/j04/primavera5/stream1')
-    # replace_files(affected_files)
+            shutil.copy(
+                os.path.join(datafile.directory, datafile.name),
+                os.path.join(TAPE_WRITE_DIR, construct_drs_path(datafile))
+            )
+        logger.debug(f'Copied {dataset}')
 
 
 if __name__ == "__main__":
