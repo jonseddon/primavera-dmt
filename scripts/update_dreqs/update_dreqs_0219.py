@@ -70,17 +70,21 @@ def main(args):
                         logger.warning(f'Expected a sym link {file_path}')
                         continue
                     try:
-                        # os.remove(file_path)
-                        pass
+                        os.remove(file_path)
                     except OSError as exc:
                         logger.error(str(exc))
-                # delete_drs_dir(set_dir)
+                    df.online = False
+                    df.directory = None
+                    df.save()
+                delete_drs_dir(set_dir)
                 logger.debug(f'Removed files for ESGFDataset {esgf}')
+                esgf.status = 'CREATED'
+                esgf.save()
                 continue
         # The data's not been published so delete the files and their sym links
-        # delete_files(dreq.datafile_set.all(), BASE_OUTPUT_DIR)
+        delete_files(dreq.datafile_set.all(), BASE_OUTPUT_DIR)
         logger.debug(f'Removed files for DataRequest {dreq}')
-        # dreq.datafile_set.update(directory=None, online=False)
+        dreq.datafile_set.update(directory=None, online=False)
 
 
 if __name__ == "__main__":
