@@ -205,7 +205,9 @@ def get_moose_url(tape_url, data_files, args):
             if not os.path.exists(drs_dir):
                 os.makedirs(drs_dir)
 
-    moose_urls = ['{}/{}'.format(tape_url, df.name) for df in data_files]
+    moose_urls = ['{}/{}'.format(tape_url,
+                                 df.name if not args.incoming
+                                 else df.incoming_name) for df in data_files]
     cmd = 'moo get -I {} {}'.format(' '.join(moose_urls), drs_dir)
 
     logger.debug('MOOSE command is:\n{}'.format(cmd))
@@ -222,10 +224,14 @@ def get_moose_url(tape_url, data_files, args):
     _remove_data_license_files(drs_dir)
 
     for data_file in data_files:
+        filename = (data_file.name if not args.incoming
+                    else data_file.incoming_name)
         if not args.skip_checksums:
             try:
-                _check_file_checksum(data_file,
-                                     os.path.join(drs_dir, data_file.name))
+                _check_file_checksum(
+                    data_file,
+                    os.path.join(drs_dir, filename)
+                )
             except ChecksumError:
                 # warning message has already been displayed and so move on
                 # to next file
@@ -238,9 +244,9 @@ def get_moose_url(tape_url, data_files, args):
             if not os.path.exists(primary_path):
                 os.makedirs(primary_path)
 
-            primary_file = os.path.join(primary_path, data_file.name)
+            primary_file = os.path.join(primary_path,filename)
             if not os.path.exists(primary_file):
-                os.symlink(os.path.join(drs_dir, data_file.name),
+                os.symlink(os.path.join(drs_dir,filename),
                            primary_file)
 
         data_file.directory = drs_dir
@@ -248,7 +254,8 @@ def get_moose_url(tape_url, data_files, args):
         try:
             data_file.save()
         except django.db.utils.IntegrityError:
-            logger.error('data_file.save() failed for {} {}'.format(data_file.directory, data_file.name))
+            logger.error('data_file.save() failed for {} {}'.
+                         format(data_file.directory, filename))
             raise
 
 
@@ -265,9 +272,12 @@ def get_et_url(tape_url, data_files, args):
 
     # make a file containing the paths of the files to retrieve from tape
     filelist_name = get_temp_filename('et_files.txt')
+
     with open(filelist_name, 'w') as fh:
         for data_file in data_files:
-            fh.write(os.path.join(data_file.incoming_directory, data_file.name)
+            filename = (data_file.name if not args.incoming
+                        else data_file.incoming_name)
+            fh.write(os.path.join(data_file.incoming_directory, filename)
                      + '\n')
     logger.debug('File list written to {}'.format(filelist_name))
 
@@ -330,12 +340,14 @@ def copy_et_files_into_drs(data_files, retrieval_dir, args):
 
     for data_file in data_files:
         file_submission_dir = data_file.incoming_directory
+        filename = (data_file.name if not args.incoming
+                    else data_file.incoming_name)
         extracted_file_path = os.path.join(retrieval_dir,
                                            file_submission_dir.lstrip('/'),
-                                           data_file.name)
+                                           filename)
         if not os.path.exists(extracted_file_path):
             msg = ('Unable to find file {} in the extracted data at {}. The '
-                   'expected path was {}'.format(data_file.name, retrieval_dir,
+                   'expected path was {}'.format(filename, retrieval_dir,
                                                  extracted_file_path))
             logger.error(msg)
             sys.exit(1)
@@ -345,7 +357,7 @@ def copy_et_files_into_drs(data_files, retrieval_dir, args):
             drs_dir = os.path.join(BASE_OUTPUT_DIR, drs_path)
         else:
             drs_dir = os.path.join(args.alternative, drs_path)
-        dest_file_path = os.path.join(drs_dir, data_file.name)
+        dest_file_path = os.path.join(drs_dir, filename)
 
         # create the path if it doesn't exist
         if not os.path.exists(drs_dir):
@@ -373,7 +385,7 @@ def copy_et_files_into_drs(data_files, retrieval_dir, args):
             if not os.path.exists(primary_path):
                 os.makedirs(primary_path)
             os.symlink(dest_file_path,
-                       os.path.join(primary_path, data_file.name))
+                       os.path.join(primary_path, filename))
 
         # set directory and set status as being online
         data_file.directory = drs_dir
@@ -396,7 +408,10 @@ def _check_file_checksum(data_file, file_path):
                         'SHA256': sha256}
 
     # there is only likely to be one checksum and so chose the last one
-    checksum_obj = data_file.checksum_set.last()
+    if not cmd_args.incoming:
+        checksum_obj = data_file.checksum_set.last()
+    else:
+        checksum_obj = data_file.tapechecksum_set.last()
 
     if not checksum_obj:
         msg = ('No checksum exists in the database. Skipping check for {}'.
@@ -508,6 +523,8 @@ def parse_args():
         "retrieval directory")
     parser.add_argument('-s', '--skip_checksums', help="don't check the "
         "checksums on restored files.", action='store_true')
+    parser.add_argument('-i', '--incoming', help="restore the incoming "
+                        "filename.", action='store_true')
     parser.add_argument('-l', '--log-level', help='set logging level to one of '
         'debug, info, warn (the default), or error')
     parser.add_argument('--version', action='version',

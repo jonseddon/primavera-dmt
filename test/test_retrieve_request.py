@@ -157,6 +157,7 @@ class TestIntegrationTests(TestCase):
             no_restore = False
             skip_checksums = True
             alternative = None
+            incoming = False
 
         self.mock_exists.side_effect = [
             False,  # if os.path.exists(retrieval_dir):
@@ -196,6 +197,7 @@ class TestIntegrationTests(TestCase):
             no_restore = False
             skip_checksums = True
             alternative = None
+            incoming = False
 
         self.mock_exists.side_effect = [
             # first tape_url
@@ -244,6 +246,7 @@ class TestIntegrationTests(TestCase):
             no_restore = False
             skip_checksums = True
             alternative = None
+            incoming = False
 
         ns = ArgparseNamespace()
 
@@ -264,6 +267,7 @@ class TestIntegrationTests(TestCase):
             no_restore = False
             skip_checksums = True
             alternative = None
+            incoming = False
 
         ns = ArgparseNamespace()
         self.assertRaises(SystemExit, main, ns)
@@ -282,6 +286,7 @@ class TestIntegrationTests(TestCase):
             no_restore = False
             skip_checksums = True
             alternative = '/gws/nopw/j04/primavera3/spare_dir'
+            incoming = False
 
         self.mock_exists.side_effect = [
             False,  # if os.path.exists(retrieval_dir):
