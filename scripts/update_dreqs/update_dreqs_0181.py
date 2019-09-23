@@ -64,6 +64,10 @@ def main(args):
             new_source_id = 'MPI-ESM1-2-HR'
         elif data_file.climate_model.short_name == 'MPIESM-1-2-XR':
             new_source_id = 'MPI-ESM1-2-XR'
+        elif data_file.climate_model.short_name == 'MPI-ESM1-2-HR':
+            new_source_id = 'MPI-ESM1-2-HR'
+        elif data_file.climate_model.short_name == 'MPI-ESM1-2-XR':
+            new_source_id = 'MPI-ESM1-2-XR'
         elif data_file.climate_model.short_name == 'EC-Earth3':
             new_source_id = 'EC-Earth3P'
         elif data_file.climate_model.short_name == 'EC-Earth3-HR':
