@@ -34,6 +34,9 @@ def parse_args():
     parser = argparse.ArgumentParser(description='Add additional data requests')
     parser.add_argument('-l', '--log-level', help='set logging level to one of '
         'debug, info, warn (the default), or error')
+    parser.add_argument('-i', '--incoming', help='Update file only, not the '
+                                                 'database.',
+                        action='store_true')
     parser.add_argument('request_id', help='to request id to update')
     parser.add_argument('--version', action='version',
         version='%(prog)s {}'.format(__version__))
@@ -64,6 +67,10 @@ def main(args):
             new_source_id = 'MPI-ESM1-2-HR'
         elif data_file.climate_model.short_name == 'MPIESM-1-2-XR':
             new_source_id = 'MPI-ESM1-2-XR'
+        elif data_file.climate_model.short_name == 'MPI-ESM1-2-HR':
+            new_source_id = 'MPI-ESM1-2-HR'
+        elif data_file.climate_model.short_name == 'MPI-ESM1-2-XR':
+            new_source_id = 'MPI-ESM1-2-XR'
         elif data_file.climate_model.short_name == 'EC-Earth3':
             new_source_id = 'EC-Earth3P'
         elif data_file.climate_model.short_name == 'EC-Earth3-HR':
@@ -88,7 +95,8 @@ def main(args):
         if created:
             logger.debug('Created {}'.format(new_dreq))
 
-        updater = SourceIdUpdate(data_file, new_source_id)
+        updater = SourceIdUpdate(data_file, new_source_id,
+                                 update_file_only=args.incoming)
         updater.update()
 
 

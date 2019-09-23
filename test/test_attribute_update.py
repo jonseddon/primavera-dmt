@@ -109,8 +109,12 @@ class TestSourceIdUpdate(TestCase):
         self.mock_run_cmd.assert_has_calls(calls)
 
     @mock.patch('pdata_app.utils.attribute_update.DmtUpdate._check_available')
+    @mock.patch('pdata_app.utils.attribute_update.DmtUpdate.'
+                '_update_database_attribute')
+    @mock.patch('pdata_app.utils.attribute_update.DmtUpdate._rename_file')
     @mock.patch('pdata_app.utils.attribute_update.DmtUpdate._update_checksum')
-    def test_update_file_only(self, mock_checksum, mock_available):
+    def test_update_file_only(self, mock_checksum, mock_rename, mock_db_change,
+                              mock_available):
         updater = SourceIdUpdate(self.test_file, self.desired_source_id, True)
         updater.update()
         calls = [
@@ -124,6 +128,7 @@ class TestSourceIdUpdate(TestCase):
                       "var1_table_model_expt_varlab_gn_1-2.nc"),
         ]
         self.mock_run_cmd.assert_has_calls(calls)
+        mock_db_change.assert_not_called()
 
     @mock.patch('pdata_app.utils.attribute_update.DmtUpdate._check_available')
     @mock.patch('pdata_app.utils.attribute_update.DmtUpdate._rename_file')
@@ -359,6 +364,7 @@ def _make_files_realistic():
     """
     datafile = DataFile.objects.get(name='test1')
     datafile.name = 'var1_table_model_expt_varlab_gn_1-2.nc'
+    datafile.incoming_name = datafile.name
     datafile.directory = '/gws/nopw/j04/primavera9/stream1/path'
     datafile.save()
     Checksum.objects.create(data_file=datafile, checksum_value='1234567890',
