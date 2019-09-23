@@ -105,6 +105,7 @@ def make_example_files(parent_obj):
                                incoming_directory='/some/dir',
                                directory='/some/dir', user=parent_obj.user)
     parent_obj.data_file1 = dbapi.get_or_create(models.DataFile, name='test1',
+                                     incoming_name='test1',
                                      incoming_directory='/some/dir',
                                      directory='/some/dir1', size=1,
                                      project=project,
@@ -122,6 +123,7 @@ def make_example_files(parent_obj):
                                      time_units='days since 1950-01-01',
                                      version='v12345678')
     data_file4 = dbapi.get_or_create(models.DataFile, name='test4',
+                                     incoming_name='test4',
                                      incoming_directory='/some/dir',
                                      directory='/some/dir2', size=4,
                                      project=project,
@@ -138,6 +140,7 @@ def make_example_files(parent_obj):
                                      calendar='360_day',
                                      time_units='days since 1950-01-01')
     data_file8 = dbapi.get_or_create(models.DataFile, name='test8',
+                                     incoming_name='test8',
                                      incoming_directory='/some/dir',
                                      directory='/some/dir2', size=8,
                                      project=project,
@@ -154,6 +157,7 @@ def make_example_files(parent_obj):
                                      calendar='360_day',
                                      time_units='days since 1950-01-01')
     data_file2 = dbapi.get_or_create(models.DataFile, name='test2',
+                                     incoming_name='test2',
                                      incoming_directory='/some/dir',
                                      directory='/some/dir', size=2,
                                      project=project,

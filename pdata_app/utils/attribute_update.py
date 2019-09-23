@@ -69,7 +69,7 @@ class DmtUpdate(object):
         :param pdata_apps.models.DataFile datafile: the file to update
         :param str new_value: the new value to apply
         :param bool update_file_only: if true then update just the file and
-            don't make any changes to the database or file paths.
+            don't make any changes to the database.
         """
         self.datafile = datafile
         self.new_value = new_value
@@ -94,18 +94,28 @@ class DmtUpdate(object):
         Update everything.
         """
         if not self.update_file_only:
+            # Default mode of operation. Update the data request and everything.
             self._find_new_dreq()
             self._check_available()
             self._update_database_attribute()
             self._update_file_attribute()
-            self._update_filename()
-            self._update_directory()
+            self._construct_filename()
+            self._update_filename_in_db()
+            self._construct_directory()
+            self._update_directory_in_db()
             self._rename_file()
             self._update_checksum()
             self._move_dreq()
         else:
+            # For when this has been run before and we just need to update
+            # files that have pulled from disk again.
+            self.old_filename = self.datafile.incoming_name
             self._check_available()
             self._update_file_attribute()
+            self._construct_filename()
+            self._construct_directory()
+            self._rename_file()
+            self._update_checksum()
 
     def _find_new_dreq(self):
         """
@@ -161,22 +171,28 @@ class DmtUpdate(object):
     @abstractmethod
     def _update_file_attribute(self):
         """
-        Update the metadata attribute in the file.
+        Update the metadata attribute in the file. Assume the file has its
+        original path and name.
         """
         pass
 
-    def _update_filename(self):
+    def _construct_filename(self):
+        """
+        Construct the new filename.
+        """
+        self.new_filename = construct_filename(self.datafile)
+
+    def _update_filename_in_db(self):
         """
         Update the file's name in the database.
         """
-        self.new_filename = construct_filename(self.datafile)
         self.datafile.name = self.new_filename
         self.datafile.save()
 
     def _update_checksum(self):
         """
         Update the checksum and size of the file in the database, preserving
-        the original values.
+        the original values. Assume the file has its new path and name.
         """
         # Archive the checksum and calculate its new value
         cs = self.datafile.checksum_set.first()
@@ -204,12 +220,17 @@ class DmtUpdate(object):
         self.datafile.size = os.path.getsize(new_path)
         self.datafile.save()
 
-    def _update_directory(self):
+    def _construct_directory(self):
         """
-        Update the file's directory.
+        Construct the new directory path.
         """
         self.new_directory = os.path.join(get_gws(self.datafile.directory),
                                           construct_drs_path(self.datafile))
+
+    def _update_directory_in_db(self):
+        """
+        Update the file's directory.
+        """
         self.datafile.directory = self.new_directory
         self.datafile.save()
 
@@ -285,9 +306,10 @@ class SourceIdUpdate(DmtUpdate):
     def _update_file_attribute(self):
         """
         Update the source_id and make the same change in the further_info_url.
+        Assume the file has its original path and name.
         """
         # source_id
-        run_ncatted(self.datafile.directory, self.datafile.name,
+        run_ncatted(self.old_directory, self.old_filename,
                     'source_id', 'global', 'c', self.new_value, False)
 
         # further_info_url
@@ -297,7 +319,7 @@ class SourceIdUpdate(DmtUpdate):
                                    self.new_value,
                                    self.datafile.experiment.short_name,
                                    self.datafile.rip_code))
-        run_ncatted(self.datafile.directory, self.datafile.name,
+        run_ncatted(self.old_directory, self.old_filename,
                     'further_info_url', 'global', 'c', further_info_url, False)
 
 
@@ -324,24 +346,25 @@ class VariantLabelUpdate(DmtUpdate):
     def _update_file_attribute(self):
         """
         Update the variant_label and make the same change in its constituent
-        parts and the further_info_url.
+        parts and the further_info_url. Assume the file has its original path
+        and name.
         """
         # variant_label
-        run_ncatted(self.datafile.directory, self.datafile.name,
+        run_ncatted(self.old_directory, self.old_filename,
                     'variant_label', 'global', 'c', self.new_value, False)
 
         # indexes
         ripf = re.match('^r(\d+)i(\d+)p(\d+)f(\d+)$', self.new_value)
-        run_ncatted(self.datafile.directory, self.datafile.name,
+        run_ncatted(self.old_directory, self.old_filename,
                     'realization_index', 'global', 's', int(ripf.group(1)),
                     False)
-        run_ncatted(self.datafile.directory, self.datafile.name,
+        run_ncatted(self.old_directory, self.old_filename,
                     'initialization_index', 'global', 's', int(ripf.group(2)),
                     False)
-        run_ncatted(self.datafile.directory, self.datafile.name,
+        run_ncatted(self.old_directory, self.old_filename,
                     'physics_index', 'global', 's', int(ripf.group(3)),
                     False)
-        run_ncatted(self.datafile.directory, self.datafile.name,
+        run_ncatted(self.old_directory, self.old_filename,
                     'forcing_index', 'global', 's', int(ripf.group(4)),
                     False)
 
@@ -352,5 +375,5 @@ class VariantLabelUpdate(DmtUpdate):
                                    self.datafile.climate_model.short_name,
                                    self.datafile.experiment.short_name,
                                    self.new_value))
-        run_ncatted(self.datafile.directory, self.datafile.name,
+        run_ncatted(self.old_directory, self.old_filename,
                     'further_info_url', 'global', 'c', further_info_url, False)
