@@ -2,7 +2,8 @@
 """
 high_freq_file_details.py
 
-Output to the specified file the name, size and checksum of sub-daily files.
+Output to the specified file the name, size, checksum and tape URI of
+sub-daily files.
 """
 from __future__ import unicode_literals, division, absolute_import
 
@@ -65,7 +66,7 @@ def main(args):
                                  f'{checksum.checksum_value}')
             else:
                 logger.warning(f'No checksum found for file {df.name}')
-            fh.write(f'{file_path} {df.size} {checksum_text}\n')
+            fh.write(f'{file_path} {df.size} {checksum_text} {df.tape_url}\n')
 
 
 if __name__ == "__main__":
