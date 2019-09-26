@@ -356,6 +356,11 @@ def construct_drs_path(data_file):
     :param pdata_app.models.DataFile data_file: the file
     :returns: A string containing the DRS directory structure
     """
+    if data_file.variable_request.out_name:
+        var_name = data_file.variable_request.out_name
+    else:
+        var_name = data_file.variable_request.cmor_name
+
     return os.path.join(
         data_file.project.short_name,
         data_file.activity_id.short_name,
@@ -364,7 +369,7 @@ def construct_drs_path(data_file):
         data_file.experiment.short_name,
         data_file.rip_code,
         data_file.variable_request.table_name,
-        data_file.variable_request.cmor_name,
+        var_name,
         data_file.grid,
         data_file.version
     )
@@ -381,8 +386,13 @@ def construct_filename(data_file):
     :returns: A string containing the file's name
     :raises NotImplementedError: if the frequency isn't known
     """
+    if data_file.variable_request.out_name:
+        var_name = data_file.variable_request.out_name
+    else:
+        var_name = data_file.variable_request.cmor_name
+
     components = [
-        data_file.variable_request.cmor_name,
+        var_name,
         data_file.variable_request.table_name,
         data_file.climate_model.short_name,
         data_file.experiment.short_name,
