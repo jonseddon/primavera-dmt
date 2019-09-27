@@ -47,10 +47,7 @@ def main(args):
     """
     for table_name in (VariableRequest.objects.order_by('table_name').
             values_list('table_name', flat=True).distinct()):
-        if not table_name.startswith('Prim'):
-            table_file = f'CMIP6_{table_name}.json'
-        else:
-            table_file = f'PRIMAVERA_{table_name}.json'
+        table_file = f'CMIP6_{table_name}.json'
         with open(os.path.join(MIP_TABLE_DIR, table_file)) as fh:
             mip_table = json.load(fh)
 
