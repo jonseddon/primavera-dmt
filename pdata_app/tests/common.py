@@ -54,7 +54,8 @@ def make_example_files(parent_obj):
                                 dimensions='massive', cmor_name='var2',
                                 modeling_realm='atmos',
                                 frequency=FREQUENCY_VALUES['ann'],
-                                cell_measures='', uid='123abc')
+                                cell_measures='', uid='123abc',
+                                out_name='var')
     parent_obj.dreq1 = dbapi.get_or_create(models.DataRequest, project=project,
                                            institute=institute,
                                            climate_model=clim_mod, experiment=expt,
@@ -139,7 +140,7 @@ def make_example_files(parent_obj):
                                      end_time=10800,  # 1980-01-01 00:00:00
                                      calendar='360_day',
                                      time_units='days since 1950-01-01')
-    data_file8 = dbapi.get_or_create(models.DataFile, name='test8',
+    parent_obj.data_file8 = dbapi.get_or_create(models.DataFile, name='test8',
                                      incoming_name='test8',
                                      incoming_directory='/some/dir',
                                      directory='/some/dir2', size=8,
@@ -150,13 +151,13 @@ def make_example_files(parent_obj):
                                      variable_request=vble1,
                                      data_request=parent_obj.dreq1,
                                      activity_id=act_id, frequency='ann',
-                                     rip_code='r1i1p1',
+                                     rip_code='r1i1p1', grid='g8',
                                      data_submission=dsub, online=False,
                                      start_time=10800,  # 1980-01-01 00:00:00
                                      end_time=14400,  # 1990-01-01 00:00:00
                                      calendar='360_day',
                                      time_units='days since 1950-01-01')
-    data_file2 = dbapi.get_or_create(models.DataFile, name='test2',
+    parent_obj.data_file2 = dbapi.get_or_create(models.DataFile, name='test2',
                                      incoming_name='test2',
                                      incoming_directory='/some/dir',
                                      directory='/some/dir', size=2,
@@ -167,5 +168,6 @@ def make_example_files(parent_obj):
                                      variable_request=vble2,
                                      data_request=parent_obj.dreq2,
                                      activity_id=act_id, frequency='ann',
-                                     rip_code='r1i1p1',
-                                     data_submission=dsub, online=True)
+                                     rip_code='r1i1p1', grid='g2',
+                                     data_submission=dsub, online=True,
+                                     version='v87654321')

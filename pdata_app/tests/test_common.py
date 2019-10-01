@@ -247,6 +247,11 @@ class TestConstructDrsPath(TestCase):
         expected = 't/HighResMIP/MOHC/t/t/r1i1p1/Amon/var1/gn/v12345678'
         self.assertEqual(construct_drs_path(self.data_file1), expected)
 
+    def test_out_name(self):
+        expected = 't/HighResMIP/MOHC/t/t/r1i1p1/Amon/var/g2/v87654321'
+        self.assertEqual(construct_drs_path(self.data_file2), expected)
+
+
 
 class TestConstructFilename(TestCase):
     """Test pdata_app.utils.common.construct_filename()"""
@@ -271,6 +276,14 @@ class TestConstructFilename(TestCase):
         actual = construct_filename(datafile)
         expected = 'var1_Amon_t_t_r1i1p1_gn.nc'
         self.assertEqual(actual, expected)
+
+    def test_out_name(self):
+        var_req = self.data_file8.variable_request
+        var_req.out_name = 'short'
+        var_req.save()
+        expected = 'short_Amon_t_t_r1i1p1_g8_1980-1990.nc'
+        self.assertEqual(construct_filename(self.data_file8), expected)
+
 
 
 class TestConstructCylcTaskName(TestCase):
