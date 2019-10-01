@@ -30,7 +30,7 @@ logger = logging.getLogger(__name__)
 BASE_OUTPUT_DIR = Settings.get_solo().base_output_dir
 
 
-def construct_out_name_drs_path(data_file):
+def construct_old_drs_path(data_file):
     """
     Make the CMIP6 DRS directory path for the specified file but using
     out_name.
@@ -46,7 +46,7 @@ def construct_out_name_drs_path(data_file):
         data_file.experiment.short_name,
         data_file.rip_code,
         data_file.variable_request.table_name,
-        data_file.variable_request.out_name,
+        data_file.variable_request.cmor_name,
         data_file.grid,
         data_file.version
     )
@@ -128,13 +128,13 @@ def main(args):
 
     # Construct the new directory names
     directory = directories[0]
-    drs_path = construct_drs_path(first_file)
-    if not directory.endswith(drs_path):
-        logger.error(f'Directory does not end with {drs_path}. '
+    existing_dir = construct_old_drs_path(first_file)
+    if not directory.endswith(existing_dir):
+        logger.error(f'Directory does not end with {existing_dir}. '
                      f'It is {directory}')
         sys.exit(1)
     new_drs_dir = os.path.join(get_gws(directory),
-                               construct_out_name_drs_path(first_file))
+                               construct_drs_path(first_file))
     if not os.path.exists(new_drs_dir):
         os.makedirs(new_drs_dir)
 
@@ -143,9 +143,9 @@ def main(args):
     if not is_same_gws(BASE_OUTPUT_DIR, directory):
         do_sym_links = True
         sym_link_dir = os.path.join(BASE_OUTPUT_DIR,
-                                    construct_drs_path(first_file))
+                                    construct_old_drs_path(first_file))
         new_sym_link_dir = os.path.join(BASE_OUTPUT_DIR,
-                                        construct_out_name_drs_path(first_file))
+                                        construct_drs_path(first_file))
         if not os.path.exists(new_sym_link_dir):
             os.makedirs(new_sym_link_dir)
 
