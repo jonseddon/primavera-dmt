@@ -81,8 +81,8 @@ def main(args):
 
     logger.debug('{} affected files found'.format(affected_files.count()))
 
-    # delete_files(affected_files, BASE_OUTPUT_DIR)
-    # replace_files(affected_files)
+    delete_files(affected_files, BASE_OUTPUT_DIR)
+    replace_files(affected_files)
 
 
 if __name__ == "__main__":
