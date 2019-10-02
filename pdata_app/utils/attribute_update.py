@@ -82,13 +82,6 @@ class DmtUpdate(object):
 
         self.update_file_only = update_file_only
 
-        # The name and value of the data_request attribute being modified
-        self.data_req_attribute_name = None
-        self.data_req_attribute_value = None
-
-        # The destination data_request
-        self.new_dreq = None
-
     @abstractmethod
     def update(self):
         """
@@ -234,17 +227,6 @@ class DataRequestUpdate(DmtUpdate):
         """
         super(DataRequestUpdate, self).__init__(datafile, new_value,
                                                 update_file_only)
-        self.datafile = datafile
-        self.new_value = new_value
-        self.old_filename = self.datafile.name
-        self.old_directory = self.datafile.directory
-        self.old_sym_link_dir = os.path.join(BASE_OUTPUT_DIR,
-                                             construct_drs_path(self.datafile))
-        self.new_filename = None
-        self.new_directory = None
-
-        self.update_file_only = update_file_only
-
         # The name and value of the data_request attribute being modified
         self.data_req_attribute_name = None
         self.data_req_attribute_value = None
