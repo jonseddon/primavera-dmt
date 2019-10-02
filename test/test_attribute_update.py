@@ -109,7 +109,7 @@ class TestSourceIdUpdate(TestCase):
         self.mock_run_cmd.assert_has_calls(calls)
 
     @mock.patch('pdata_app.utils.attribute_update.DmtUpdate._check_available')
-    @mock.patch('pdata_app.utils.attribute_update.DmtUpdate.'
+    @mock.patch('pdata_app.utils.attribute_update.DataRequestUpdate.'
                 '_update_database_attribute')
     @mock.patch('pdata_app.utils.attribute_update.DmtUpdate._rename_file')
     @mock.patch('pdata_app.utils.attribute_update.DmtUpdate._update_checksum')
