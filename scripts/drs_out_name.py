@@ -57,7 +57,7 @@ def parse_args():
     Parse command-line arguments
     """
     parser = argparse.ArgumentParser(
-        description='Move files to a single group workspace.'
+        description='Change DRS directory to out_name'
     )
     parser.add_argument('request_id', help="the data request's id")
     parser.add_argument('-m', '--move', help="move the data request to this "
