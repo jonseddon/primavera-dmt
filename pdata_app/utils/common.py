@@ -714,6 +714,8 @@ def run_ncatted(directory, filename, attribute_name, attribute_visibility,
     :param str attribute_visibility: global or a variable name.
     :param str attribute_type: the `ncatted` type.
     :param new_value: the attribute's new value.
+    :param bool suppress_history: Default is to not update the files's
+        history attribute.
     """
     # Aiming for:
     # ncatted -h -a branch_time_in_parent,global,o,d,10800.0
@@ -728,6 +730,29 @@ def run_ncatted(directory, filename, attribute_name, attribute_visibility,
         quote_mark,
         new_value,
         quote_mark,
+        os.path.join(directory, filename)
+    )
+    run_command(cmd)
+
+
+def run_ncrename(directory, filename, old_name, new_name,
+                 suppress_history=True):
+    """
+    Run ncrename on a file to rename a variable.
+
+    :param str directory: the file's directory.
+    :param str filename: the files's name.
+    :param old_name: the variable's old name.
+    :param new_name: the variable's new name.
+    :param bool suppress_history: Default is to not update the files's
+        history attribute.
+    """
+    # Aiming for:
+    # ncrename -h -v va7h,va
+    cmd = 'ncrename {}-v {},{} {}'.format(
+        '-h ' if suppress_history else '',
+        old_name,
+        new_name,
         os.path.join(directory, filename)
     )
     run_command(cmd)
