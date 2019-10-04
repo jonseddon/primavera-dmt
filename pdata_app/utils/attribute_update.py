@@ -13,7 +13,8 @@ from pdata_app.models import (Checksum, ClimateModel, DataRequest, Settings,
                               TapeChecksum)
 from pdata_app.utils.common import (adler32, construct_drs_path,
                                     construct_filename, get_gws,
-                                    delete_drs_dir, is_same_gws, run_ncatted)
+                                    delete_drs_dir, is_same_gws,
+                                    run_ncatted, run_ncrename)
 
 logger = logging.getLogger(__name__)
 
@@ -402,3 +403,63 @@ class VariantLabelUpdate(DataRequestUpdate):
                                    self.new_value))
         run_ncatted(self.old_directory, self.old_filename,
                     'further_info_url', 'global', 'c', further_info_url, False)
+
+
+class VarNameToOutNameUpdate(DmtUpdate):
+    """
+    Update a file's name and contents from cmor_name to out_name.
+    """
+    def __init__(self, datafile, update_file_only=False):
+        """
+        Initialise the class
+
+        :param pdata_apps.models.DataFile datafile: the file to update
+        :param str new_value: the new value to apply
+        :param bool update_file_only: if true then update just the file and
+            don't make any changes to the database.
+        """
+        super(VarNameToOutNameUpdate, self).__init__(datafile, update_file_only)
+        # Lets do some checks to make sure that this is a sensible change to
+        # make.
+        if self.datafile.variable_request.out_name is None:
+            raise ValueError(f'File {self.datafile.name} out_name is not '
+                             f'defined.')
+        expected_file_start = self.datafile.variable_request.cmor_name + '_'
+        if not self.datafile.name.startswith(expected_file_start):
+            raise ValueError(f'File {self.datafile.name} does not start with '
+                             f'{expected_file_start}')
+
+    def update(self):
+        """
+        Update everything.
+        """
+        if not self.update_file_only:
+            # Default mode of operation. Update the data request and everything.
+            self._check_available()
+            self._update_file_attribute()
+            self._construct_filename()
+            self._update_filename_in_db()
+            self._construct_directory()
+            self._update_directory_in_db()
+            self._rename_file()
+            self._update_checksum()
+        else:
+            # For when this has been run before and we just need to update
+            # files that have pulled from disk again.
+            self.old_filename = self.datafile.incoming_name
+            self._check_available()
+            self._update_file_attribute()
+            self._construct_filename()
+            self._construct_directory()
+            self._rename_file()
+            self._update_checksum()
+
+    def _update_file_attribute(self):
+        """
+        Update the variant_label and make the same change in its constituent
+        parts and the further_info_url. Assume the file has its original path
+        and name.
+        """
+        run_ncrename(self.old_directory, self.old_filename,
+                     self.datafile.variable_request.cmor_name,
+                     self.datafile.variable_request.out_name, True)
