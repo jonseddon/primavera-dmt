@@ -8,7 +8,14 @@ on elastic tape and ones in MASS.
 from __future__ import unicode_literals, division, absolute_import
 import argparse
 import logging.config
+from multiprocessing.pool import ThreadPool
 import sys
+
+try:
+    import dask
+except ImportError:
+    pass
+import iris
 
 import django
 django.setup()
@@ -85,6 +92,10 @@ def main(args):
     Main entry point
     """
     logger.debug('Starting split_retrieve_request.py')
+
+    # Limit the number of Dask threads
+    if not iris.__version__.startswith('1.'):
+        dask.config.set(pool=ThreadPool(2))
 
     ret_reqs = RetrievalRequest.objects.filter(date_complete__isnull=True,
                                               date_deleted__isnull=True)
