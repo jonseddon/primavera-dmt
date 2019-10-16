@@ -46,7 +46,7 @@ VALIDATE_SCRIPT = 'validate_data_submission.py'
 MAX_VALIDATE_SCRIPTS = 6
 NUM_PROCS_USE_LOTUS = 4
 LOTUS_OPTIONS = ('-o ~/lotus/%J.o -q par-single -n {} -R "span[hosts=1]" '
-                 '-W 12:00 -R "rusage[mem=98304.0]" -M 98304',
+                 '-W 12:00 -R "rusage[mem=98304.0]" -M 98304'.
                  format(NUM_PROCS_USE_LOTUS))
 VERSION_STRING = 'v00000000'
 
