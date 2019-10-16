@@ -5,8 +5,15 @@ send_emails.py - send unsent emails that have been queued in the database.
 from __future__ import unicode_literals, division, absolute_import
 import argparse
 import logging.config
+from multiprocessing.pool import ThreadPool
 from smtplib import SMTPException
 import sys
+
+try:
+    import dask
+except ImportError:
+    pass
+import iris
 
 import django
 django.setup()
@@ -48,6 +55,10 @@ def main():
 
     :return:
     """
+    # Limit the number of Dask threads
+    if not iris.__version__.startswith('1.'):
+        dask.config.set(pool=ThreadPool(2))
+
     num_sent = 0
 
     for email in EmailQueue.objects.filter(sent=False):

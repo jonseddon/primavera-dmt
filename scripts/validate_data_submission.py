@@ -192,6 +192,11 @@ def _identify_and_validate_file(filename, project, file_format, output,
         error has occurred in another process and processing should end
     """
     try:
+        basename = os.path.basename(filename)
+        if DataFile.objects.filter(name=basename).count() > 0:
+            msg = 'File {} already exists in the database.'.format(basename)
+            raise FileValidationError(msg)
+
         metadata = identify_filename_metadata(filename, file_format)
 
         if metadata['table'].startswith('Prim'):

@@ -9,6 +9,13 @@ chown the files in the submission from the user who submitted them to the
 PRIMAVERA DMT admin user.
 """
 from __future__ import unicode_literals, division, absolute_import
+from multiprocessing.pool import ThreadPool
+
+try:
+    import dask
+except ImportError:
+    pass
+import iris
 
 import django
 django.setup()
@@ -21,6 +28,10 @@ OUTPUT_FILE = ('/home/users/jseddon/primavera/root_cron/'
 
 
 def main():
+    # Limit the number of Dask threads
+    if not iris.__version__.startswith('1.'):
+        dask.config.set(pool=ThreadPool(2))
+
     submissions = DataSubmission.objects.filter(status=STATUS_TO_PROCESS)
 
     with open(OUTPUT_FILE, 'w') as fh:
