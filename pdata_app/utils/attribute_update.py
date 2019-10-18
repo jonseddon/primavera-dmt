@@ -456,10 +456,12 @@ class VarNameToOutNameUpdate(DmtUpdate):
 
     def _update_file_attribute(self):
         """
-        Update the variant_label and make the same change in its constituent
-        parts and the further_info_url. Assume the file has its original path
-        and name.
+        Renamr the variable inside the file. Assume the file has its original
+        path and name.
         """
         run_ncrename(self.old_directory, self.old_filename,
                      self.datafile.variable_request.cmor_name,
                      self.datafile.variable_request.out_name, False)
+        run_ncatted(self.old_directory, self.old_filename,
+                    'variable_id', 'global', 'c',
+                    self.datafile.variable_request.out_name, True)

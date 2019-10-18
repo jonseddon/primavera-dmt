@@ -403,11 +403,15 @@ class TestVarNameToOutNameUpdate(TestCase):
                                mock_available):
         updater = VarNameToOutNameUpdate(self.test_file)
         updater.update()
-        self.mock_run_cmd.assert_called_once_with(
-            "ncrename -h -v var1,var "
-            "/gws/nopw/j04/primavera9/stream1/path/"
-            "var1_table_model_expt_varlab_gn_1-2.nc"
-        )
+        calls = [
+            mock.call("ncrename -v var1,var "
+                      "/gws/nopw/j04/primavera9/stream1/path/"
+                      "var1_table_model_expt_varlab_gn_1-2.nc"),
+            mock.call("ncatted -h -a variable_id,global,o,c,'var' "
+                      "/gws/nopw/j04/primavera9/stream1/path/"
+                      "var1_table_model_expt_varlab_gn_1-2.nc")
+        ]
+        self.mock_run_cmd.assert_has_calls(calls)
 
 
 def _make_files_realistic():
