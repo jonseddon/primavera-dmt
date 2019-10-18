@@ -462,4 +462,4 @@ class VarNameToOutNameUpdate(DmtUpdate):
         """
         run_ncrename(self.old_directory, self.old_filename,
                      self.datafile.variable_request.cmor_name,
-                     self.datafile.variable_request.out_name, True)
+                     self.datafile.variable_request.out_name, False)
