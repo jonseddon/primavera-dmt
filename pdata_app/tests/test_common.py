@@ -24,7 +24,8 @@ from pdata_app.utils.common import (make_partial_date_time,
                                     construct_cylc_task_name,
                                     construct_time_string, get_request_size,
                                     date_filter_files, grouper,
-                                    directories_spanned, run_ncatted)
+                                    directories_spanned, run_ncatted,
+                                    run_ncrename)
 from pdata_app.utils import dbapi
 from .common import make_example_files
 
@@ -548,6 +549,25 @@ class TestRunNcatted(TestCase):
                     suppress_history=False)
         self.mock_run_cmd.assert_called_once_with(
             "ncatted -a source_id,global,o,c,'better-model' /a/b.nc"
+        )
+
+
+class TestRunNcrename(TestCase):
+    def setUp(self):
+        patch = mock.patch('pdata_app.utils.common.run_command')
+        self.mock_run_cmd = patch.start()
+        self.addCleanup(patch.stop)
+
+    def test_typical(self):
+        run_ncrename('/a', 'b.nc', 'abc', 'ab')
+        self.mock_run_cmd.assert_called_once_with(
+            "ncrename -h -v abc,ab /a/b.nc"
+        )
+
+    def test_with_history(self):
+        run_ncrename('/a', 'b.nc', 'abc', 'ab', suppress_history=False)
+        self.mock_run_cmd.assert_called_once_with(
+            "ncrename -v abc,ab /a/b.nc"
         )
 
 

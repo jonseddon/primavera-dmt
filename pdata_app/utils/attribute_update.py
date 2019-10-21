@@ -13,7 +13,8 @@ from pdata_app.models import (Checksum, ClimateModel, DataRequest, Settings,
                               TapeChecksum)
 from pdata_app.utils.common import (adler32, construct_drs_path,
                                     construct_filename, get_gws,
-                                    delete_drs_dir, is_same_gws, run_ncatted)
+                                    delete_drs_dir, is_same_gws,
+                                    run_ncatted, run_ncrename)
 
 logger = logging.getLogger(__name__)
 
@@ -60,7 +61,7 @@ class SymLinkIsFileError(AttributeUpdateError):
 @six.add_metaclass(ABCMeta)
 class DmtUpdate(object):
     """
-    Abstract base class for all DMT metadata updates.
+    Abstract base class for any updates to files in the DMT.
     """
     def __init__(self, datafile, new_value, update_file_only=False):
         """
@@ -82,68 +83,12 @@ class DmtUpdate(object):
 
         self.update_file_only = update_file_only
 
-        # The name and value of the data_request attribute being modified
-        self.data_req_attribute_name = None
-        self.data_req_attribute_value = None
-
-        # The destination data_request
-        self.new_dreq = None
-
+    @abstractmethod
     def update(self):
         """
         Update everything.
         """
-        if not self.update_file_only:
-            # Default mode of operation. Update the data request and everything.
-            self._find_new_dreq()
-            self._check_available()
-            self._update_database_attribute()
-            self._update_file_attribute()
-            self._construct_filename()
-            self._update_filename_in_db()
-            self._construct_directory()
-            self._update_directory_in_db()
-            self._rename_file()
-            self._update_checksum()
-            self._move_dreq()
-        else:
-            # For when this has been run before and we just need to update
-            # files that have pulled from disk again.
-            self.old_filename = self.datafile.incoming_name
-            self._check_available()
-            self._update_file_attribute()
-            self._construct_filename()
-            self._construct_directory()
-            self._rename_file()
-            self._update_checksum()
-
-    def _find_new_dreq(self):
-        """
-        Find the new data request. If it can't be find the data request (or
-        there are multiple ones) then Django will raise an exception so that we
-        don't make any changes to the files or DB.
-        """
-        if self.data_req_attribute_name is None:
-            raise NotImplementedError("data_req_attribute_name hasn't been "
-                                      "set.")
-        if self.data_req_attribute_value is None:
-            raise NotImplementedError("data_req_attribute_value hasn't been "
-                                      "set.")
-
-        # the default values from the existing data request
-        dreq_dict = {
-            'project': self.datafile.data_request.project,
-            'institute': self.datafile.data_request.institute,
-            'climate_model': self.datafile.data_request.climate_model,
-            'experiment': self.datafile.data_request.experiment,
-            'variable_request': self.datafile.data_request.variable_request,
-            'rip_code': self.datafile.data_request.rip_code
-        }
-        # overwrite with the new value
-        dreq_dict[self.data_req_attribute_name] = self.data_req_attribute_value
-
-        # find the data request
-        self.new_dreq = DataRequest.objects.get(**dreq_dict)
+        pass
 
     def _check_available(self):
         """
@@ -160,13 +105,6 @@ class DmtUpdate(object):
         if not os.path.exists(os.path.join(self.old_directory,
                                            self.old_filename)):
             raise FileNotOnDiskError(self.old_directory, self.old_filename)
-
-    @abstractmethod
-    def _update_database_attribute(self):
-        """
-        Update the attribute in the database.
-        """
-        pass
 
     @abstractmethod
     def _update_file_attribute(self):
@@ -272,6 +210,94 @@ class DmtUpdate(object):
             os.symlink(os.path.join(self.new_directory, self.new_filename),
                        os.path.join(new_link_dir, self.new_filename))
 
+
+@six.add_metaclass(ABCMeta)
+class DataRequestUpdate(DmtUpdate):
+    """
+    Abstract base class for updates that require a move of the files to a
+    different DataRequest object.
+    """
+    def __init__(self, datafile, new_value, update_file_only=False):
+        """
+        Initialise the class
+
+        :param pdata_apps.models.DataFile datafile: the file to update
+        :param str new_value: the new value to apply
+        :param bool update_file_only: if true then update just the file and
+            don't make any changes to the database.
+        """
+        super(DataRequestUpdate, self).__init__(datafile, new_value,
+                                                update_file_only)
+        # The name and value of the data_request attribute being modified
+        self.data_req_attribute_name = None
+        self.data_req_attribute_value = None
+
+        # The destination data_request
+        self.new_dreq = None
+
+    def update(self):
+        """
+        Update everything.
+        """
+        if not self.update_file_only:
+            # Default mode of operation. Update the data request and everything.
+            self._find_new_dreq()
+            self._check_available()
+            self._update_database_attribute()
+            self._update_file_attribute()
+            self._construct_filename()
+            self._update_filename_in_db()
+            self._construct_directory()
+            self._update_directory_in_db()
+            self._rename_file()
+            self._update_checksum()
+            self._move_dreq()
+        else:
+            # For when this has been run before and we just need to update
+            # files that have pulled from disk again.
+            self.old_filename = self.datafile.incoming_name
+            self._check_available()
+            self._update_file_attribute()
+            self._construct_filename()
+            self._construct_directory()
+            self._rename_file()
+            self._update_checksum()
+
+    def _find_new_dreq(self):
+        """
+        Find the new data request. If it can't be find the data request (or
+        there are multiple ones) then Django will raise an exception so that we
+        don't make any changes to the files or DB.
+        """
+        if self.data_req_attribute_name is None:
+            raise NotImplementedError("data_req_attribute_name hasn't been "
+                                      "set.")
+        if self.data_req_attribute_value is None:
+            raise NotImplementedError("data_req_attribute_value hasn't been "
+                                      "set.")
+
+        # the default values from the existing data request
+        dreq_dict = {
+            'project': self.datafile.data_request.project,
+            'institute': self.datafile.data_request.institute,
+            'climate_model': self.datafile.data_request.climate_model,
+            'experiment': self.datafile.data_request.experiment,
+            'variable_request': self.datafile.data_request.variable_request,
+            'rip_code': self.datafile.data_request.rip_code
+        }
+        # overwrite with the new value
+        dreq_dict[self.data_req_attribute_name] = self.data_req_attribute_value
+
+        # find the data request
+        self.new_dreq = DataRequest.objects.get(**dreq_dict)
+
+    @abstractmethod
+    def _update_database_attribute(self):
+        """
+        Update the attribute in the database.
+        """
+        pass
+
     def _move_dreq(self):
         """
         Move the data file to the new data request
@@ -280,7 +306,7 @@ class DmtUpdate(object):
         self.datafile.save()
 
 
-class SourceIdUpdate(DmtUpdate):
+class SourceIdUpdate(DataRequestUpdate):
     """
     Update a DataFile's source_id (climate model).
     """
@@ -323,7 +349,7 @@ class SourceIdUpdate(DmtUpdate):
                     'further_info_url', 'global', 'c', further_info_url, False)
 
 
-class VariantLabelUpdate(DmtUpdate):
+class VariantLabelUpdate(DataRequestUpdate):
     """
     Update a DataFile's variant_label (rip_code).
     """
@@ -377,3 +403,65 @@ class VariantLabelUpdate(DmtUpdate):
                                    self.new_value))
         run_ncatted(self.old_directory, self.old_filename,
                     'further_info_url', 'global', 'c', further_info_url, False)
+
+
+class VarNameToOutNameUpdate(DmtUpdate):
+    """
+    Update a file's name and contents from cmor_name to out_name.
+    """
+    def __init__(self, datafile, update_file_only=False):
+        """
+        Initialise the class
+
+        :param pdata_apps.models.DataFile datafile: the file to update
+        :param str new_value: the new value to apply
+        :param bool update_file_only: if true then update just the file and
+            don't make any changes to the database.
+        """
+        super(VarNameToOutNameUpdate, self).__init__(datafile, update_file_only)
+        # Lets do some checks to make sure that this is a sensible change to
+        # make.
+        if self.datafile.variable_request.out_name is None:
+            raise ValueError(f'File {self.datafile.name} out_name is not '
+                             f'defined.')
+        expected_file_start = self.datafile.variable_request.cmor_name + '_'
+        if not self.datafile.name.startswith(expected_file_start):
+            raise ValueError(f'File {self.datafile.name} does not start with '
+                             f'{expected_file_start}')
+
+    def update(self):
+        """
+        Update everything.
+        """
+        if not self.update_file_only:
+            # Default mode of operation. Update the data request and everything.
+            self._check_available()
+            self._update_file_attribute()
+            self._construct_filename()
+            self._update_filename_in_db()
+            self._construct_directory()
+            self._update_directory_in_db()
+            self._rename_file()
+            self._update_checksum()
+        else:
+            # For when this has been run before and we just need to update
+            # files that have pulled from disk again.
+            self.old_filename = self.datafile.incoming_name
+            self._check_available()
+            self._update_file_attribute()
+            self._construct_filename()
+            self._construct_directory()
+            self._rename_file()
+            self._update_checksum()
+
+    def _update_file_attribute(self):
+        """
+        Renamr the variable inside the file. Assume the file has its original
+        path and name.
+        """
+        run_ncrename(self.old_directory, self.old_filename,
+                     self.datafile.variable_request.cmor_name,
+                     self.datafile.variable_request.out_name, False)
+        run_ncatted(self.old_directory, self.old_filename,
+                    'variable_id', 'global', 'c',
+                    self.datafile.variable_request.out_name, True)

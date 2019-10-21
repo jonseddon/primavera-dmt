@@ -18,6 +18,7 @@ from pdata_app.tests.common import make_example_files
 
 from pdata_app.utils.attribute_update import (SourceIdUpdate,
                                               VariantLabelUpdate,
+                                              VarNameToOutNameUpdate,
                                               FileOfflineError,
                                               FileNotOnDiskError)
 import pdata_app.utils.attribute_update
@@ -109,7 +110,7 @@ class TestSourceIdUpdate(TestCase):
         self.mock_run_cmd.assert_has_calls(calls)
 
     @mock.patch('pdata_app.utils.attribute_update.DmtUpdate._check_available')
-    @mock.patch('pdata_app.utils.attribute_update.DmtUpdate.'
+    @mock.patch('pdata_app.utils.attribute_update.DataRequestUpdate.'
                 '_update_database_attribute')
     @mock.patch('pdata_app.utils.attribute_update.DmtUpdate._rename_file')
     @mock.patch('pdata_app.utils.attribute_update.DmtUpdate._update_checksum')
@@ -353,6 +354,62 @@ class TestVariantLabelUpdate(TestCase):
                       "'https://furtherinfo.es-doc.org/t.MOHC.t.t.none."
                       "r1i2p3f4' /gws/nopw/j04/primavera9/stream1/path/"
                       "var1_table_model_expt_varlab_gn_1-2.nc"),
+        ]
+        self.mock_run_cmd.assert_has_calls(calls)
+
+
+class TestVarNameToOutNameUpdate(TestCase):
+    """Test scripts.attribute_update.VarNameToOutNameUpdate"""
+    def setUp(self):
+        make_example_files(self)
+        self.test_file = DataFile.objects.get(name='test1')
+        _make_files_realistic()
+        self.test_file.refresh_from_db()
+        var_req = self.test_file.variable_request
+        var_req.out_name = 'var'
+        var_req.save()
+
+        patch = mock.patch('pdata_app.utils.common.run_command')
+        self.mock_run_cmd = patch.start()
+        self.addCleanup(patch.stop)
+
+    @mock.patch('pdata_app.utils.attribute_update.DmtUpdate._check_available')
+    @mock.patch('pdata_app.utils.attribute_update.DmtUpdate._rename_file')
+    @mock.patch('pdata_app.utils.attribute_update.DmtUpdate._update_checksum')
+    def test_filename_updated(self, mock_checksum, mock_rename,
+                              mock_available):
+        updater = VarNameToOutNameUpdate(self.test_file)
+        updater.update()
+        self.test_file.refresh_from_db()
+        desired_filename = 'var_Amon_t_t_r1i1p1_gn_1950-1960.nc'
+        self.assertEqual(self.test_file.name, desired_filename)
+
+    @mock.patch('pdata_app.utils.attribute_update.DmtUpdate._check_available')
+    @mock.patch('pdata_app.utils.attribute_update.DmtUpdate._rename_file')
+    @mock.patch('pdata_app.utils.attribute_update.DmtUpdate._update_checksum')
+    def test_directory_updated(self, mock_checksum, mock_rename,
+                               mock_available):
+        updater = VarNameToOutNameUpdate(self.test_file)
+        updater.update()
+        self.test_file.refresh_from_db()
+        desired_dir = ('/gws/nopw/j04/primavera9/stream1/t/'
+                       'HighResMIP/MOHC/t/t/r1i1p1/Amon/var/gn/v12345678')
+        self.assertEqual(self.test_file.directory, desired_dir)
+
+    @mock.patch('pdata_app.utils.attribute_update.DmtUpdate._check_available')
+    @mock.patch('pdata_app.utils.attribute_update.DmtUpdate._rename_file')
+    @mock.patch('pdata_app.utils.attribute_update.DmtUpdate._update_checksum')
+    def test_update_attributes(self, mock_checksum, mock_rename,
+                               mock_available):
+        updater = VarNameToOutNameUpdate(self.test_file)
+        updater.update()
+        calls = [
+            mock.call("ncrename -v var1,var "
+                      "/gws/nopw/j04/primavera9/stream1/path/"
+                      "var1_table_model_expt_varlab_gn_1-2.nc"),
+            mock.call("ncatted -h -a variable_id,global,o,c,'var' "
+                      "/gws/nopw/j04/primavera9/stream1/path/"
+                      "var1_table_model_expt_varlab_gn_1-2.nc")
         ]
         self.mock_run_cmd.assert_has_calls(calls)
 
