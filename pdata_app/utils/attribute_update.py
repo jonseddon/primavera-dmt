@@ -424,10 +424,11 @@ class VarNameToOutNameUpdate(DmtUpdate):
         if self.datafile.variable_request.out_name is None:
             raise ValueError(f'File {self.datafile.name} out_name is not '
                              f'defined.')
-        expected_file_start = self.datafile.variable_request.cmor_name + '_'
-        if not self.datafile.name.startswith(expected_file_start):
-            raise ValueError(f'File {self.datafile.name} does not start with '
-                             f'{expected_file_start}')
+        if not self.update_file_only:
+            expected_file_start = self.datafile.variable_request.cmor_name + '_'
+            if not self.datafile.name.startswith(expected_file_start):
+                raise ValueError(f'File {self.datafile.name} does not start '
+                                 f'with {expected_file_start}')
 
     def update(self):
         """
