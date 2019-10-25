@@ -418,7 +418,8 @@ class VarNameToOutNameUpdate(DmtUpdate):
         :param bool update_file_only: if true then update just the file and
             don't make any changes to the database.
         """
-        super(VarNameToOutNameUpdate, self).__init__(datafile, update_file_only)
+        super(VarNameToOutNameUpdate, self).__init__(datafile, None,
+                                                     update_file_only)
         # Lets do some checks to make sure that this is a sensible change to
         # make.
         if self.datafile.variable_request.out_name is None:
