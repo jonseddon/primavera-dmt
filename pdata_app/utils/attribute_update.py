@@ -446,12 +446,10 @@ class VarNameToOutNameUpdate(DmtUpdate):
         else:
             # For when this has been run before and we just need to update
             # files that have pulled from disk again.
-            self.old_filename = self.datafile.incoming_name
             self._check_available()
             self._update_file_attribute()
-            self._construct_filename()
-            self._construct_directory()
-            self._rename_file()
+            self.new_filename = self.old_filename
+            self.new_directory = self.old_directory
             self._update_checksum()
 
     def _update_file_attribute(self):
