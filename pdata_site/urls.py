@@ -43,6 +43,9 @@ urlpatterns = [
 
     url(r'^files/$', pdata_app.views.DataFileList.as_view(), name='data_files'),
 
+    url(r'^files_quick_query/$', pdata_app.views.view_files_quick_query,
+        name='files_quick_query'),
+
     url(r'^replaced_files/$', pdata_app.views.ReplacedFileList.as_view(),
         name='replaced_files'),
 

@@ -8,8 +8,12 @@
         <p>
             <form class="form-inline" action="{% url 'data_submissions' %}" method="get">
                 <div class="form-group">
+                    <label class="sr-only" for="incoming_directory">Incoming Directory</label>
+                    <input type="text" class="form-control" name="incoming_directory" id="incoming_directory" placeholder="Incoming Directory" {% if request.GET.incoming_directory %} value="{{ request.GET.incoming_directory }}" {% endif %} autofocus>
+                </div>
+                <div class="form-group">
                     <label class="sr-only" for="directory">Directory</label>
-                    <input type="text" class="form-control" name="directory" id="directory" placeholder="Directory" {% if request.GET.directory %} value="{{ request.GET.directory }}" {% endif %} autofocus>
+                    <input type="text" class="form-control" name="directory" id="directory" placeholder="Directory" {% if request.GET.directory %} value="{{ request.GET.directory }}" {% endif %}>
                 </div>
                 <div class="form-group">
                     <label class="sr-only" for="status">Status</label>

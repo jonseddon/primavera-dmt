@@ -131,10 +131,15 @@ class DataFileFilter(django_filters.FilterSet):
 class DataSubmissionFilter(django_filters.FilterSet):
     class Meta:
         model = DataSubmission
-        fields = ('status', 'directory', 'user')
+        fields = ('status', 'incoming_directory', 'directory', 'user')
 
     status = django_filters.CharFilter(field_name='status',
                                        lookup_expr='icontains')
+
+    incoming_directory = django_filters.CharFilter(
+        field_name='incoming_directory',
+        lookup_expr='icontains'
+    )
 
     directory = django_filters.CharFilter(field_name='directory',
                                           lookup_expr='icontains')
