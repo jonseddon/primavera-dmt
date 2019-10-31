@@ -54,8 +54,8 @@ def main(args):
 
     logger.debug(f'{dfs.count()} files found in the DMT')
 
-    # delete_files(affected_files, '/gws/nopw/j04/primavera5/stream1')
-    # replace_files(affected_files)
+    delete_files(affected_files, '/gws/nopw/j04/primavera5/stream1')
+    replace_files(affected_files)
 
 
 if __name__ == "__main__":
