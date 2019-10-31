@@ -418,16 +418,18 @@ class VarNameToOutNameUpdate(DmtUpdate):
         :param bool update_file_only: if true then update just the file and
             don't make any changes to the database.
         """
-        super(VarNameToOutNameUpdate, self).__init__(datafile, update_file_only)
+        super(VarNameToOutNameUpdate, self).__init__(datafile, None,
+                                                     update_file_only)
         # Lets do some checks to make sure that this is a sensible change to
         # make.
         if self.datafile.variable_request.out_name is None:
             raise ValueError(f'File {self.datafile.name} out_name is not '
                              f'defined.')
-        expected_file_start = self.datafile.variable_request.cmor_name + '_'
-        if not self.datafile.name.startswith(expected_file_start):
-            raise ValueError(f'File {self.datafile.name} does not start with '
-                             f'{expected_file_start}')
+        if not self.update_file_only:
+            expected_file_start = self.datafile.variable_request.cmor_name + '_'
+            if not self.datafile.name.startswith(expected_file_start):
+                raise ValueError(f'File {self.datafile.name} does not start '
+                                 f'with {expected_file_start}')
 
     def update(self):
         """
@@ -446,12 +448,10 @@ class VarNameToOutNameUpdate(DmtUpdate):
         else:
             # For when this has been run before and we just need to update
             # files that have pulled from disk again.
-            self.old_filename = self.datafile.incoming_name
             self._check_available()
             self._update_file_attribute()
-            self._construct_filename()
-            self._construct_directory()
-            self._rename_file()
+            self.new_filename = self.old_filename
+            self.new_directory = self.old_directory
             self._update_checksum()
 
     def _update_file_attribute(self):

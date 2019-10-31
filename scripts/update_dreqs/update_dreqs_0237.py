@@ -1,21 +1,20 @@
 #!/usr/bin/env python
 """
-update_dreqs_0238.py
+update_dreqs_0237.py
 
-Replace files from EC-Earth3P highresSST-present r2i1p1f1 submissions from 1956
-and 1959, which may not have been generated correctly.
+This file creates data requests for the MOHC AMIP future ensemble members
+r1i[14,15]p1f1.
 """
 import argparse
 import logging.config
-import os
 import sys
+
 
 import django
 django.setup()
-from pdata_app.utils.common import list_files
-from pdata_app.utils.replace_file import replace_files
-from pdata_app.models import DataFile
-from pdata_app.utils.common import delete_files
+
+from pdata_app.models import DataRequest
+
 
 __version__ = '0.1.0b1'
 
@@ -23,9 +22,6 @@ DEFAULT_LOG_LEVEL = logging.WARNING
 DEFAULT_LOG_FORMAT = '%(levelname)s: %(message)s'
 
 logger = logging.getLogger(__name__)
-
-NEW_SUBMISSION = ('/gws/nopw/j04/primavera4/upload/EC-Earth-Consortium/'
-                  'EC-Earth-3/incoming/xl1a-present-fix')
 
 
 def parse_args():
@@ -46,16 +42,17 @@ def main(args):
     """
     Main entry point
     """
-    new_files = list_files(NEW_SUBMISSION)
+    r1i1p1f1 = {
+        'climate_model__short_name': 'HadGEM3-GC31-LM',
+        'experiment__short_name': 'highresSST-future',
+        'rip_code': 'r1i1p1f1'
+    }
 
-    logger.debug(f'{len(new_files)} files found in the submission')
-
-    dfs = DataFile.objects.filter(name__in=map(os.path.basename, new_files))
-
-    logger.debug(f'{dfs.count()} files found in the DMT')
-
-    delete_files(dfs, '/gws/nopw/j04/primavera5/stream1')
-    replace_files(dfs)
+    for dr in DataRequest.objects.filter(**r1i1p1f1):
+        for variant_label in ['r1i14p1f1', 'r1i15p1f1']:
+            dr.pk = None
+            dr.rip_code = variant_label
+            dr.save()
 
 
 if __name__ == "__main__":
