@@ -158,6 +158,11 @@ class ObservationFileList(PagedFilteredTableView):
         return self.filter.qs.distinct()
 
 
+def view_files_quick_query(request):
+    return render(request, 'pdata_app/datafile_quick_query.html',
+                  {'request': request, 'page_title': 'Data Files'})
+
+
 def view_received_quick_query(request):
     return render(request, 'pdata_app/var_received_quick_query.html',
                   {'request': request, 'page_title': 'Variables Received'})
