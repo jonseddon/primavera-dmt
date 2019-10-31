@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 """
-update_dreqs_0237.py
+update_dreqs_0238.py
 
 Replace files from EC-Earth3P highresSST-present r2i1p1f1 submissions from 1956
 and 1959, which may not have been generated correctly.
@@ -48,8 +48,11 @@ def main(args):
     """
     new_files = list_files(NEW_SUBMISSION)
 
+    logger.debug(f'{len(new_files)} files found in the submission')
+
     dfs = DataFile.objects.filter(name__in=map(os.path.basename, new_files))
 
+    logger.debug(f'{dfs.count()} files found in the DMT')
 
     # delete_files(affected_files, '/gws/nopw/j04/primavera5/stream1')
     # replace_files(affected_files)
