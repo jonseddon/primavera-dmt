@@ -34,6 +34,8 @@ logger = logging.getLogger(__name__)
 BASE_OUTPUT_DIR = Settings.get_solo().base_output_dir
 
 
+CEDA_BASE = '/badc/cmip6/data'
+
 def scan_database():
     """
     Start the scan of the database.
@@ -85,7 +87,8 @@ def scan_file_structure(directory):
         else:
             db_file = db_files.first()
 
-            # This will return false for broken symbolic links
+            # Check for broken symbolic links
+            # os.path.exists() returns False for broken links
             if not os.path.exists(nc_file):
                 os.remove(nc_file)
                 if db_file.directory:
@@ -114,11 +117,16 @@ def scan_file_structure(directory):
             actual_path = os.path.realpath(nc_file)
             actual_dir = os.path.dirname(actual_path)
             if db_file.directory != actual_dir:
-                logger.warning('Directory for file {} changed from {} to {}'.
-                               format(nc_file_name, db_file.directory,
-                                      actual_dir))
-                db_file.directory = actual_dir
-                db_file.save()
+                if db_file.directory.startswith(CEDA_BASE):
+                    # This file is believed to be in the archive
+                    logger.warning('File {} is in the CEDA archive according '
+                                   'to the database.'.format(nc_file))
+                else:
+                    logger.warning('Directory for file {} changed from {} to {}'.
+                                   format(nc_file_name, db_file.directory,
+                                          actual_dir))
+                    db_file.directory = actual_dir
+                    db_file.save()
 
     logger.debug('Completed file structure scan.')
 
@@ -152,9 +160,8 @@ def main(args):
     """
     logger.debug('Starting db_netcdf_housekeeping')
 
-    ceda_base = '/badc/cmip6/data'
-    if not os.path.exists(ceda_base):
-        logger.error("{} isn't mounted on this server".format(ceda_base))
+    if not os.path.exists(CEDA_BASE):
+        logger.error("{} isn't mounted on this server".format(CEDA_BASE))
         sys.exit(1)
 
     if not args.no_file_structure:
