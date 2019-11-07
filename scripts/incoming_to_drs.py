@@ -17,7 +17,7 @@ import django
 django.setup()
 
 from pdata_app.models import Settings, DataSubmission
-from pdata_app.utils.common import is_same_gws
+from pdata_app.utils.common import is_same_gws, construct_drs_path
 
 
 __version__ = '0.1.0b1'
@@ -30,26 +30,6 @@ logger = logging.getLogger(__name__)
 # The top-level directory to write output data to
 BASE_OUTPUT_DIR = Settings.get_solo().base_output_dir
 
-
-def construct_drs_path(data_file):
-    """
-    Make the CMIP6 DRS directory path for the specified file.
-
-    :param pdata_app.models.DataFile data_file:
-    :returns: A string containing the DRS directory structure
-    """
-    return os.path.join(
-        data_file.project.short_name,
-        data_file.activity_id.short_name,
-        data_file.institute.short_name,
-        data_file.climate_model.short_name,
-        data_file.experiment.short_name,
-        data_file.rip_code,
-        data_file.variable_request.table_name,
-        data_file.variable_request.cmor_name,
-        data_file.grid,
-        data_file.version
-    )
 
 
 def _get_submission_object(submission_dir):
@@ -110,7 +90,7 @@ def main(args):
 
     errors_encountered = False
 
-    for data_file in data_sub.datafile_set.all():
+    for data_file in data_sub.datafile_set.order_by('name'):
         # make full path of existing file
         existing_path = os.path.join(data_file.directory, data_file.name)
 
@@ -125,33 +105,24 @@ def main(args):
 
         # link if on same GWS, or else copy
         this_file_error = False
-        if is_same_gws(existing_path, drs_path):
-            try:
-                os.link(existing_path, drs_path)
-            except OSError as exc:
-                logger.error('Unable to link from {} to {}. {}'.
-                             format(existing_path, drs_path, str(exc)))
-                errors_encountered = True
-                this_file_error = True
-        else:
-            try:
-                shutil.copyfile(existing_path, drs_path)
-            except IOError as exc:
-                logger.error('Unable to copy from {} to {}. {}'.
-                             format(existing_path, drs_path, str(exc)))
-                errors_encountered = True
-                this_file_error = True
+        try:
+            os.rename(existing_path, drs_path)
+        except OSError as exc:
+            logger.error('Unable to link from {} to {}. {}'.
+                            format(existing_path, drs_path, str(exc)))
+            errors_encountered = True
+            this_file_error = True
 
         # update the file's location in the database
         if not this_file_error:
-            data_file.directory = os.path.join(drs_base_dir, drs_sub_path)
+            data_file.directory = drs_dir
             if not data_file.online:
                 data_file.online = True
             data_file.save()
 
         # if storing the files in an alternative location, create a sym link
         # from the primary DRS structure to the file
-        if args.alternative and not this_file_error:
+        if not is_same_gws(BASE_OUTPUT_DIR, drs_base_dir):
             primary_path = os.path.join(BASE_OUTPUT_DIR, drs_sub_path)
             try:
                 if not os.path.exists(primary_path):
@@ -167,8 +138,6 @@ def main(args):
 
     # summarise what happened and keep the DB updated
     if not errors_encountered:
-        data_sub.directory = drs_base_dir
-        data_sub.save()
         logger.debug('All files copied with no errors. Data submission '
                      'incoming directory can be deleted.')
     else:
