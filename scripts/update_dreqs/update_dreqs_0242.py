@@ -54,6 +54,9 @@ def main(args):
         sys.exit(1)
 
     delete_files(dfs, '/gws/nopw/j04/primavera5/stream1')
+    for df in dfs:
+        df.incoming_directory = df.incoming_directory + '_1'
+        df.save()
     replace_files(dfs)
 
 
