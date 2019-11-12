@@ -53,8 +53,8 @@ def main(args):
         logger.error(f'{num_files} found but was expecting 1920')
         sys.exit(1)
 
-    # delete_files(dfs, '/gws/nopw/j04/primavera5/stream1')
-    # replace_files(dfs)
+    delete_files(dfs, '/gws/nopw/j04/primavera5/stream1')
+    replace_files(dfs)
 
 
 if __name__ == "__main__":
