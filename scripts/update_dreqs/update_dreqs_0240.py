@@ -7,12 +7,10 @@ Replace files from EC-Earth3P highresSST-present r2i1p1f1 submissions from
 """
 import argparse
 import logging.config
-import os
 import sys
 
 import django
 django.setup()
-from pdata_app.utils.common import list_files
 from pdata_app.utils.replace_file import replace_files
 from pdata_app.models import DataFile
 from pdata_app.utils.common import delete_files
@@ -23,9 +21,6 @@ DEFAULT_LOG_LEVEL = logging.WARNING
 DEFAULT_LOG_FORMAT = '%(levelname)s: %(message)s'
 
 logger = logging.getLogger(__name__)
-
-NEW_SUBMISSION = ('/gws/nopw/j04/primavera4/upload/EC-Earth-Consortium/'
-                  'EC-Earth-3/incoming/xl1a-1950s-fix')
 
 
 def parse_args():
@@ -46,13 +41,17 @@ def main(args):
     """
     Main entry point
     """
-    new_files = list_files(NEW_SUBMISSION)
+    dfs = DataFile.objects.filter(
+        climate_model__short_name='EC-Earth3P',
+        experiment__short_name='highresSST-present',
+        rip_code='r2i1p1f1',
+        name__contains='_195'
+    )
 
-    logger.debug(f'{len(new_files)} files found in the submission')
-
-    dfs = DataFile.objects.filter(name__in=map(os.path.basename, new_files))
-
-    logger.debug(f'{dfs.count()} files found in the DMT')
+    num_files = dfs.count()
+    if num_files != 1920:
+        logger.error(f'{num_files} found but was expecting 1920')
+        sys.exit(1)
 
     # delete_files(dfs, '/gws/nopw/j04/primavera5/stream1')
     # replace_files(dfs)
