@@ -108,8 +108,8 @@ def main(args):
                      f'{num_files_expected}')
         sys.exit(1)
 
-    # delete_files(dfs, '/gws/nopw/j04/primavera5/stream1')
-    # replace_files(dfs)
+    delete_files(dfs, '/gws/nopw/j04/primavera5/stream1')
+    replace_files(dfs)
 
 
 if __name__ == "__main__":
