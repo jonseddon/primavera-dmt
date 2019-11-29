@@ -6,11 +6,9 @@ Calculate the volume of Stream 1 and Stream 2 data submitted to the ESGF. Save
 the results in a file and generate a plot to show the progress.
 
 The files are specified on the command line. There's no backup of the files
-made as it's assumed that they'll be stored in the home directory, where
+made as it's assumed that they'll be stored in a user's home directory, where
 regular snapshots are taken.
 """
-from __future__ import unicode_literals, division, absolute_import
-
 import argparse
 import datetime
 import logging.config
@@ -127,10 +125,10 @@ def get_total_volume():
 def generate_plots(time_series_file, output_image):
     """
     Load the CSV formatted time series file and generate an image showing the
-    publication process made over the last 30 days.
+    publication progress made over the last 30 days.
 
-    :param str time_series_file:
-    :param str output_image:
+    :param str time_series_file: the full path of the time series file.
+    :param str output_image: the full path of the image.
     """
     df = pd.read_csv(time_series_file, names=['Date', 'Submitted', 'Total'],
                      parse_dates=[0], index_col=[0])
@@ -224,7 +222,8 @@ if __name__ == "__main__":
             log_level = getattr(logging, cmd_args.log_level.upper())
         except AttributeError:
             logger.setLevel(logging.WARNING)
-            logger.error('log-level must be one of: debug, info, warn or error')
+            logger.error('log-level must be one of: debug, info, warn or '
+                         'error')
             sys.exit(1)
     else:
         log_level = DEFAULT_LOG_LEVEL
