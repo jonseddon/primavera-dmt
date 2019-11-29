@@ -4,12 +4,24 @@ esgf_timeseries.py
 
 Calculate the volume of Stream 1 and Stream 2 data submitted to the ESGF. Save
 the results in a file and generate a plot to show the progress.
+
+The files are specified on the command line. There's no backup of the files
+made as it's assumed that they'll be stored in the home directory, where
+regular snapshots are taken.
 """
 from __future__ import unicode_literals, division, absolute_import
 
 import argparse
+import datetime
 import logging.config
 import sys
+
+import matplotlib
+# use the Agg environment to generate an image rather than outputting to screen
+matplotlib.use('Agg')
+import matplotlib.pyplot as plt
+from matplotlib.dates import DateFormatter
+import pandas as pd
 
 import django
 from django.db.models import Sum
@@ -24,6 +36,9 @@ DEFAULT_LOG_LEVEL = logging.WARNING
 DEFAULT_LOG_FORMAT = '%(levelname)s: %(message)s'
 
 logger = logging.getLogger(__name__)
+
+# The number of bytes in a tebibyte
+BYTES_IN_TEBIBYTE = 1024 ** 4
 
 
 def get_volume_published():
@@ -56,7 +71,7 @@ def get_total_volume():
 
     # MOHC stream 2 is members r1i2p2f1 to r1i15p1f1
     mohc_stream2_members = [f'r1i{init_index}p1f1'
-                            for init_index in range(2,16)]
+                            for init_index in range(2, 16)]
 
     stream1_2 = DataFile.objects.filter(
         experiment__short_name__in=stream1_2_expts
@@ -74,7 +89,7 @@ def get_total_volume():
     mohc_stream2_members = DataFile.objects.filter(
         institute__short_name__in=['MOHC', 'NERC'],
         experiment__short_name__in=stream1_2_expts,
-        rip_code__in = mohc_stream2_members
+        rip_code__in=mohc_stream2_members
     ).distinct()
 
     mohc_stream2_low_freq = mohc_stream2_members.filter(
@@ -109,20 +124,70 @@ def get_total_volume():
     return publishable_files.aggregate(Sum('size'))['size__sum']
 
 
+def generate_plots(time_series_file, output_image):
+    """
+    Load the CSV formatted time series file and generate an image showing the
+    publication process made over the last 30 days.
+
+    :param str time_series_file:
+    :param str output_image:
+    """
+    df = pd.read_csv(time_series_file, names=['Date', 'Submitted', 'Total'],
+                     parse_dates=[0], index_col=[0])
+    # Swap the order of the columns as this looks better when plotted
+    df = df[['Total', 'Submitted']]
+    # Convert to tebibytes
+    df = df.div(BYTES_IN_TEBIBYTE)
+    # Calculate the current rate
+    df['Rate of submission'] = (df['Submitted'].diff() /
+                                df.index.to_series().diff().dt.days).fillna(0)
+    # display a maximum of 30 time points
+    times_in_df = df.shape[0]
+    if times_in_df <= 30:
+        num_times = -1 * times_in_df
+    else:
+        num_times = -30
+    # Plot
+    ax = df.iloc[num_times:, 0:3].plot(secondary_y=['Rate of submission'],
+                                       mark_right=False)
+    # Set the x-axis tick format to be day month
+    ax.xaxis.set_major_formatter(DateFormatter('%d %b'))
+    # Set the right-hand y-axis limits
+    ax.right_ax.set_ylim((0, 20))
+    # Set the y-axis titles
+    ax.set_ylabel('Volume submitted (TiB)')
+    ax.right_ax.set_ylabel('Rate of submission (TiB/day)')
+    # Move the legend
+    ax.get_legend().set_bbox_to_anchor((0.4, 0.95))
+    # Set the title
+    last_row = df.iloc[-1, 0:3]
+    percent_complete = last_row['Submitted'] / last_row['Total'] * 100
+    plt.title(f'ESGF Submission Progress - {percent_complete:.0f}% complete')
+    # Include the date and time that the plot was generated at
+    time_str = ('Created at: ' + datetime.datetime.utcnow().
+                replace(microsecond=0).isoformat())
+    plt.figtext(0.8, 0.05, time_str, va='center', ha='center',
+                color='lightgray')
+
+    # Save the image
+    plt.savefig(output_image)
+
+
 def parse_args():
     """
     Parse command-line arguments
     """
     parser = argparse.ArgumentParser(description='Plot the volume of data '
                                                  'submitted to the ESGF.')
-    parser.add_argument('time-series-file', help='The full path to the comma '
-                                                 'separated file to save the '
-                                                 'time series data in.')
-    parser.add_argument('output-image', help='The full path to the image that '
-                                             'will be generated.')
-    parser.add_argument('-l', '--log-level', help='set logging level to one of '
-                                                  'debug, info, warn (the '
-                                                  'default), or error')
+    parser.add_argument('time_series_file', action='store',
+                        help='The full path to the comma separated file to '
+                             'save the time series data in.',)
+    parser.add_argument('output_image', action='store',
+                        help='The full path to the image that will be '
+                             'generated.')
+    parser.add_argument('-l', '--log-level',
+                        help='set logging level to one of debug, info, warn '
+                             '(the default), or error')
     parser.add_argument('--version', action='version',
                         version='%(prog)s {}'.format(__version__))
     args = parser.parse_args()
@@ -137,9 +202,17 @@ def main(args):
 
     pretty_esgf = filesizeformat(esgf_volume).replace('\xa0', ' ')
     pretty_total = filesizeformat(total_volume).replace('\xa0', ' ')
-    print(f'Volume published to ESGF {pretty_esgf}')
-    print(f'Total Volume {pretty_total}')
-    print(f'Percentage published to ESGF {esgf_volume / total_volume:.0%}')
+    logger.info(f'Volume published to ESGF {pretty_esgf}')
+    logger.info(f'Total Volume {pretty_total}')
+    logger.info(f'Percentage published to ESGF '
+                f'{esgf_volume / total_volume:.0%}')
+
+    # Append the values to the file in a CSV format
+    with open(args.time_series_file, 'a') as fh:
+        fh.write(f'{datetime.datetime.utcnow()}, '
+                 f'{esgf_volume}, {total_volume}\n')
+
+    generate_plots(args.time_series_file, args.output_image)
 
 
 if __name__ == "__main__":
