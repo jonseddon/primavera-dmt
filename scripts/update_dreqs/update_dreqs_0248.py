@@ -1,8 +1,9 @@
 #!/usr/bin/env python
 """
-update_dreqs_0244.py
+update_dreqs_0248.py
 
-Replace files from EC-Earth3P control-1950 r1i1p1f1 ps_3hr.
+Replace files from EC-Earth3P control-1950 r1i1p2f1 and EC-Earth3P-HR
+highres-future r1i1p1f1 ps_3hr.
 """
 import argparse
 import logging.config
@@ -43,14 +44,30 @@ def main(args):
     dfs = DataFile.objects.filter(
         climate_model__short_name='EC-Earth3P',
         experiment__short_name='control-1950',
+        rip_code='r1i1p2f1',
+        variable_request__table_name='3hr',
+        variable_request__cmor_name='ps'
+    )
+
+    num_files = dfs.count()
+    if num_files != 1200:
+        logger.error(f'{num_files} found but was expecting 1200')
+        sys.exit(1)
+
+    delete_files(dfs, '/gws/nopw/j04/primavera5/stream1')
+    replace_files(dfs)
+
+    dfs = DataFile.objects.filter(
+        climate_model__short_name='EC-Earth3P-HR',
+        experiment__short_name='highres-future',
         rip_code='r1i1p1f1',
         variable_request__table_name='3hr',
         variable_request__cmor_name='ps'
     )
 
     num_files = dfs.count()
-    if num_files != 1212:
-        logger.error(f'{num_files} found but was expecting 1212')
+    if num_files != 432:
+        logger.error(f'{num_files} found but was expecting 432')
         sys.exit(1)
 
     delete_files(dfs, '/gws/nopw/j04/primavera5/stream1')
