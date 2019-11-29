@@ -1,18 +1,20 @@
 #!/usr/bin/env python
 """
-update_dreqs_0244.py
+update_dreqs_0247.py
 
-Replace files from EC-Earth3P control-1950 r1i1p1f1 ps_3hr.
+Delete from disk and its symbolic links the MPI tos variables that have been
+retracted.
 """
 import argparse
 import logging.config
+import os
 import sys
 
 import django
 django.setup()
-from pdata_app.utils.replace_file import replace_files
-from pdata_app.models import DataFile
-from pdata_app.utils.common import delete_files
+from pdata_app.models import DataRequest, Settings
+from pdata_app.utils.common import (construct_drs_path, delete_drs_dir,
+                                    delete_files)
 
 __version__ = '0.1.0b1'
 
@@ -20,6 +22,9 @@ DEFAULT_LOG_LEVEL = logging.WARNING
 DEFAULT_LOG_FORMAT = '%(levelname)s: %(message)s'
 
 logger = logging.getLogger(__name__)
+
+# The top-level directory to write output data to
+BASE_OUTPUT_DIR = Settings.get_solo().base_output_dir
 
 
 def parse_args():
@@ -40,21 +45,51 @@ def main(args):
     """
     Main entry point
     """
-    dfs = DataFile.objects.filter(
-        climate_model__short_name='EC-Earth3P',
-        experiment__short_name='control-1950',
-        rip_code='r1i1p1f1',
-        variable_request__table_name='3hr',
-        variable_request__cmor_name='ps'
-    )
+    dreqs = DataRequest.objects.filter(
+        institute__short_name='MPI-M',
+        experiment__short_name__in=['control-1950', 'hist-1950'],
+        variable_request__cmor_name='tos',
+        datafile__isnull=False
+    ).distinct()
 
-    num_files = dfs.count()
-    if num_files != 1212:
-        logger.error(f'{num_files} found but was expecting 1212')
-        sys.exit(1)
+    logger.debug(f'Found {dreqs.count()} datasets')
 
-    delete_files(dfs, '/gws/nopw/j04/primavera5/stream1')
-    replace_files(dfs)
+    for dreq in dreqs:
+        if dreq.esgfdataset_set.all():
+            # ESGF dataset's been created...
+            esgf = dreq.esgfdataset_set.first()
+            if esgf.status == 'PUBLISHED':
+                # ... and published so the data's in the CEDA archive
+                # and symlinked from the PRIMAVERA data structure
+                # All sym links will be in one directory
+                set_dir = os.path.join(
+                    BASE_OUTPUT_DIR,
+                    construct_drs_path(dreq.datafile_set.first())
+                )
+                for df in dreq.datafile_set.all():
+                    file_path = os.path.join(set_dir, df.name)
+                    if not os.path.islink(file_path):
+                        logger.warning(f'Expected a sym link {file_path}')
+                        continue
+                    try:
+                        os.remove(file_path)
+                    except OSError as exc:
+                        logger.error(str(exc))
+                    df.online = False
+                    df.directory = None
+                    df.save()
+                delete_drs_dir(set_dir)
+                logger.debug(f'Removed files for ESGFDataset {esgf}')
+                esgf.status = 'CREATED'
+                esgf.save()
+                continue
+        # The data's not been published so delete the files and their sym links
+        delete_files(dreq.datafile_set.all(), BASE_OUTPUT_DIR)
+        logger.debug(f'Removed files for DataRequest {dreq}')
+        dreq.datafile_set.update(directory=None, online=False)
+
+    for dreq in dreqs:
+        dreq.datafile_set.update(version='v20191129')
 
 
 if __name__ == "__main__":
