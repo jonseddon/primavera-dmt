@@ -74,6 +74,53 @@ class TestReplaceFile(TestCase):
         old_file = ReplacedFile.objects.get(name='file_one.nc')
         self.assertEqual('1234', old_file.checksum_value)
 
+    def test_duplicate_files(self):
+        copy_file = DataFile.objects.get(name='file_one.nc')
+        orig_id = copy_file.id
+        copy_file.id = None
+        copy_file.save()
+
+        orig_file = DataFile.objects.filter(id=orig_id)
+        replace_files(orig_file)
+
+        copy_file = DataFile.objects.filter(name='file_one.nc')
+        replace_files(copy_file)
+
+        num_files = ReplacedFile.objects.filter(name='file_one.nc').count()
+        self.assertEqual(num_files, 2)
+
+        num_files = ReplacedFile.objects.filter(
+            name='file_one.nc',
+            incoming_directory='/gws/MOHC/MY-MODEL/incoming/v12345678'
+        ).count()
+        self.assertEqual(num_files, 1)
+
+        num_files = ReplacedFile.objects.filter(
+            name='file_one.nc',
+            incoming_directory='/gws/MOHC/MY-MODEL/incoming/v12345678_1'
+        ).count()
+        self.assertEqual(num_files, 1)
+
+
+    def test_limit_on_inc_dir(self):
+        copy_file = DataFile.objects.get(name='file_one.nc')
+        orig_id = copy_file.id
+        copy_file.id = None
+        copy_file.save()
+
+        orig_file = DataFile.objects.filter(id=orig_id)
+        replace_files(orig_file)
+        rep_file = ReplacedFile.objects.get(name='file_one.nc')
+        inc_dir = rep_file.incoming_directory
+        for n in range(1, 5):
+            rep_file.id = None
+            rep_file.incoming_directory = f'{inc_dir}_{n}'
+            rep_file.save()
+
+        copy_file = DataFile.objects.filter(name='file_one.nc')
+        self.assertRaises(ValueError, replace_files, copy_file)
+
+
 class TestRestoreFiles(TestCase):
     """ Test pdata_app.utils.replace_file.replace_files """
     def setUp(self):
