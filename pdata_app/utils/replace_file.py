@@ -4,6 +4,7 @@ replace_file.py - a function to move DataFile entries to a ReplacedFile entry.
 from __future__ import unicode_literals, division, absolute_import
 
 import logging.config
+import django
 from pdata_app.models import Checksum, DataFile, ReplacedFile
 from pdata_app.utils.dbapi import get_or_create
 
@@ -26,30 +27,60 @@ def replace_files(queryset):
             raise TypeError('queryset entries must be of type DataFile')
 
         checksum = datafile.checksum_set.first()
-        replacement_file = ReplacedFile.objects.create(
-            name=datafile.name,
-            incoming_directory=datafile.incoming_directory,
-            size=datafile.size,
-            version=datafile.version,
-            project=datafile.project,
-            institute=datafile.institute,
-            climate_model=datafile.climate_model,
-            activity_id=datafile.activity_id,
-            experiment=datafile.experiment,
-            variable_request=datafile.variable_request,
-            data_request=datafile.data_request,
-            frequency=datafile.frequency,
-            rip_code=datafile.rip_code,
-            grid=datafile.grid,
-            start_time=datafile.start_time,
-            end_time=datafile.end_time,
-            time_units=datafile.time_units,
-            calendar=datafile.calendar,
-            data_submission=datafile.data_submission,
-            tape_url=datafile.tape_url,
-            checksum_value=checksum.checksum_value if checksum else None,
-            checksum_type=checksum.checksum_type if checksum else None
-        )
+        try:
+            replacement_file = ReplacedFile.objects.create(
+                name=datafile.name,
+                incoming_directory=datafile.incoming_directory,
+                size=datafile.size,
+                version=datafile.version,
+                project=datafile.project,
+                institute=datafile.institute,
+                climate_model=datafile.climate_model,
+                activity_id=datafile.activity_id,
+                experiment=datafile.experiment,
+                variable_request=datafile.variable_request,
+                data_request=datafile.data_request,
+                frequency=datafile.frequency,
+                rip_code=datafile.rip_code,
+                grid=datafile.grid,
+                start_time=datafile.start_time,
+                end_time=datafile.end_time,
+                time_units=datafile.time_units,
+                calendar=datafile.calendar,
+                data_submission=datafile.data_submission,
+                tape_url=datafile.tape_url,
+                checksum_value=checksum.checksum_value if checksum else None,
+                checksum_type=checksum.checksum_type if checksum else None
+            )
+        except django.db.utils.IntegrityError:
+            new_inc_dir = datafile.incoming_directory + '_1'
+            logger.warning(f'Trying with incoming_directory of {new_inc_dir} '
+                           f'for {datafile.name}')
+            replacement_file = ReplacedFile.objects.create(
+                name=datafile.name,
+                incoming_directory=new_inc_dir,
+                size=datafile.size,
+                version=datafile.version,
+                project=datafile.project,
+                institute=datafile.institute,
+                climate_model=datafile.climate_model,
+                activity_id=datafile.activity_id,
+                experiment=datafile.experiment,
+                variable_request=datafile.variable_request,
+                data_request=datafile.data_request,
+                frequency=datafile.frequency,
+                rip_code=datafile.rip_code,
+                grid=datafile.grid,
+                start_time=datafile.start_time,
+                end_time=datafile.end_time,
+                time_units=datafile.time_units,
+                calendar=datafile.calendar,
+                data_submission=datafile.data_submission,
+                tape_url=datafile.tape_url,
+                checksum_value=checksum.checksum_value if checksum else None,
+                checksum_type=checksum.checksum_type if checksum else None
+            )
+
 
         if replacement_file:
             datafile.delete()
