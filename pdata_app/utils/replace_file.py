@@ -4,7 +4,6 @@ replace_file.py - a function to move DataFile entries to a ReplacedFile entry.
 from __future__ import unicode_literals, division, absolute_import
 
 import logging.config
-import django
 from pdata_app.models import Checksum, DataFile, ReplacedFile
 from pdata_app.utils.dbapi import get_or_create
 
@@ -26,61 +25,36 @@ def replace_files(queryset):
         if not isinstance(datafile, DataFile):
             raise TypeError('queryset entries must be of type DataFile')
 
-        checksum = datafile.checksum_set.first()
-        try:
-            replacement_file = ReplacedFile.objects.create(
-                name=datafile.name,
-                incoming_directory=datafile.incoming_directory,
-                size=datafile.size,
-                version=datafile.version,
-                project=datafile.project,
-                institute=datafile.institute,
-                climate_model=datafile.climate_model,
-                activity_id=datafile.activity_id,
-                experiment=datafile.experiment,
-                variable_request=datafile.variable_request,
-                data_request=datafile.data_request,
-                frequency=datafile.frequency,
-                rip_code=datafile.rip_code,
-                grid=datafile.grid,
-                start_time=datafile.start_time,
-                end_time=datafile.end_time,
-                time_units=datafile.time_units,
-                calendar=datafile.calendar,
-                data_submission=datafile.data_submission,
-                tape_url=datafile.tape_url,
-                checksum_value=checksum.checksum_value if checksum else None,
-                checksum_type=checksum.checksum_type if checksum else None
-            )
-        except django.db.utils.IntegrityError:
-            new_inc_dir = datafile.incoming_directory + '_1'
-            logger.warning(f'Trying with incoming_directory of {new_inc_dir} '
-                           f'for {datafile.name}')
-            replacement_file = ReplacedFile.objects.create(
-                name=datafile.name,
-                incoming_directory=new_inc_dir,
-                size=datafile.size,
-                version=datafile.version,
-                project=datafile.project,
-                institute=datafile.institute,
-                climate_model=datafile.climate_model,
-                activity_id=datafile.activity_id,
-                experiment=datafile.experiment,
-                variable_request=datafile.variable_request,
-                data_request=datafile.data_request,
-                frequency=datafile.frequency,
-                rip_code=datafile.rip_code,
-                grid=datafile.grid,
-                start_time=datafile.start_time,
-                end_time=datafile.end_time,
-                time_units=datafile.time_units,
-                calendar=datafile.calendar,
-                data_submission=datafile.data_submission,
-                tape_url=datafile.tape_url,
-                checksum_value=checksum.checksum_value if checksum else None,
-                checksum_type=checksum.checksum_type if checksum else None
-            )
+        incoming_directory = _get_unique_incoming_dir(
+            datafile.name,
+            datafile.incoming_directory
+        )
 
+        checksum = datafile.checksum_set.first()
+        replacement_file = ReplacedFile.objects.create(
+            name=datafile.name,
+            incoming_directory=incoming_directory,
+            size=datafile.size,
+            version=datafile.version,
+            project=datafile.project,
+            institute=datafile.institute,
+            climate_model=datafile.climate_model,
+            activity_id=datafile.activity_id,
+            experiment=datafile.experiment,
+            variable_request=datafile.variable_request,
+            data_request=datafile.data_request,
+            frequency=datafile.frequency,
+            rip_code=datafile.rip_code,
+            grid=datafile.grid,
+            start_time=datafile.start_time,
+            end_time=datafile.end_time,
+            time_units=datafile.time_units,
+            calendar=datafile.calendar,
+            data_submission=datafile.data_submission,
+            tape_url=datafile.tape_url,
+            checksum_value=checksum.checksum_value if checksum else None,
+            checksum_type=checksum.checksum_type if checksum else None
+        )
 
         if replacement_file:
             datafile.delete()
@@ -90,6 +64,41 @@ def replace_files(queryset):
                              format(datafile))
 
     logger.debug('{} files moved.'.format(num_files_moved))
+
+
+def _get_unique_incoming_dir(name, incoming_directory, n=0):
+    """
+    Calculate a unique value for incoming_directory for name in the
+    existing ReplacedFile objects.
+
+    :param str name: The basename of the file being withdrawn
+    :param str incoming_directory: The incoming_directory value
+    :param int n: The unique number that is being tried to append to
+        incoming_directory.
+    :return: a unique incoming_directory value for that name
+    """
+    # To avoid entering an infinite loop if there's been an error somewhere,
+    # limit the number of attempts. If we get a file withdrawn more than this
+    # number of time then this limit can be happily extended, but it's a
+    # sensible limit for the number of withdrawals seen so far.
+    max_num_tries = 5
+
+    if n >= max_num_tries:
+        raise ValueError(f'Reached the maximum number ({max_num_tries}) of '
+                         f'unique incoming_directory attempts to try.')
+
+    if n:
+        test_inc_dir = f'{incoming_directory}_{n}'
+    else:
+        test_inc_dir = incoming_directory
+
+    if ReplacedFile.objects.filter(
+        name=name,
+        incoming_directory=test_inc_dir
+    ).count():
+        return _get_unique_incoming_dir(name, incoming_directory, n + 1)
+    else:
+        return test_inc_dir
 
 
 def restore_files(queryset):
