@@ -72,10 +72,10 @@ def main(args):
         logger.debug('{} existing tasks loaded from file'.
                      format(len(existing_tasks)))
 
-    lm_amip_i2 = filter_hadgem_stream2(DataRequest.objects.filter(
+    lm_amip = filter_hadgem_stream2(DataRequest.objects.filter(
         climate_model__short_name='HadGEM3-GC31-LM',
         experiment__short_name='highresSST-present',
-        rip_code='r1i2p1f1',
+        rip_code__in=['r1i2p1f1', 'r1i3p1f1', 'r1i14p1f1', 'r1i15p1f1'],        
         datafile__isnull=False
     ).exclude(
         variable_request__table_name__startswith='Prim'
@@ -84,7 +84,7 @@ def main(args):
 
     # task querysets can be ORed together with |
 
-    all_tasks = (lm_amip_i2)
+    all_tasks = (lm_amip)
 
     task_name_list = [
         '{}_{}_{}_{}_{}'.format(dr.climate_model.short_name,
