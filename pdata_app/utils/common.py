@@ -756,3 +756,42 @@ def run_ncrename(directory, filename, old_name, new_name,
         os.path.join(directory, filename)
     )
     run_command(cmd)
+
+
+def filter_hadgem_stream2(queryset):
+    """
+    From a queryset of pdata_app.DataRequest objects return just the data
+    requests that are required in the PRIMAVERA Stream 2 simulations for
+    HadGEM data.
+
+    :param django.db.models.query.QuerySet queryset:
+    :returns: Just the Stream 2 data requests
+    :rtype:  django.db.models.query.QuerySet
+    """
+    low_freq = queryset.filter(
+        variable_request__frequency__in=['mon', 'day']
+    ).exclude(
+        variable_request__table_name='CFday'
+    ).distinct()
+
+    cfday = queryset.filter(
+        variable_request__table_name='CFday',
+        variable_request__cmor_name='ps'
+    ).distinct()
+
+    six_hr = queryset.filter(
+        variable_request__table_name='Prim6hr',
+        variable_request__cmor_name='wsgmax'
+    ).distinct()
+
+    three_hr = queryset.filter(
+        variable_request__table_name__in=['3hr', 'E3hr', 'E3hrPt', 'Prim3hr',
+                                          'Prim3hrPt'],
+        variable_request__cmor_name__in=['rsdsdiff', 'rsds', 'tas', 'uas',
+                                         'vas', 'ua50m', 'va50m', 'ua100m',
+                                         'va100m', 'ua7h', 'va7h', 'sfcWind',
+                                         'sfcWindmax', 'pr', 'psl', 'zg7h']
+    ).distinct()
+
+    # Combine together and return
+    return low_freq | cfday | six_hr | three_hr
