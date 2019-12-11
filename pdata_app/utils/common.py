@@ -789,7 +789,7 @@ def filter_hadgem_stream2(queryset):
                                           'Prim3hrPt'],
         variable_request__cmor_name__in=['rsdsdiff', 'rsds', 'tas', 'uas',
                                          'vas', 'ua50m', 'va50m', 'ua100m',
-                                         'va100m', 'ua850', 'va850', 'sfcWind',
+                                         'va100m', 'ua7h', 'va7h', 'sfcWind',
                                          'sfcWindmax', 'pr', 'psl', 'zg7h']
     ).distinct()
 
