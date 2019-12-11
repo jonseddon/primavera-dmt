@@ -18,7 +18,7 @@ from django.template.defaultfilters import filesizeformat
 
 from django.contrib.auth.models import User
 from pdata_app.models import RetrievalRequest, DataRequest
-from pdata_app.utils.common import get_request_size
+from pdata_app.utils.common import get_request_size, filter_hadgem_stream2
 
 __version__ = '0.1.0b1'
 
@@ -54,15 +54,14 @@ def main(args):
     start_year = 1948
     end_year = 2051
 
-    data_reqs = DataRequest.objects.filter(
-        climate_model__short_name__in=['CMCC-CM2-HR4', 'CMCC-CM2-VHR4'],
-        experiment__short_name='highresSST-future',
-        rip_code='r1i1p1f1',
+    data_reqs = filter_hadgem_stream2(DataRequest.objects.filter(
+        climate_model__short_name='HadGEM3-GC31-LM',
+        experiment__short_name='highresSST-present',
+        rip_code='r1i2p1f1',
         datafile__isnull=False
     ).exclude(
         variable_request__table_name__startswith='Prim'
-    ).distinct()
- 
+    ).distinct())
  
     logger.debug('Total data volume: {} Volume to restore: {}'.format(
         filesizeformat(get_request_size(data_reqs, start_year, end_year)).

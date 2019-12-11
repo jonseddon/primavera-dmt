@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 """
-make_rose_task_names_cmcc-future.py
+make_rose_task_names_mohc_stream2.py
 
 This script is used to generate a JSON list of the task names that
 should be run by the rose suite that performs submissions to the CREPP
@@ -22,6 +22,7 @@ import django
 django.setup()
 
 from pdata_app.models import DataRequest
+from pdata_app.utils.common import filter_hadgem_stream2
 
 __version__ = '0.1.0b'
 
@@ -71,19 +72,19 @@ def main(args):
         logger.debug('{} existing tasks loaded from file'.
                      format(len(existing_tasks)))
 
-    cmcc_amip_future = DataRequest.objects.filter(
-        climate_model__short_name__in=['CMCC-CM2-HR4', 'CMCC-CM2-VHR4'],
-        experiment__short_name='highresSST-future',
-        rip_code='r1i1p1f1',
+    lm_amip_i2 = filter_hadgem_stream2(DataRequest.objects.filter(
+        climate_model__short_name='HadGEM3-GC31-LM',
+        experiment__short_name='highresSST-present',
+        rip_code='r1i2p1f1',
         datafile__isnull=False
     ).exclude(
         variable_request__table_name__startswith='Prim'
-    ).distinct()
+    ).distinct())
 
 
     # task querysets can be ORed together with |
 
-    all_tasks = (cmcc_amip_future)
+    all_tasks = (lm_amip_i2)
 
     task_name_list = [
         '{}_{}_{}_{}_{}'.format(dr.climate_model.short_name,
