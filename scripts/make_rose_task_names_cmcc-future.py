@@ -80,10 +80,19 @@ def main(args):
         variable_request__table_name__startswith='Prim'
     ).distinct()
 
+    cmcc_future = DataRequest.objects.filter(
+        climate_model__short_name__in=['CMCC-CM2-HR4', 'CMCC-CM2-VHR4'],
+        experiment__short_name='highres-future',
+        rip_code='r1i1p1f1',
+        datafile__isnull=False
+    ).exclude(
+        variable_request__table_name__startswith='Prim'
+    ).distinct()
+
 
     # task querysets can be ORed together with |
 
-    all_tasks = (cmcc_amip_future)
+    all_tasks = (cmcc_amip_future | cmcc_future)
 
     task_name_list = [
         '{}_{}_{}_{}_{}'.format(dr.climate_model.short_name,
