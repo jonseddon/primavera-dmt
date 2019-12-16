@@ -71,16 +71,271 @@ def main(args):
         logger.debug('{} existing tasks loaded from file'.
                      format(len(existing_tasks)))
 
-    hadgem3_gc31_lm_amip_amon = DataRequest.objects.filter(
-        climate_model__short_name='HadGEM3-GC31-LM',
+    hadgem3_gc31_amip_amon = DataRequest.objects.filter(
+        climate_model__short_name__startswith='HadGEM3-GC31',
         experiment__short_name='highresSST-present',
         rip_code='r1i1p1f1',
         variable_request__table_name='Amon',
         datafile__isnull=False
     ).distinct()
 
+    ecmwf_amip_all = DataRequest.objects.filter(
+        institute__short_name='ECMWF',
+        experiment__short_name='highresSST-present',
+        rip_code='r1i1p1f1',
+        datafile__isnull=False
+    ).exclude(
+        variable_request__table_name__startswith='Prim'
+    ).distinct()
+
+    cmcc_amip_all = DataRequest.objects.filter(
+        institute__short_name='CMCC',
+        experiment__short_name='highresSST-present',
+        rip_code='r1i1p1f1',
+        datafile__isnull=False
+    ).exclude(
+        variable_request__table_name__startswith='Prim'
+    ).distinct()
+
+    hadgem3_gc31_amip_lm = DataRequest.objects.filter(
+        climate_model__short_name='HadGEM3-GC31-LM',
+        experiment__short_name='highresSST-present',
+        rip_code='r1i1p1f1',
+        datafile__isnull=False
+    ).exclude(
+        variable_request__table_name__startswith='Prim'
+    ).distinct()
+
+    hadgem3_gc31_amip_mm = DataRequest.objects.filter(
+        climate_model__short_name='HadGEM3-GC31-MM',
+        experiment__short_name='highresSST-present',
+        rip_code='r1i1p1f1',
+        datafile__isnull=False
+    ).exclude(
+        variable_request__table_name__startswith='Prim'
+    ).distinct()
+
+    hadgem3_gc31_amip_hm = DataRequest.objects.filter(
+        climate_model__short_name='HadGEM3-GC31-HM',
+        experiment__short_name='highresSST-present',
+        rip_code='r1i1p1f1',
+        variable_request__frequency__in=['mon', 'day', '6hr', '3hr', '1hr'],
+        datafile__isnull=False
+    ).exclude(
+        variable_request__table_name__startswith='Prim'
+    ).distinct()
+
+    mpi_amip_all = DataRequest.objects.filter(
+        institute__short_name='MPI-M',
+        climate_model__short_name__in=['MPI-ESM1-2-HR', 'MPI-ESM1-2-XR'],
+        experiment__short_name='highresSST-present',
+        datafile__isnull=False
+    ).exclude(
+        variable_request__table_name__startswith='Prim'
+    ).distinct()
+
+    cerfacs_amip = DataRequest.objects.filter(
+        climate_model__short_name='CNRM-CM6-1',
+        experiment__short_name='highresSST-present',
+        rip_code='r1i1p1f2',
+    ).exclude(
+        variable_request__table_name__startswith='Prim'
+    ).filter(
+        datafile__isnull=False
+    ).distinct()
+
+    cerfacs_hr_amip = DataRequest.objects.filter(
+        climate_model__short_name='CNRM-CM6-1-HR',
+        experiment__short_name='highresSST-present',
+        rip_code='r1i1p1f2',
+        variable_request__frequency__in=['mon', 'day', '6hr', '3hr'],
+        datafile__isnull=False
+    ).exclude(
+        variable_request__table_name__startswith='Prim'
+    ).distinct()
+
+    mohc_ll_coup = DataRequest.objects.filter(
+        climate_model__short_name='HadGEM3-GC31-LL',
+        experiment__short_name__in=['hist-1950', 'control-1950'],
+        rip_code='r1i1p1f1',
+        variable_request__table_name__in=[
+            '3hr', '6hrPlev', '6hrPlevPt', 'AERday', 'AERmon', 'Amon', 
+            'CF3hr', 'CFday', 'CFmon', 'E1hr', 'E3hr', 'E3hrPt', 'Eday', 
+            'EdayZ', 'Emon', 'EmonZ', 'Esubhr', 'LImon', 'Lmon', 'day'
+        ],
+        datafile__isnull=False
+    ).distinct()
+
+    mohc_mm_coup = DataRequest.objects.filter(
+        climate_model__short_name='HadGEM3-GC31-MM',
+        experiment__short_name__in=['hist-1950', 'control-1950'],
+        rip_code='r1i1p1f1',
+        variable_request__table_name__in=[
+            '3hr', '6hrPlev', '6hrPlevPt', 'AERday', 'AERmon', 'Amon',
+            'CF3hr', 'CFday', 'CFmon', 'E1hr', 'E3hr', 'E3hrPt', 'Eday',
+            'EdayZ', 'Emon', 'EmonZ', 'Esubhr', 'LImon', 'Lmon', 'day'
+        ],
+        datafile__isnull=False
+    ).distinct()
+
+    mohc_hm_hist = DataRequest.objects.filter(
+        climate_model__short_name='HadGEM3-GC31-HM',
+        experiment__short_name='hist-1950',
+        rip_code='r1i1p1f1',
+        variable_request__table_name__in=[
+            '3hr', '6hrPlev', '6hrPlevPt', 'AERday', 'AERmon', 'Amon',
+            'CF3hr', 'CFday', 'CFmon', 'E1hr', 'E3hr', 'E3hrPt', 'Eday',
+            'EdayZ', 'Emon', 'EmonZ', 'Esubhr', 'LImon', 'Lmon', 'day'
+        ],
+        # variable_request__frequency__in=['mon', 'day', '6hr', '3hr'],
+        datafile__isnull=False
+    ).distinct()
+
+    mohc_hm_cont = DataRequest.objects.filter(
+        climate_model__short_name='HadGEM3-GC31-HM',
+        experiment__short_name='control-1950',
+        rip_code='r1i1p1f1',
+        variable_request__table_name__in=[
+            '3hr', '6hrPlev', '6hrPlevPt', 'AERday', 'AERmon', 'Amon',
+            'CF3hr', 'CFday', 'CFmon', 'E1hr', 'E3hr', 'E3hrPt', 'Eday',
+            'EdayZ', 'Emon', 'EmonZ', 'Esubhr', 'LImon', 'Lmon', 'day'
+        ],
+        datafile__isnull=False
+    ).distinct()
+
+    ecmwf_lr_coupled = DataRequest.objects.filter(
+        climate_model__short_name='ECMWF-IFS-LR',
+        experiment__short_name__in=['hist-1950', 'control-1950', 'spinup-1950'],
+        rip_code='r1i1p1f1',
+        datafile__isnull=False
+    ).exclude(
+        variable_request__table_name__startswith='Prim'
+    ).distinct()
+
+    ecmwf_hr_coupled = DataRequest.objects.filter(
+        climate_model__short_name='ECMWF-IFS-HR',
+        experiment__short_name__in=['hist-1950', 'control-1950', 'spinup-1950'],
+        rip_code='r1i1p1f1',
+        datafile__isnull=False
+    ).exclude(
+        variable_request__table_name__startswith='Prim'
+    ).distinct()
+
+    cerfacs_lr_coupled = DataRequest.objects.filter(
+        climate_model__short_name='CNRM-CM6-1',
+        experiment__short_name__in=['hist-1950', 'control-1950'],
+        rip_code='r1i1p1f2',
+        datafile__isnull=False
+    ).exclude(
+        variable_request__table_name__startswith='Prim'
+    ).distinct()
+
+    cerfacs_hr_coupled = DataRequest.objects.filter(
+        climate_model__short_name='CNRM-CM6-1-HR',
+        experiment__short_name='hist-1950',
+        rip_code='r1i1p1f2',
+        datafile__isnull=False
+    ).exclude(
+        variable_request__table_name__startswith='Prim'
+    ).distinct()
+
+    mohc_amip_future = DataRequest.objects.filter(
+        climate_model__short_name__in=['HadGEM3-GC31-LM', 'HadGEM3-GC31-MM', 
+                                       'HadGEM3-GC31-HM'],
+        experiment__short_name='highresSST-future',
+        rip_code='r1i1p1f1',
+        datafile__isnull=False
+    ).exclude(
+        variable_request__table_name__startswith='Prim'        
+    ).distinct()
+
+    mohc_future = DataRequest.objects.filter(
+        climate_model__short_name__in=['HadGEM3-GC31-LL', 'HadGEM3-GC31-MM'],
+        experiment__short_name='highres-future',
+        rip_code='r1i1p1f1',
+        datafile__isnull=False
+    ).exclude(
+        variable_request__table_name__startswith='Prim'
+    ).distinct()
+
+    mohc_future_hm = DataRequest.objects.filter(
+        climate_model__short_name='HadGEM3-GC31-HM',
+        experiment__short_name='highres-future',
+        rip_code='r1i1p1f1',
+        variable_request__table_name__in=[
+            '3hr', '6hrPlev', '6hrPlevPt', 'AERday', 'AERmon', 'Amon',
+            'CF3hr', 'CFday', 'CFmon', 'E1hr', 'E3hr', 'E3hrPt', 'Eday',
+            'EdayZ', 'Emon', 'EmonZ', 'Esubhr', 'LImon', 'Lmon', 'day'
+        ],
+        datafile__isnull=False
+    ).distinct()
+
+    cerfacs_future = DataRequest.objects.filter(
+        climate_model__short_name__in=['CNRM-CM6-1', 'CNRM-CM6-1-HR'],
+        experiment__short_name__in=['highresSST-future', 'highres-future'],
+        rip_code='r1i1p1f2',
+        datafile__isnull=False
+    ).exclude(
+        variable_request__table_name__startswith='Prim'
+    ).distinct()
+
+    cmcc_coupled = DataRequest.objects.filter(
+        climate_model__short_name='CMCC-CM2-HR4',
+        experiment__short_name__in=['control-1950', 'hist-1950'],
+        rip_code='r1i1p1f1',
+        datafile__isnull=False
+    ).exclude(
+        variable_request__table_name__startswith='Prim'
+    ).distinct()
+
+    cmcc_vhr_coupled = DataRequest.objects.filter(
+        climate_model__short_name='CMCC-CM2-VHR4',
+        experiment__short_name='control-1950',
+        rip_code='r1i1p1f1',
+        variable_request__frequency__in=['mon', 'day', '6hr'],
+        datafile__isnull=False
+    ).exclude(
+        variable_request__table_name__startswith='Prim'
+    ).distinct()
+
+    cmcc_vhr_hist = DataRequest.objects.filter(
+        climate_model__short_name='CMCC-CM2-VHR4',
+        experiment__short_name='hist-1950',
+        rip_code='r1i1p1f1',
+        datafile__isnull=False
+    ).exclude(
+        variable_request__table_name__startswith='Prim'
+    ).distinct()
+
+    mpi_coupled = DataRequest.objects.filter(
+        climate_model__short_name__in=['MPI-ESM1-2-HR', 'MPI-ESM1-2-XR'],
+        experiment__short_name__in=['hist-1950', 'control-1950'],
+        datafile__isnull=False
+    ).exclude(
+        variable_request__table_name__startswith='Prim'
+    ).distinct()
+
+    mohc_spinup = DataRequest.objects.filter(
+        climate_model__short_name__in=['HadGEM3-GC31-LL', 'HadGEM3-GC31-MM', 'HadGEM3-GC31-MH'],
+        experiment__short_name='spinup-1950',
+        rip_code='r1i1p1f1',
+        variable_request__table_name__in=[
+            '3hr', '6hrPlev', '6hrPlevPt', 'AERday', 'AERmon', 'Amon',
+            'CF3hr', 'CFday', 'CFmon', 'E1hr', 'E3hr', 'E3hrPt', 'Eday',
+            'EdayZ', 'Emon', 'EmonZ', 'Esubhr', 'LImon', 'Lmon', 'day'
+        ],
+        datafile__isnull=False
+    ).distinct()
+
     # task querysets can be ORed together with |
-    all_tasks = hadgem3_gc31_lm_amip_amon
+
+    all_tasks = (hadgem3_gc31_amip_amon | ecmwf_amip_all | cmcc_amip_all | hadgem3_gc31_amip_lm |
+                 mpi_amip_all | hadgem3_gc31_amip_mm | hadgem3_gc31_amip_hm | cerfacs_amip | 
+                 cerfacs_hr_amip | mohc_ll_coup | mohc_mm_coup | mohc_hm_hist | mohc_hm_cont |
+                 ecmwf_lr_coupled | ecmwf_hr_coupled | cerfacs_lr_coupled | cerfacs_hr_coupled |
+                 mohc_amip_future | cerfacs_future | mohc_future | mohc_future_hm | cmcc_coupled |
+                 cmcc_vhr_coupled | cmcc_vhr_hist | mpi_coupled | mohc_spinup)
+
     task_name_list = [
         '{}_{}_{}_{}_{}'.format(dr.climate_model.short_name,
                                 dr.experiment.short_name,
