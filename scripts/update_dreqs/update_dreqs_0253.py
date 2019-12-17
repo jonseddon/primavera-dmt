@@ -54,23 +54,23 @@ def main(args):
     start_year = 1948
     end_year = 2051
 
-    data_reqs = DataRequest.objects.filter(
-        climate_model__short_name='ECMWF-IFS-LR',
-        experiment__short_name='hist-1950',
-        rip_code__in=[f'r{i}i1p1f1' for i in range(2,9)],
-        datafile__isnull=False
-    ).exclude(
-        variable_request__table_name__startswith='Prim'
-    ).distinct()
-
     # data_reqs = DataRequest.objects.filter(
-    #     climate_model__short_name='ECMWF-IFS-HR',
-    #     experiment__short_name='highresSST-present',
-    #     rip_code__in=[f'r{i}i1p1f1' for i in range(2,7)],
+    #     climate_model__short_name='ECMWF-IFS-LR',
+    #     experiment__short_name='hist-1950',
+    #     rip_code__in=[f'r{i}i1p1f1' for i in range(2,9)],
     #     datafile__isnull=False
     # ).exclude(
     #     variable_request__table_name__startswith='Prim'
     # ).distinct()
+
+    data_reqs = DataRequest.objects.filter(
+        climate_model__short_name='ECMWF-IFS-HR',
+        experiment__short_name='hist-1950',
+        rip_code__in=[f'r{i}i1p1f1' for i in range(2,7)],
+        datafile__isnull=False
+    ).exclude(
+        variable_request__table_name__startswith='Prim'
+    ).distinct()
 
     logger.debug('Total data volume: {} Volume to restore: {}'.format(
         filesizeformat(get_request_size(data_reqs, start_year, end_year)).

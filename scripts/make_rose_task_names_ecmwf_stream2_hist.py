@@ -80,18 +80,18 @@ def main(args):
         variable_request__table_name__startswith='Prim'
     ).distinct()
 
-    # hr_hist = DataRequest.objects.filter(
-    #     climate_model__short_name='ECMWF-IFS-HR',
-    #     experiment__short_name='hist-1950',
-    #     rip_code__in=[f'r{i}i1p1f1' for i in range(2,7)],
-    #     datafile__isnull=False
-    # ).exclude(
-    #     variable_request__table_name__startswith='Prim'
-    # ).distinct()
+    hr_hist = DataRequest.objects.filter(
+        climate_model__short_name='ECMWF-IFS-HR',
+        experiment__short_name='hist-1950',
+        rip_code__in=[f'r{i}i1p1f1' for i in range(2,7)],
+        datafile__isnull=False
+    ).exclude(
+        variable_request__table_name__startswith='Prim'
+    ).distinct()
 
     # task querysets can be ORed together with |
 
-    all_tasks = (lr_hist) # | hr_hist)
+    all_tasks = (lr_hist | hr_hist)
 
     task_name_list = [
         '{}_{}_{}_{}_{}'.format(dr.climate_model.short_name,
