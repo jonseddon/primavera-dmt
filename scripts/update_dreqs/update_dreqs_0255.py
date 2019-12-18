@@ -1,9 +1,9 @@
 #!/usr/bin/env python
 """
-update_dreqs_0253.py
+update_dreqs_0255.py
 
 Create a retrieval request for data that's required for ESGF publication for 
-ECMWF Stream 2 hist-1950.
+MOHC Stream 2 hist-1950.
 """
 from __future__ import unicode_literals, division, absolute_import
 import argparse
@@ -18,7 +18,7 @@ from django.template.defaultfilters import filesizeformat
 
 from django.contrib.auth.models import User
 from pdata_app.models import RetrievalRequest, DataRequest
-from pdata_app.utils.common import get_request_size
+from pdata_app.utils.common import get_request_size, filter_hadgem_stream2
 
 __version__ = '0.1.0b1'
 
@@ -54,23 +54,28 @@ def main(args):
     start_year = 1948
     end_year = 2051
 
-    # data_reqs = DataRequest.objects.filter(
-    #     climate_model__short_name='ECMWF-IFS-LR',
+    # data_reqs = filter_hadgem_stream2(DataRequest.objects.filter(
+    #     climate_model__short_name='HadGEM3-GC31-LL',
     #     experiment__short_name='hist-1950',
-    #     rip_code__in=[f'r{i}i1p1f1' for i in range(2,9)],
+    #     rip_code__in=[f'r1i{i}p1f1' for i in range(2,9)],
     #     datafile__isnull=False
     # ).exclude(
     #     variable_request__table_name__startswith='Prim'
-    # ).distinct()
+    # ).distinct())
 
-    data_reqs = DataRequest.objects.filter(
-        climate_model__short_name='ECMWF-IFS-HR',
+    data_reqs = filter_hadgem_stream2(DataRequest.objects.filter(
+        climate_model__short_name='HadGEM3-GC31-HM',
         experiment__short_name='hist-1950',
-        rip_code__in=[f'r{i}i1p1f1' for i in range(2,7)],
+        rip_code='r1i2p1f1',
+        variable_request__table_name__in=[
+            '3hr', '6hrPlev', '6hrPlevPt', 'AERday', 'AERmon', 'Amon',
+            'CF3hr', 'CFday', 'CFmon', 'E1hr', 'E3hr', 'E3hrPt', 'Eday',
+            'EdayZ', 'Emon', 'EmonZ', 'Esubhr', 'LImon', 'Lmon', 'day'
+        ],
         datafile__isnull=False
     ).exclude(
         variable_request__table_name__startswith='Prim'
-    ).distinct()
+    ).distinct())
 
     logger.debug('Total data volume: {} Volume to restore: {}'.format(
         filesizeformat(get_request_size(data_reqs, start_year, end_year)).
