@@ -72,14 +72,14 @@ def main(args):
         logger.debug('{} existing tasks loaded from file'.
                      format(len(existing_tasks)))
 
-    ll_hist = filter_hadgem_stream2(DataRequest.objects.filter(
-        climate_model__short_name='HadGEM3-GC31-LL',
-        experiment__short_name='hist-1950',
-        rip_code__in=[f'r1i{i}p1f1' for i in range(2,9)],
-        datafile__isnull=False
-    ).exclude(
-        variable_request__table_name__startswith='Prim'
-    ).distinct())
+    # ll_hist = filter_hadgem_stream2(DataRequest.objects.filter(
+    #     climate_model__short_name='HadGEM3-GC31-LL',
+    #     experiment__short_name='hist-1950',
+    #     rip_code__in=[f'r1i{i}p1f1' for i in range(2,9)],
+    #     datafile__isnull=False
+    # ).exclude(
+    #     variable_request__table_name__startswith='Prim'
+    # ).distinct())
 
     # mm_hist = filter_hadgem_stream2(DataRequest.objects.filter(
     #     climate_model__short_name='HadGEM3-GC31-MM',
@@ -89,19 +89,19 @@ def main(args):
     # ).exclude(
     #     variable_request__table_name__startswith='Prim'
     # ).distinct())
-    #
-    # hm_hist = filter_hadgem_stream2(DataRequest.objects.filter(
-    #     climate_model__short_name='HadGEM3-GC31-HM',
-    #     experiment__short_name='highresSST-present',
-    #     rip_code__in=['r1i2p1f1'], # , 'r1i3p1f1'],
-    #     datafile__isnull=False
-    # ).exclude(
-    #     variable_request__table_name__startswith='Prim'
-    # ).distinct())
+    
+    hm_hist = filter_hadgem_stream2(DataRequest.objects.filter(
+        climate_model__short_name='HadGEM3-GC31-HM',
+        experiment__short_name='hist-1950',
+        rip_code__in=['r1i2p1f1'], # , 'r1i3p1f1'],
+        datafile__isnull=False
+    ).exclude(
+        variable_request__table_name__startswith='Prim'
+    ).distinct())
 
     # task querysets can be ORed together with |
 
-    all_tasks = (ll_hist) # | mm_hist | hm_hist)
+    all_tasks = (hm_hist) # | mm_hist | hm_hist)
 
     task_name_list = [
         '{}_{}_{}_{}_{}'.format(dr.climate_model.short_name,
