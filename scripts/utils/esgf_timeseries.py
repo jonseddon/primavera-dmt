@@ -12,7 +12,6 @@ regular snapshots are taken.
 import argparse
 import datetime
 import logging.config
-import sys
 
 import matplotlib
 # use the Agg environment to generate an image rather than outputting to screen
@@ -29,9 +28,6 @@ from pdata_app.models import DataFile, ESGFDataset
 
 
 __version__ = '0.1.0b1'
-
-DEFAULT_LOG_LEVEL = logging.WARNING
-DEFAULT_LOG_FORMAT = '%(levelname)s: %(message)s'
 
 logger = logging.getLogger(__name__)
 
@@ -184,8 +180,9 @@ def parse_args():
                         help='The full path to the image that will be '
                              'generated.')
     parser.add_argument('-l', '--log-level',
-                        help='set logging level to one of debug, info, warn '
-                             '(the default), or error')
+                        help='set logging level (default: %(default)s)',
+                        choices=['debug', 'info', 'warning', 'error'],
+                        default='warning')
     parser.add_argument('--version', action='version',
                         version='%(prog)s {}'.format(__version__))
     args = parser.parse_args()
@@ -216,25 +213,14 @@ def main(args):
 if __name__ == "__main__":
     cmd_args = parse_args()
 
-    # determine the log level
-    if cmd_args.log_level:
-        try:
-            log_level = getattr(logging, cmd_args.log_level.upper())
-        except AttributeError:
-            logger.setLevel(logging.WARNING)
-            logger.error('log-level must be one of: debug, info, warn or '
-                         'error')
-            sys.exit(1)
-    else:
-        log_level = DEFAULT_LOG_LEVEL
-
     # configure the logger
+    log_level = getattr(logging, cmd_args.log_level.upper())
     logging.config.dictConfig({
         'version': 1,
         'disable_existing_loggers': False,
         'formatters': {
             'standard': {
-                'format': DEFAULT_LOG_FORMAT,
+                'format': '%(levelname)s: %(message)s',
             },
         },
         'handlers': {
