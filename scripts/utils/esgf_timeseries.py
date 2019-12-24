@@ -126,6 +126,9 @@ def generate_plots(time_series_file, output_image):
     :param str time_series_file: the full path of the time series file.
     :param str output_image: the full path of the image.
     """
+    # The number of seconds in a day
+    seconds_in_day = 60**2 * 24
+
     df = pd.read_csv(time_series_file, names=['Date', 'Submitted', 'Total'],
                      parse_dates=[0], index_col=[0])
     # Swap the order of the columns as this looks better when plotted
@@ -133,8 +136,10 @@ def generate_plots(time_series_file, output_image):
     # Convert to tebibytes
     df = df.div(BYTES_IN_TEBIBYTE)
     # Calculate the current rate
-    df['Rate of submission'] = (df['Submitted'].diff() /
-                                df.index.to_series().diff().dt.days).fillna(0)
+    df['Rate of submission'] = (
+        df['Submitted'].diff() /
+        (df.index.to_series().diff().dt.total_seconds() / seconds_in_day)
+    )
     # display a maximum of 30 time points
     times_in_df = df.shape[0]
     if times_in_df <= 30:
