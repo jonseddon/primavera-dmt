@@ -126,6 +126,9 @@ def generate_plots(time_series_file, output_image):
     :param str time_series_file: the full path of the time series file.
     :param str output_image: the full path of the image.
     """
+    # The number of seconds in a day
+    seconds_in_day = 60**2 * 24
+
     df = pd.read_csv(time_series_file, names=['Date', 'Submitted', 'Total'],
                      parse_dates=[0], index_col=[0])
     # Swap the order of the columns as this looks better when plotted
@@ -133,8 +136,10 @@ def generate_plots(time_series_file, output_image):
     # Convert to tebibytes
     df = df.div(BYTES_IN_TEBIBYTE)
     # Calculate the current rate
-    df['Rate of submission'] = (df['Submitted'].diff() /
-                                df.index.to_series().diff().dt.days).fillna(0)
+    df['Rate of submission'] = (
+        df['Submitted'].diff() /
+        (df.index.to_series().diff().dt.total_seconds() / seconds_in_day)
+    )
     # display a maximum of 30 time points
     times_in_df = df.shape[0]
     if times_in_df <= 30:
@@ -153,10 +158,15 @@ def generate_plots(time_series_file, output_image):
     ax.right_ax.set_ylabel('Rate of submission (TiB/day)')
     # Move the legend
     ax.get_legend().set_bbox_to_anchor((0.4, 0.95))
+    # Estimate publication rate required
+    to_publish = df['Total'][-1] - df['Submitted'][-1]
+    prim_end = datetime.datetime(2020, 7, 31, 0, 0)
+    days_left = (prim_end - datetime.datetime.utcnow()).days
+    rate_needed = to_publish / days_left
     # Set the title
-    last_row = df.iloc[-1, 0:3]
-    percent_complete = last_row['Submitted'] / last_row['Total'] * 100
-    plt.title(f'ESGF Submission Progress - {percent_complete:.0f}% complete')
+    percent_complete = df['Submitted'][-1] / df['Total'][-1] * 100
+    plt.title(f'ESGF Submission Progress - {percent_complete:.0f}% complete\n'
+              f'({days_left} days left so require {rate_needed:.1f} TiB/day)')
     # Include the date and time that the plot was generated at
     time_str = ('Created at: ' + datetime.datetime.utcnow().
                 replace(microsecond=0).isoformat())
