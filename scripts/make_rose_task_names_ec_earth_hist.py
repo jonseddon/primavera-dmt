@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 """
-make_rose_task_names_mohc_stream2_hist.py
+make_rose_task_names_ec_earth_hist.py
 
 This script is used to generate a JSON list of the task names that
 should be run by the rose suite that performs submissions to the CREPP
@@ -72,46 +72,18 @@ def main(args):
         logger.debug('{} existing tasks loaded from file'.
                      format(len(existing_tasks)))
 
-    ll_hist = filter_hadgem_stream2(DataRequest.objects.filter(
-        climate_model__short_name='HadGEM3-GC31-LL',
+    hist_r1p2 = DataRequest.objects.filter(
+        institute__short_name='EC-Earth-Consortium',
         experiment__short_name='hist-1950',
-        rip_code__in=[f'r1i{i}p1f1' for i in range(2,9)],
-        variable_request__table_name__in=[
-            '3hr', '6hrPlev', '6hrPlevPt', 'AERday', 'AERmon', 'Amon',
-            'CF3hr', 'CFday', 'CFmon', 'E1hr', 'E3hr', 'E3hrPt', 'Eday',
-            'EdayZ', 'Emon', 'EmonZ', 'Esubhr', 'LImon', 'Lmon', 'day'
-        ],
+        rip_code='r1i1p2f1',        
         datafile__isnull=False
     ).exclude(
         variable_request__table_name__startswith='Prim'
-    ).distinct())
-
-    # mm_hist = filter_hadgem_stream2(DataRequest.objects.filter(
-    #     climate_model__short_name='HadGEM3-GC31-MM',
-    #     experiment__short_name='highresSST-present',
-    #     rip_code__in=['r1i2p1f1', 'r1i3p1f1'],
-    #     datafile__isnull=False
-    # ).exclude(
-    #     variable_request__table_name__startswith='Prim'
-    # ).distinct())
-    
-    hm_hist = filter_hadgem_stream2(DataRequest.objects.filter(
-        climate_model__short_name='HadGEM3-GC31-HM',
-        experiment__short_name='hist-1950',
-        rip_code__in=['r1i2p1f1', 'r1i3p1f1'],
-        variable_request__table_name__in=[
-            '3hr', '6hrPlev', '6hrPlevPt', 'AERday', 'AERmon', 'Amon',
-            'CF3hr', 'CFday', 'CFmon', 'E1hr', 'E3hr', 'E3hrPt', 'Eday',
-            'EdayZ', 'Emon', 'EmonZ', 'Esubhr', 'LImon', 'Lmon', 'day'
-        ],
-        datafile__isnull=False
-    ).exclude(
-        variable_request__table_name__startswith='Prim'
-    ).distinct())
+    ).distinct()
 
     # task querysets can be ORed together with |
 
-    all_tasks = (ll_hist | hm_hist)
+    all_tasks = (hist_r1p2)
 
     task_name_list = [
         '{}_{}_{}_{}_{}'.format(dr.climate_model.short_name,

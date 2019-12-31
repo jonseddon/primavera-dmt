@@ -81,9 +81,18 @@ def main(args):
         variable_request__table_name__startswith='Prim'
     ).distinct()
 
+    lr_spin = DataRequest.objects.filter(
+        climate_model__short_name='CNRM-CM6-1',
+        experiment__short_name='spinup-1950',
+        rip_code='r1i1p1f2',
+        datafile__isnull=False
+    ).exclude(
+        variable_request__table_name__startswith='Prim'
+    ).distinct()
+
     # task querysets can be ORed together with |
 
-    all_tasks = (hr_ctrl)
+    all_tasks = (hr_ctrl | lr_spin)
 
     task_name_list = [
         '{}_{}_{}_{}_{}'.format(dr.climate_model.short_name,
