@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 """
-make_rose_task_names_ec_earth_hist.py
+make_rose_task_names_ec_earth_ctrl.py
 
 This script is used to generate a JSON list of the task names that
 should be run by the rose suite that performs submissions to the CREPP
@@ -72,9 +72,9 @@ def main(args):
         logger.debug('{} existing tasks loaded from file'.
                      format(len(existing_tasks)))
 
-    hist_r1p2 = DataRequest.objects.filter(
+    ctrl_r1p2 = DataRequest.objects.filter(
         institute__short_name='EC-Earth-Consortium',
-        experiment__short_name='hist-1950',
+        experiment__short_name='control-1950',
         rip_code='r1i1p2f1',        
         datafile__isnull=False
     ).exclude(
@@ -87,7 +87,7 @@ def main(args):
 
     # task querysets can be ORed together with |
 
-    all_tasks = (hist_r1p2)
+    all_tasks = (ctrl_r1p2)
 
     task_name_list = [
         '{}_{}_{}_{}_{}'.format(dr.climate_model.short_name,
