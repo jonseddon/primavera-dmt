@@ -54,10 +54,37 @@ def main(args):
     start_year = 1948
     end_year = 2051
 
-    data_reqs = DataRequest.objects.filter(
-        climate_model__short_name='EC-Earth3P',
+    # data_reqs = DataRequest.objects.filter(
+    #     climate_model__short_name='EC-Earth3P',
+    #     experiment__short_name='hist-1950',
+    #     rip_code='r1i1p2f1',
+    #     datafile__isnull=False
+    # ).exclude(
+    #     variable_request__table_name__startswith='Prim'
+    # ).exclude(
+    #     variable_request__dimensions__contains='alevhalf'
+    # ).exclude(
+    #     variable_request__dimensions__contains='alevel'
+    # ).distinct()
+
+    # data_reqs = DataRequest.objects.filter(
+    #     climate_model__short_name='EC-Earth3P',
+    #     experiment__short_name='hist-1950',
+    #     rip_code='r2i1p2f1',
+    #     datafile__isnull=False
+    # ).exclude(
+    #     variable_request__table_name__startswith='Prim'
+    # ).exclude(
+    #     variable_request__dimensions__contains='alevhalf'
+    # ).exclude(
+    #     variable_request__dimensions__contains='alevel'
+    # ).distinct()
+
+    mon_reqs = DataRequest.objects.filter(
+        climate_model__short_name='EC-Earth3P-HR',
         experiment__short_name='hist-1950',
-        rip_code='r1i1p2f1',
+        rip_code__in=[f'r{mem_num}i1p2f1' for mem_num in range(1, 4)],
+        variable_request__frequency='mon',
         datafile__isnull=False
     ).exclude(
         variable_request__table_name__startswith='Prim'
@@ -66,6 +93,22 @@ def main(args):
     ).exclude(
         variable_request__dimensions__contains='alevel'
     ).distinct()
+
+    day_reqs = DataRequest.objects.filter(
+        climate_model__short_name='EC-Earth3P-HR',
+        experiment__short_name='hist-1950',
+        rip_code='r1i1p2f1',
+        variable_request__frequency='day',
+        datafile__isnull=False
+    ).exclude(
+        variable_request__table_name__startswith='Prim'
+    ).exclude(
+        variable_request__dimensions__contains='alevhalf'
+    ).exclude(
+        variable_request__dimensions__contains='alevel'
+    ).distinct()
+
+    data_reqs = mon_reqs | day_reqs
 
     logger.debug('Total data volume: {} Volume to restore: {}'.format(
         filesizeformat(get_request_size(data_reqs, start_year, end_year)).

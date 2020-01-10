@@ -74,6 +74,7 @@ def main(args):
 
     amip_r1p1 = DataRequest.objects.filter(
         institute__short_name='EC-Earth-Consortium',
+        climate_model__short_name__startswith='EC-Earth3P',
         experiment__short_name='highresSST-present',
         rip_code='r1i1p1f1',        
         datafile__isnull=False

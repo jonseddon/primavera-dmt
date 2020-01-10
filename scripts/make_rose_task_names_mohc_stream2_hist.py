@@ -86,14 +86,19 @@ def main(args):
         variable_request__table_name__startswith='Prim'
     ).distinct())
 
-    # mm_hist = filter_hadgem_stream2(DataRequest.objects.filter(
-    #     climate_model__short_name='HadGEM3-GC31-MM',
-    #     experiment__short_name='highresSST-present',
-    #     rip_code__in=['r1i2p1f1', 'r1i3p1f1'],
-    #     datafile__isnull=False
-    # ).exclude(
-    #     variable_request__table_name__startswith='Prim'
-    # ).distinct())
+    mm_hist = filter_hadgem_stream2(DataRequest.objects.filter(
+        climate_model__short_name='HadGEM3-GC31-MM',
+        experiment__short_name='hist-1950',
+        rip_code__in=['r1i2p1f1', 'r1i3p1f1'],
+        variable_request__table_name__in=[
+            '3hr', '6hrPlev', '6hrPlevPt', 'AERday', 'AERmon', 'Amon',
+            'CF3hr', 'CFday', 'CFmon', 'E1hr', 'E3hr', 'E3hrPt', 'Eday',
+            'EdayZ', 'Emon', 'EmonZ', 'Esubhr', 'LImon', 'Lmon', 'day'
+        ],
+        datafile__isnull=False
+    ).exclude(
+        variable_request__table_name__startswith='Prim'
+    ).distinct())
     
     hm_hist = filter_hadgem_stream2(DataRequest.objects.filter(
         climate_model__short_name='HadGEM3-GC31-HM',
@@ -111,7 +116,7 @@ def main(args):
 
     # task querysets can be ORed together with |
 
-    all_tasks = (ll_hist | hm_hist)
+    all_tasks = (ll_hist | mm_hist | hm_hist)
 
     task_name_list = [
         '{}_{}_{}_{}_{}'.format(dr.climate_model.short_name,

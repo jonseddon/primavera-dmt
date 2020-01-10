@@ -54,9 +54,17 @@ def main(args):
     start_year = 1948
     end_year = 2051
 
+    # data_reqs = DataRequest.objects.filter(
+    #     climate_model__short_name='CNRM-CM6-1-HR',
+    #     experiment__short_name='control-1950',
+    #     datafile__isnull=False
+    # ).exclude(
+    #     variable_request__table_name__startswith='Prim'
+    # ).distinct()
+
     data_reqs = DataRequest.objects.filter(
-        climate_model__short_name='CNRM-CM6-1-HR',
-        experiment__short_name='control-1950',
+        climate_model__short_name='CNRM-CM6-1',
+        experiment__short_name='spinup-1950',
         datafile__isnull=False
     ).exclude(
         variable_request__table_name__startswith='Prim'
