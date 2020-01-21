@@ -16,7 +16,7 @@ import django
 django.setup()
 from pdata_app.models import DataFile, Settings
 from pdata_app.utils.common import (adler32, construct_drs_path,
-                                    get_gws_any_dir, ilist_files)
+                                    get_gws_any_dir, ilist_files, is_same_gws)
 
 __version__ = '0.1.0b'
 
@@ -78,11 +78,12 @@ def main(args):
         os.rename(extracted_file, dest_path)
 
         # create a link from the base dir
-        link_dir = os.path.join(base_dir, construct_drs_path(data_file))
-        link_path = os.path.join(link_dir, data_file.name)
-        if not  os.path.exists(link_dir):
-            os.makedirs(link_dir)
-        os.symlink(dest_path, link_path)
+        if not is_same_gws(dest_path, base_dir):
+            link_dir = os.path.join(base_dir, construct_drs_path(data_file))
+            link_path = os.path.join(link_dir, data_file.name)
+            if not  os.path.exists(link_dir):
+                os.makedirs(link_dir)
+            os.symlink(dest_path, link_path)
 
         data_file.online = True
         data_file.directory = dest_dir
