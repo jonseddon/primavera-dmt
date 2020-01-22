@@ -50,14 +50,14 @@ def main(args):
     )
 
     num_files = dfs.count()
-    num_files_expected = 4633
+    num_files_expected = 49900
     if num_files != num_files_expected:
         logger.error(f'{num_files} found but was expecting '
                      f'{num_files_expected}')
         sys.exit(1)
 
-    # delete_files(dfs, '/gws/nopw/j04/primavera5/stream1')
-    # replace_files(dfs)
+    delete_files(dfs, '/gws/nopw/j04/primavera5/stream1')
+    replace_files(dfs)
 
 
 if __name__ == "__main__":
