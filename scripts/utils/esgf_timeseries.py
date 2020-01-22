@@ -151,8 +151,9 @@ def generate_plots(time_series_file, output_image):
                                        mark_right=False)
     # Set the x-axis tick format to be day month
     ax.xaxis.set_major_formatter(DateFormatter('%d %b'))
-    # Set the right-hand y-axis limits
+    # Set the y-axes limits
     ax.right_ax.set_ylim((0, 20))
+    ax.set_ylim((0, 1700))
     # Set the y-axis titles
     ax.set_ylabel('Volume submitted (TiB)')
     ax.right_ax.set_ylabel('Rate of submission (TiB/day)')
