@@ -54,10 +54,24 @@ def main(args):
     start_year = 1948
     end_year = 2051
 
+    # data_reqs = DataRequest.objects.filter(
+    #     climate_model__short_name='EC-Earth3P',
+    #     experiment__short_name='control-1950',
+    #     rip_code='r1i1p2f1',
+    #     datafile__isnull=False
+    # ).exclude(
+    #     variable_request__table_name__startswith='Prim'
+    # ).exclude(
+    #     variable_request__dimensions__contains='alevhalf'
+    # ).exclude(
+    #     variable_request__dimensions__contains='alevel'
+    # ).distinct()
+
     data_reqs = DataRequest.objects.filter(
-        climate_model__short_name='EC-Earth3P',
+        climate_model__short_name='EC-Earth3P-HR',
         experiment__short_name='control-1950',
         rip_code='r1i1p2f1',
+        variable_request__frequency__in=['day'],
         datafile__isnull=False
     ).exclude(
         variable_request__table_name__startswith='Prim'

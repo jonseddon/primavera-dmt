@@ -72,10 +72,23 @@ def main(args):
         logger.debug('{} existing tasks loaded from file'.
                      format(len(existing_tasks)))
 
-    lr_r2p2 = DataRequest.objects.filter(
+    lr_r23p2 = DataRequest.objects.filter(
         climate_model__short_name='EC-Earth3P',
         experiment__short_name='hist-1950',
-        rip_code='r2i1p2f1',        
+        rip_code__in=['r2i1p2f1', 'r3i1p2f1'],
+        datafile__isnull=False
+    ).exclude(
+        variable_request__table_name__startswith='Prim'
+    ).exclude(
+        variable_request__dimensions__contains='alevhalf'
+    ).exclude(
+        variable_request__dimensions__contains='alevel'
+    ).distinct()
+
+    hr_r23p2 = DataRequest.objects.filter(
+        climate_model__short_name='EC-Earth3P-HR',
+        experiment__short_name='hist-1950',
+        rip_code__in=['r2i1p2f1', 'r3i1p2f1'],
         datafile__isnull=False
     ).exclude(
         variable_request__table_name__startswith='Prim'
@@ -87,7 +100,7 @@ def main(args):
 
     # task querysets can be ORed together with |
 
-    all_tasks = (lr_r2p2)
+    all_tasks = (lr_r23p2 | hr_r23p2)
 
     task_name_list = [
         '{}_{}_{}_{}_{}'.format(dr.climate_model.short_name,
