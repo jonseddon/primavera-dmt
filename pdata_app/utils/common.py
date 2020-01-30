@@ -587,7 +587,7 @@ def delete_drs_dir(directory, mip_eras=('PRIMAVERA', 'CMIP6')):
         delete_drs_dir(parent_dir)
 
 
-def delete_files(query_set, base_output_dir):
+def delete_files(query_set, base_output_dir, skip_badc=False):
     """
     Delete any files online from the specified queryset
 
@@ -595,16 +595,22 @@ def delete_files(query_set, base_output_dir):
         delete.
     :param str base_output_dir: the group workspace that the symbolic links
         are created under.
+    :param bool skip_badc: if True don't try to delete files in the BADC
+        archive but still delete the sym links as usual.
     """
+    # The start of the path of files in the archive that shouldn't be deleted
+    archive_prefix = '/badc'
+
     directories_found = []
     for df in query_set.filter(online=True):
-        try:
-            os.remove(os.path.join(df.directory, df.name))
-        except OSError as exc:
-            logger.error(str(exc))
-        else:
-            if df.directory not in directories_found:
-                directories_found.append(df.directory)
+        if not (skip_badc and df.directory.startswith(archive_prefix)):
+            try:
+                os.remove(os.path.join(df.directory, df.name))
+            except OSError as exc:
+                logger.error(str(exc))
+            else:
+                if df.directory not in directories_found:
+                    directories_found.append(df.directory)
         # remove the associated symbolic link
         if not is_same_gws(df.directory, base_output_dir):
             sym_link_dir = os.path.join(base_output_dir,
