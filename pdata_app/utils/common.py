@@ -289,24 +289,18 @@ def is_same_gws(path1, path2):
     :param str path1: The first path
     :param str path2: The second path
     :returns: True if both paths are in the same group workspace
-    :raises RuntimeError: if the paths aren't recognised
     """
     if path1.startswith('/group_workspaces'):
         gws_pattern = r'^/group_workspaces/jasmin2/primavera\d'
     elif path1.startswith('/gws'):
         gws_pattern = r'^/gws/nopw/j04/primavera\d'
     else:
-        raise ValueError('path1 format is not a recognised group workspace '
-                         'pattern: {}'.format(path1))
+        return False
     gws1 = re.match(gws_pattern, path1)
     gws2 = re.match(gws_pattern, path2)
 
-    if not gws1:
-        msg = 'Cannot determine group workspace name from {}'.format(path1)
-        raise RuntimeError(msg)
-    if not gws2:
-        msg = 'Cannot determine group workspace name from {}'.format(path2)
-        raise RuntimeError(msg)
+    if not gws1 or not gws2:
+        return False
 
     return True if gws1.group(0) == gws2.group(0) else False
 
