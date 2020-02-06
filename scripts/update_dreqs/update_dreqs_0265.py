@@ -6,12 +6,14 @@ Remove from disk and update the version of EC-Earth Lmon and LImon datasets
 that have been withdrawn and will be resubmitted.
 """
 import argparse
+import datetime
 import logging.config
 import sys
 
 import django
 django.setup()
-from pdata_app.models import DataRequest
+from django.contrib.auth.models import User
+from pdata_app.models import DataRequest, RetrievalRequest
 from pdata_app.utils.common import delete_files
 
 __version__ = '0.1.0b1'
@@ -80,6 +82,13 @@ def main(args):
         'CMIP6.HighResMIP.EC-Earth-Consortium.EC-Earth3P.hist-1950.r1i1p2f1.Lmon.tsl.gr.v20190314',
     ]
 
+    jon = User.objects.get(username='jseddon')
+    rr = RetrievalRequest.objects.create(requester=jon, start_year=1948,
+                                         end_year=2051)
+    time_zone = datetime.timezone(datetime.timedelta())
+    rr.date_created = datetime.datetime.utcnow().replace(tzinfo=time_zone)
+    rr.save()
+
     for dataset in datasets:
         cmpts = dataset.split('.')
         dreq = DataRequest.objects.get(
@@ -92,10 +101,12 @@ def main(args):
 
         logger.debug(f'{dreq} {dreq.datafile_set.all().count()} files')
 
-        # delete_files(dreq.datafile_set.all(),
-        #              '/gws/nopw/j04/primavera5/stream1')
-        #
-        # dreq.datafile_set.update(version='v20200206')
+        delete_files(dreq.datafile_set.all(),
+                     '/gws/nopw/j04/primavera5/stream1', skip_badc=True)
+
+        dreq.datafile_set.update(version='v20200206')
+
+        rr.data_request.add(dreq)
 
 
 if __name__ == "__main__":
