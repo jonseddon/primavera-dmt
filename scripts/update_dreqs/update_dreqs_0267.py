@@ -43,10 +43,11 @@ def main(args):
     """
     copy_dir = '/gws/nopw/j04/primavera5/upload/CMCC'
 
-    dreqs = DataRequest.objects.get(
+    dreqs = DataRequest.objects.filter(
         institute__short_name='CMCC',
-        variable_request__cmor_name__in=['tauu', 'tauv']
-    )
+        variable_request__cmor_name__in=['tauu', 'tauv'],
+        datafile__isnull=False
+    ).distinct()
 
     num_dreqs = dreqs.count()
     expected_dreqs = 20
@@ -62,7 +63,7 @@ def main(args):
             if not os.path.exists(new_dir):
                 os.makedirs(new_dir)
             shutil.copyfile(os.path.join(df.directory, df.name),
-                            new_dir)
+                            os.path.join(new_dir, df.name))
 
 
 if __name__ == "__main__":
