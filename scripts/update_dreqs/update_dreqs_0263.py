@@ -52,12 +52,39 @@ def main(args):
     Main entry point
     """
     start_year = 1948
-    end_year = 2051
+    end_year = 2150
+
+    # data_reqs = DataRequest.objects.filter(
+    #     climate_model__short_name='EC-Earth3P',
+    #     experiment__short_name='highres-future',
+    #     rip_code='r1i1p2f1',
+    #     datafile__isnull=False
+    # ).exclude(
+    #     variable_request__table_name__startswith='Prim'
+    # ).exclude(
+    #     variable_request__dimensions__contains='alevhalf'
+    # ).exclude(
+    #     variable_request__dimensions__contains='alevel'
+    # ).distinct()
+
+    # data_reqs = DataRequest.objects.filter(
+    #     climate_model__short_name='EC-Earth3P',
+    #     experiment__short_name='highres-future',
+    #     rip_code='r3i1p2f1',  # 'r2i1p2f1',
+    #     datafile__isnull=False
+    # ).exclude(
+    #     variable_request__table_name__startswith='Prim'
+    # ).exclude(
+    #     variable_request__dimensions__contains='alevhalf'
+    # ).exclude(
+    #     variable_request__dimensions__contains='alevel'
+    # ).distinct()
 
     data_reqs = DataRequest.objects.filter(
-        climate_model__short_name='EC-Earth3P',
+        climate_model__short_name='EC-Earth3P-HR',
         experiment__short_name='highres-future',
         rip_code='r1i1p2f1',
+        variable_request__frequency__in=['6hr', '3hr'],
         datafile__isnull=False
     ).exclude(
         variable_request__table_name__startswith='Prim'
@@ -66,6 +93,21 @@ def main(args):
     ).exclude(
         variable_request__dimensions__contains='alevel'
     ).distinct()
+
+    # data_reqs = DataRequest.objects.filter(
+    #     climate_model__short_name='EC-Earth3P-HR',
+    #     experiment__short_name='highres-future',
+    #     rip_code='r3i1p2f1', # 'r2i1p2f1',
+    #     variable_request__frequency__in=['mon', 'day'],
+    #     datafile__isnull=False
+    # ).exclude(
+    #     variable_request__table_name__startswith='Prim'
+    # ).exclude(
+    #     variable_request__dimensions__contains='alevhalf'
+    # ).exclude(
+    #     variable_request__dimensions__contains='alevel'
+    # ).distinct()
+
 
     logger.debug('Total data volume: {} Volume to restore: {}'.format(
         filesizeformat(get_request_size(data_reqs, start_year, end_year)).

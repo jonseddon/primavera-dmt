@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 """
-make_rose_task_names_ec_earth_highres_future.py
+make_rose_task_names_mohc_stream2_hist.py
 
 This script is used to generate a JSON list of the task names that
 should be run by the rose suite that performs submissions to the CREPP
@@ -22,6 +22,7 @@ import django
 django.setup()
 
 from pdata_app.models import DataRequest
+from pdata_app.utils.common import filter_hadgem_stream2
 
 __version__ = '0.1.0b'
 
@@ -71,48 +72,51 @@ def main(args):
         logger.debug('{} existing tasks loaded from file'.
                      format(len(existing_tasks)))
 
-    fut_r1p2 = DataRequest.objects.filter(
-        institute__short_name='EC-Earth-Consortium',
-        experiment__short_name='highres-future',
-        rip_code='r1i1p2f1',        
+    ll_hist = filter_hadgem_stream2(DataRequest.objects.filter(
+        climate_model__short_name='HadGEM3-GC31-LL',
+        experiment__short_name='hist-1950',
+        rip_code__in=[f'r1i{i}p1f1' for i in range(2,9)],
+        variable_request__table_name__in=[
+            '3hr', '6hrPlev', '6hrPlevPt', 'AERday', 'AERmon', 'Amon',
+            'CF3hr', 'CFday', 'CFmon', 'E1hr', 'E3hr', 'E3hrPt', 'Eday',
+            'EdayZ', 'Emon', 'EmonZ', 'Esubhr', 'LImon', 'Lmon', 'day'
+        ],
         datafile__isnull=False
     ).exclude(
         variable_request__table_name__startswith='Prim'
-    ).exclude(
-        variable_request__dimensions__contains='alevhalf'
-    ).exclude(
-        variable_request__dimensions__contains='alevel'
-    ).distinct()
+    ).distinct())
 
-    fut_r2p2 = DataRequest.objects.filter(
-        institute__short_name='EC-Earth-Consortium',
-        experiment__short_name='highres-future',
-        rip_code='r2i1p2f1',
+    mm_hist = filter_hadgem_stream2(DataRequest.objects.filter(
+        climate_model__short_name='HadGEM3-GC31-MM',
+        experiment__short_name='hist-1950',
+        rip_code__in=['r1i2p1f1', 'r1i3p1f1'],
+        variable_request__table_name__in=[
+            '3hr', '6hrPlev', '6hrPlevPt', 'AERday', 'AERmon', 'Amon',
+            'CF3hr', 'CFday', 'CFmon', 'E1hr', 'E3hr', 'E3hrPt', 'Eday',
+            'EdayZ', 'Emon', 'EmonZ', 'Esubhr', 'LImon', 'Lmon', 'day'
+        ],
         datafile__isnull=False
     ).exclude(
         variable_request__table_name__startswith='Prim'
-    ).exclude(
-        variable_request__dimensions__contains='alevhalf'
-    ).exclude(
-        variable_request__dimensions__contains='alevel'
-    ).distinct()
-
-    fut_r3p2 = DataRequest.objects.filter(
-        institute__short_name='EC-Earth-Consortium',
-        experiment__short_name='highres-future',
-        rip_code='r3i1p2f1',
+    ).distinct())
+    
+    hm_hist = filter_hadgem_stream2(DataRequest.objects.filter(
+        climate_model__short_name='HadGEM3-GC31-HM',
+        experiment__short_name='hist-1950',
+        rip_code__in=['r1i2p1f1', 'r1i3p1f1'],
+        variable_request__table_name__in=[
+            '3hr', '6hrPlev', '6hrPlevPt', 'AERday', 'AERmon', 'Amon',
+            'CF3hr', 'CFday', 'CFmon', 'E1hr', 'E3hr', 'E3hrPt', 'Eday',
+            'EdayZ', 'Emon', 'EmonZ', 'Esubhr', 'LImon', 'Lmon', 'day'
+        ],
         datafile__isnull=False
     ).exclude(
         variable_request__table_name__startswith='Prim'
-    ).exclude(
-        variable_request__dimensions__contains='alevhalf'
-    ).exclude(
-        variable_request__dimensions__contains='alevel'
-    ).distinct()
+    ).distinct())
 
     # task querysets can be ORed together with |
 
-    all_tasks = (fut_r1p2 | fut_r2p2 | fut_r3p2)
+    all_tasks = (ll_hist | mm_hist | hm_hist)
 
     task_name_list = [
         '{}_{}_{}_{}_{}'.format(dr.climate_model.short_name,

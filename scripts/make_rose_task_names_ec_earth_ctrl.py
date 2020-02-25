@@ -85,9 +85,35 @@ def main(args):
         variable_request__dimensions__contains='alevel'
     ).distinct()
 
-    # task querysets can be ORed together with |
+    ctrl_r2p2 = DataRequest.objects.filter(
+        institute__short_name='EC-Earth-Consortium',
+        experiment__short_name='control-1950',
+        rip_code='r2i1p2f1',
+        datafile__isnull=False
+    ).exclude(
+        variable_request__table_name__startswith='Prim'
+    ).exclude(
+        variable_request__dimensions__contains='alevhalf'
+    ).exclude(
+        variable_request__dimensions__contains='alevel'
+    ).distinct()
 
-    all_tasks = (ctrl_r1p2)
+    ctrl_r3p2 = DataRequest.objects.filter(
+        climate_model__short_name__in=['EC-Earth3P'],
+        experiment__short_name='control-1950',
+        rip_code='r3i1p2f1',
+        datafile__isnull=False
+    ).exclude(
+        variable_request__table_name__startswith='Prim'
+    ).exclude(
+        variable_request__dimensions__contains='alevhalf'
+    ).exclude(
+        variable_request__dimensions__contains='alevel'
+    ).distinct()
+
+
+    # task querysets can be ORed together with |
+    all_tasks = (ctrl_r1p2 | ctrl_r2p2 | ctrl_r3p2)
 
     task_name_list = [
         '{}_{}_{}_{}_{}'.format(dr.climate_model.short_name,

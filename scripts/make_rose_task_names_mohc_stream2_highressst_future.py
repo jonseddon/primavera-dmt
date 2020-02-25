@@ -86,37 +86,37 @@ def main(args):
         variable_request__table_name__startswith='Prim'
     ).distinct())
 
-    # mm = filter_hadgem_stream2(DataRequest.objects.filter(
-    #     climate_model__short_name='HadGEM3-GC31-MM',
-    #     experiment__short_name='highresSST-future',
-    #     rip_code__in=['r1i2p1f1', 'r1i3p1f1'],
-    #     variable_request__table_name__in=[
-    #         '3hr', '6hrPlev', '6hrPlevPt', 'AERday', 'AERmon', 'Amon',
-    #         'CF3hr', 'CFday', 'CFmon', 'E1hr', 'E3hr', 'E3hrPt', 'Eday',
-    #         'EdayZ', 'Emon', 'EmonZ', 'Esubhr', 'LImon', 'Lmon', 'day'
-    #     ],
-    #     datafile__isnull=False
-    # ).exclude(
-    #     variable_request__table_name__startswith='Prim'
-    # ).distinct())
+    mm = filter_hadgem_stream2(DataRequest.objects.filter(
+        climate_model__short_name='HadGEM3-GC31-MM',
+        experiment__short_name='highresSST-future',
+        rip_code__in=['r1i2p1f1', 'r1i3p1f1'],
+        variable_request__table_name__in=[
+            '3hr', '6hrPlev', '6hrPlevPt', 'AERday', 'AERmon', 'Amon',
+            'CF3hr', 'CFday', 'CFmon', 'E1hr', 'E3hr', 'E3hrPt', 'Eday',
+            'EdayZ', 'Emon', 'EmonZ', 'Esubhr', 'LImon', 'Lmon', 'day'
+        ],
+        datafile__isnull=False
+    ).exclude(
+        variable_request__table_name__startswith='Prim'
+    ).distinct())
     
-    # hm = filter_hadgem_stream2(DataRequest.objects.filter(
-    #     climate_model__short_name='HadGEM3-GC31-HM',
-    #     experiment__short_name='highresSST-future',
-    #     rip_code__in=['r1i2p1f1', 'r1i3p1f1'],
-    #     variable_request__table_name__in=[
-    #         '3hr', '6hrPlev', '6hrPlevPt', 'AERday', 'AERmon', 'Amon',
-    #         'CF3hr', 'CFday', 'CFmon', 'E1hr', 'E3hr', 'E3hrPt', 'Eday',
-    #         'EdayZ', 'Emon', 'EmonZ', 'Esubhr', 'LImon', 'Lmon', 'day'
-    #     ],
-    #     datafile__isnull=False
-    # ).exclude(
-    #     variable_request__table_name__startswith='Prim'
-    # ).distinct())
+    hm = filter_hadgem_stream2(DataRequest.objects.filter(
+        climate_model__short_name='HadGEM3-GC31-HM',
+        experiment__short_name='highresSST-future',
+        rip_code__in=['r1i2p1f1', 'r1i3p1f1'],
+        variable_request__table_name__in=[
+            '3hr', '6hrPlev', '6hrPlevPt', 'AERday', 'AERmon', 'Amon',
+            'CF3hr', 'CFday', 'CFmon', 'E1hr', 'E3hr', 'E3hrPt', 'Eday',
+            'EdayZ', 'Emon', 'EmonZ', 'Esubhr', 'LImon', 'Lmon', 'day'
+        ],
+        datafile__isnull=False
+    ).exclude(
+        variable_request__table_name__startswith='Prim'
+    ).distinct())
 
     # task querysets can be ORed together with |
 
-    all_tasks = (ll)  # | mm | hm)
+    all_tasks = (ll | mm | hm)
 
     task_name_list = [
         '{}_{}_{}_{}_{}'.format(dr.climate_model.short_name,

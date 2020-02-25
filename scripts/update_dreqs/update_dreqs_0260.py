@@ -70,8 +70,9 @@ def main(args):
     data_reqs = DataRequest.objects.filter(
         climate_model__short_name='EC-Earth3P-HR',
         experiment__short_name='control-1950',
-        rip_code='r1i1p2f1',
-        variable_request__frequency__in=['day'],
+        rip_code='r2i1p2f1',
+        variable_request__frequency__in=['3hr'],
+        variable_request__table_name='3hr',
         datafile__isnull=False
     ).exclude(
         variable_request__table_name__startswith='Prim'
