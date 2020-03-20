@@ -9,8 +9,8 @@ import os
 import re
 import six
 
-from pdata_app.models import (Checksum, ClimateModel, DataRequest, Settings,
-                              TapeChecksum)
+from pdata_app.models import (Checksum, ClimateModel, DataRequest, Institute,
+                              Settings, TapeChecksum)
 from pdata_app.utils.common import (adler32, construct_drs_path,
                                     construct_filename, get_gws,
                                     delete_drs_dir, is_same_gws,
@@ -347,6 +347,84 @@ class SourceIdUpdate(DataRequestUpdate):
                                    self.datafile.rip_code))
         run_ncatted(self.old_directory, self.old_filename,
                     'further_info_url', 'global', 'c', further_info_url, False)
+
+
+class InstitutionIdUpdate(DataRequestUpdate):
+    """
+    Update a DataFile's institution_id.
+    """
+
+    def __init__(self, datafile, new_value, update_file_only=False):
+        """
+        Initialise the class
+        """
+        super(InstitutionIdUpdate, self).__init__(datafile, new_value,
+                                                  update_file_only)
+        self.data_req_attribute_name = 'institute'
+        self.data_req_attribute_value = Institute.objects.get(
+            short_name=self.new_value
+        )
+
+    def _update_database_attribute(self):
+        """
+        Update the institution_id.
+        """
+        new_institute = Institute.objects.get(short_name=self.new_value)
+        self.datafile.institute = new_institute
+        self.datafile.save()
+
+    def _update_file_attribute(self):
+        """
+        Update the institution_id and make the same change in further_info_url,
+        institution and license.
+        Assume the file has its original path and name.
+        """
+        # institution_id
+        run_ncatted(self.old_directory, self.old_filename,
+                    'institution_id', 'global', 'c', self.new_value, False)
+
+        # institution
+        new_insts = {
+            'MOHC': 'Met Office Hadley Centre, Fitzroy Road, Exeter, Devon, '
+                    'EX1 3PB, UK',
+            'NERC': 'Natural Environment Research Council, STFC-RAL, Harwell, '
+                    'Oxford, OX11 0QX, UK'
+        }
+        inst = new_insts[self.new_value]
+        run_ncatted(self.old_directory, self.old_filename,
+                    'institution', 'global', 'c', inst, False)
+
+        # further_info_url
+        further_info_url = (
+            'https://furtherinfo.es-doc.org/{}.{}.{}.{}.none.{}'.
+            format(self.datafile.project.short_name,
+                   self.new_value,
+                   self.datafile.climate_model.short_name,
+                   self.datafile.experiment.short_name,
+                   self.datafile.rip_code))
+        run_ncatted(self.old_directory, self.old_filename,
+                    'further_info_url', 'global', 'c', further_info_url,
+                    False)
+
+        # license
+        license_txt = (
+            f'CMIP6 model data produced by {self.new_value} is licensed under '
+            f'a Creative Commons Attribution-ShareAlike 4.0 International '
+            f'License (https://creativecommons.org/licenses). Consult '
+            f'https://pcmdi.llnl.gov/CMIP6/TermsOfUse for terms of use '
+            f'governing CMIP6 output, including citation requirements and '
+            f'proper acknowledgment. Further information about this data, '
+            f'including some limitations, can be found via the '
+            f'further_info_url (recorded as a global attribute in this file). '
+            f'The data producers and data providers make no warranty, either '
+            f'express or implied, including, but not limited to, warranties of '
+            f'merchantability and fitness for a particular purpose. All '
+            f'liabilities arising from the supply of the information '
+            f'(including any liability arising in negligence) are excluded to '
+            f'the fullest extent permitted by law.'
+        )
+        run_ncatted(self.old_directory, self.old_filename,
+                    'license', 'global', 'c', license_txt, False)
 
 
 class VariantLabelUpdate(DataRequestUpdate):
