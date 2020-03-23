@@ -15,18 +15,18 @@ except ImportError:
 import django
 django.setup()
 
-from django.test import TestCase
+from django.test import TestCase  # nopep8
 
-from pdata_app.models import Checksum, DataFile, DataRequest, Institute
-from pdata_app.tests.common import make_example_files
+from pdata_app.models import Checksum, DataFile, Institute  # nopep8
+from pdata_app.tests.common import make_example_files  # nopep8
 
 from pdata_app.utils.attribute_update import (InstitutionIdUpdate,
                                               SourceIdUpdate,
                                               VariantLabelUpdate,
                                               VarNameToOutNameUpdate,
                                               FileOfflineError,
-                                              FileNotOnDiskError)
-import pdata_app.utils.attribute_update
+                                              FileNotOnDiskError)  # nopep8
+import pdata_app.utils.attribute_update  # nopep8
 
 
 class TestSourceIdUpdate(TestCase):
@@ -39,7 +39,7 @@ class TestSourceIdUpdate(TestCase):
         self.desired_source_id = 'better-model'
 
         mock.patch.object(pdata_app.utils.attribute_update, 'BASE_OUTPUT_DIR',
-                          return_value = '/gws/nopw/j04/primavera5/stream1')
+                          return_value='/gws/nopw/j04/primavera5/stream1')
 
         patch = mock.patch('pdata_app.utils.common.run_command')
         self.mock_run_cmd = patch.start()
@@ -140,7 +140,9 @@ class TestSourceIdUpdate(TestCase):
     @mock.patch('pdata_app.utils.attribute_update.DmtUpdate._rename_file')
     @mock.patch('pdata_app.utils.attribute_update.DmtUpdate._update_checksum')
     def test_move_dreq(self, mock_checksum, mock_rename, mock_available):
-        df = DataFile.objects.get(name='var1_table_model_expt_varlab_gn_1-2.nc')
+        df = DataFile.objects.get(
+            name='var1_table_model_expt_varlab_gn_1-2.nc'
+        )
         self.assertEqual(df.data_request.climate_model.short_name, 't')
         updater = SourceIdUpdate(self.test_file, self.desired_source_id)
         updater.update()
@@ -156,7 +158,9 @@ class TestSourceIdUpdate(TestCase):
                       mock_available):
         mock_size.return_value = 256
         mock_adler.return_value = '9876543210'
-        df = DataFile.objects.get(name='var1_table_model_expt_varlab_gn_1-2.nc')
+        df = DataFile.objects.get(
+            name='var1_table_model_expt_varlab_gn_1-2.nc'
+        )
         self.assertEqual(df.data_request.climate_model.short_name, 't')
         updater = SourceIdUpdate(self.test_file, self.desired_source_id)
         updater.update()
@@ -334,7 +338,9 @@ class TestInstitutionIdUpdate(TestCase):
     @mock.patch('pdata_app.utils.attribute_update.DmtUpdate._update_checksum')
     def test_move_dreq(self, mock_checksum, mock_rename,
                        mock_available):
-        df = DataFile.objects.get(name='var1_table_model_expt_varlab_gn_1-2.nc')
+        df = DataFile.objects.get(
+            name='var1_table_model_expt_varlab_gn_1-2.nc'
+        )
         self.assertEqual(df.data_request.institute.short_name, 'MOHC')
         updater = InstitutionIdUpdate(self.test_file,
                                       self.desired_institution_id)
@@ -404,7 +410,8 @@ class TestVariantLabelUpdate(TestCase):
     @mock.patch('pdata_app.utils.attribute_update.DmtUpdate._update_checksum')
     def test_variant_label_updated(self, mock_checksum, mock_rename,
                                    mock_available):
-        updater = VariantLabelUpdate(self.test_file, self.desired_variant_label)
+        updater = VariantLabelUpdate(self.test_file,
+                                     self.desired_variant_label)
         updater.update()
         self.test_file.refresh_from_db()
         self.assertEqual(self.test_file.rip_code, self.desired_variant_label)
@@ -414,7 +421,8 @@ class TestVariantLabelUpdate(TestCase):
     @mock.patch('pdata_app.utils.attribute_update.DmtUpdate._update_checksum')
     def test_filename_updated(self, mock_checksum, mock_rename,
                               mock_available):
-        updater = VariantLabelUpdate(self.test_file, self.desired_variant_label)
+        updater = VariantLabelUpdate(self.test_file,
+                                     self.desired_variant_label)
         updater.update()
         self.test_file.refresh_from_db()
         desired_filename = 'var1_Amon_t_t_r1i2p3f4_gn_1950-1960.nc'
@@ -425,7 +433,8 @@ class TestVariantLabelUpdate(TestCase):
     @mock.patch('pdata_app.utils.attribute_update.DmtUpdate._update_checksum')
     def test_directory_updated(self, mock_checksum, mock_rename,
                                mock_available):
-        updater = VariantLabelUpdate(self.test_file, self.desired_variant_label)
+        updater = VariantLabelUpdate(self.test_file,
+                                     self.desired_variant_label)
         updater.update()
         self.test_file.refresh_from_db()
         desired_dir = ('/gws/nopw/j04/primavera9/stream1/t/'
@@ -437,9 +446,12 @@ class TestVariantLabelUpdate(TestCase):
     @mock.patch('pdata_app.utils.attribute_update.DmtUpdate._update_checksum')
     def test_move_dreq(self, mock_checksum, mock_rename,
                        mock_available):
-        df = DataFile.objects.get(name='var1_table_model_expt_varlab_gn_1-2.nc')
+        df = DataFile.objects.get(
+            name='var1_table_model_expt_varlab_gn_1-2.nc'
+        )
         self.assertEqual(df.data_request.rip_code, 'r1i1p1f1')
-        updater = VariantLabelUpdate(self.test_file, self.desired_variant_label)
+        updater = VariantLabelUpdate(self.test_file,
+                                     self.desired_variant_label)
         updater.update()
         df.refresh_from_db()
         self.assertEqual(df.data_request.rip_code, 'r1i2p3f4')
@@ -449,7 +461,8 @@ class TestVariantLabelUpdate(TestCase):
     @mock.patch('pdata_app.utils.attribute_update.DmtUpdate._update_checksum')
     def test_update_attributes(self, mock_checksum, mock_rename,
                                mock_available):
-        updater = VariantLabelUpdate(self.test_file, self.desired_variant_label)
+        updater = VariantLabelUpdate(self.test_file,
+                                     self.desired_variant_label)
         updater.update()
         calls = [
             mock.call("ncatted -a variant_label,global,o,c,'r1i2p3f4' "

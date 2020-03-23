@@ -14,8 +14,8 @@ import logging.config
 import django
 django.setup()
 
-from pdata_app.models import DataRequest, Institute
-from pdata_app.utils.attribute_update import InstitutionIdUpdate
+from pdata_app.models import DataRequest, Institute  # nopep8
+from pdata_app.utils.attribute_update import InstitutionIdUpdate  # nopep8
 
 
 __version__ = '0.1.0b1'

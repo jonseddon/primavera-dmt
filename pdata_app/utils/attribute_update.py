@@ -54,7 +54,7 @@ class SymLinkIsFileError(AttributeUpdateError):
     """
     def __init__(self, filepath):
         message = ("{} was expected to be a symbolic link but isn't.".
-            format(filepath))
+                   format(filepath))
         Exception.__init__(self, message)
 
 
@@ -240,7 +240,8 @@ class DataRequestUpdate(DmtUpdate):
         Update everything.
         """
         if not self.update_file_only:
-            # Default mode of operation. Update the data request and everything.
+            # Default mode of operation. Update the data request and
+            # everything.
             self._find_new_dreq()
             self._check_available()
             self._update_database_attribute()
@@ -339,12 +340,12 @@ class SourceIdUpdate(DataRequestUpdate):
                     'source_id', 'global', 'c', self.new_value, False)
 
         # further_info_url
-        further_info_url = ('https://furtherinfo.es-doc.org/{}.{}.{}.{}.none.{}'.
-                            format(self.datafile.project.short_name,
-                                   self.datafile.institute.short_name,
-                                   self.new_value,
-                                   self.datafile.experiment.short_name,
-                                   self.datafile.rip_code))
+        further_info_url = ('https://furtherinfo.es-doc.org/{}.{}.{}.{}.none.'
+                            '{}'.format(self.datafile.project.short_name,
+                                        self.datafile.institute.short_name,
+                                        self.new_value,
+                                        self.datafile.experiment.short_name,
+                                        self.datafile.rip_code))
         run_ncatted(self.old_directory, self.old_filename,
                     'further_info_url', 'global', 'c', further_info_url, False)
 
@@ -416,8 +417,8 @@ class InstitutionIdUpdate(DataRequestUpdate):
             f'including some limitations, can be found via the '
             f'further_info_url (recorded as a global attribute in this file). '
             f'The data producers and data providers make no warranty, either '
-            f'express or implied, including, but not limited to, warranties of '
-            f'merchantability and fitness for a particular purpose. All '
+            f'express or implied, including, but not limited to, warranties '
+            f'of merchantability and fitness for a particular purpose. All '
             f'liabilities arising from the supply of the information '
             f'(including any liability arising in negligence) are excluded to '
             f'the fullest extent permitted by law.'
@@ -457,7 +458,7 @@ class VariantLabelUpdate(DataRequestUpdate):
                     'variant_label', 'global', 'c', self.new_value, False)
 
         # indexes
-        ripf = re.match('^r(\d+)i(\d+)p(\d+)f(\d+)$', self.new_value)
+        ripf = re.match(r'^r(\d+)i(\d+)p(\d+)f(\d+)$', self.new_value)
         run_ncatted(self.old_directory, self.old_filename,
                     'realization_index', 'global', 's', int(ripf.group(1)),
                     False)
@@ -472,12 +473,12 @@ class VariantLabelUpdate(DataRequestUpdate):
                     False)
 
         # further_info_url
-        further_info_url = ('https://furtherinfo.es-doc.org/{}.{}.{}.{}.none.{}'.
-                            format(self.datafile.project.short_name,
-                                   self.datafile.institute.short_name,
-                                   self.datafile.climate_model.short_name,
-                                   self.datafile.experiment.short_name,
-                                   self.new_value))
+        further_info_url = ('https://furtherinfo.es-doc.org/{}.{}.{}.{}.none.'
+                            '{}'.format(self.datafile.project.short_name,
+                                        self.datafile.institute.short_name,
+                                        self.datafile.climate_model.short_name,
+                                        self.datafile.experiment.short_name,
+                                        self.new_value))
         run_ncatted(self.old_directory, self.old_filename,
                     'further_info_url', 'global', 'c', further_info_url, False)
 
@@ -503,7 +504,8 @@ class VarNameToOutNameUpdate(DmtUpdate):
             raise ValueError(f'File {self.datafile.name} out_name is not '
                              f'defined.')
         if not self.update_file_only:
-            expected_file_start = self.datafile.variable_request.cmor_name + '_'
+            expected_file_start = (self.datafile.variable_request.cmor_name +
+                                   '_')
             if not self.datafile.name.startswith(expected_file_start):
                 raise ValueError(f'File {self.datafile.name} does not start '
                                  f'with {expected_file_start}')
@@ -513,7 +515,8 @@ class VarNameToOutNameUpdate(DmtUpdate):
         Update everything.
         """
         if not self.update_file_only:
-            # Default mode of operation. Update the data request and everything.
+            # Default mode of operation. Update the data request and
+            # everything.
             self._check_available()
             self._update_file_attribute()
             self._construct_filename()
