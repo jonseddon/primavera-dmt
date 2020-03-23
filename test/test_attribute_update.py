@@ -1,7 +1,11 @@
 """
 test_attribute_update.py
 
-Test of pdata_app/utils/attribute_update.py
+Test of pdata_app/utils/attribute_update.py.
+
+The tests for SourceIdUpdate are comprehensive and exercise all aspects of the
+base class. The tests for other classes only test the actions that are unique
+to those classes.
 """
 try:
     from unittest import mock
@@ -11,17 +15,18 @@ except ImportError:
 import django
 django.setup()
 
-from django.test import TestCase
+from django.test import TestCase  # nopep8
 
-from pdata_app.models import Checksum, DataFile
-from pdata_app.tests.common import make_example_files
+from pdata_app.models import Checksum, DataFile, Institute  # nopep8
+from pdata_app.tests.common import make_example_files  # nopep8
 
-from pdata_app.utils.attribute_update import (SourceIdUpdate,
+from pdata_app.utils.attribute_update import (InstitutionIdUpdate,
+                                              SourceIdUpdate,
                                               VariantLabelUpdate,
                                               VarNameToOutNameUpdate,
                                               FileOfflineError,
-                                              FileNotOnDiskError)
-import pdata_app.utils.attribute_update
+                                              FileNotOnDiskError)  # nopep8
+import pdata_app.utils.attribute_update  # nopep8
 
 
 class TestSourceIdUpdate(TestCase):
@@ -34,7 +39,7 @@ class TestSourceIdUpdate(TestCase):
         self.desired_source_id = 'better-model'
 
         mock.patch.object(pdata_app.utils.attribute_update, 'BASE_OUTPUT_DIR',
-                          return_value = '/gws/nopw/j04/primavera5/stream1')
+                          return_value='/gws/nopw/j04/primavera5/stream1')
 
         patch = mock.patch('pdata_app.utils.common.run_command')
         self.mock_run_cmd = patch.start()
@@ -135,7 +140,9 @@ class TestSourceIdUpdate(TestCase):
     @mock.patch('pdata_app.utils.attribute_update.DmtUpdate._rename_file')
     @mock.patch('pdata_app.utils.attribute_update.DmtUpdate._update_checksum')
     def test_move_dreq(self, mock_checksum, mock_rename, mock_available):
-        df = DataFile.objects.get(name='var1_table_model_expt_varlab_gn_1-2.nc')
+        df = DataFile.objects.get(
+            name='var1_table_model_expt_varlab_gn_1-2.nc'
+        )
         self.assertEqual(df.data_request.climate_model.short_name, 't')
         updater = SourceIdUpdate(self.test_file, self.desired_source_id)
         updater.update()
@@ -151,7 +158,9 @@ class TestSourceIdUpdate(TestCase):
                       mock_available):
         mock_size.return_value = 256
         mock_adler.return_value = '9876543210'
-        df = DataFile.objects.get(name='var1_table_model_expt_varlab_gn_1-2.nc')
+        df = DataFile.objects.get(
+            name='var1_table_model_expt_varlab_gn_1-2.nc'
+        )
         self.assertEqual(df.data_request.climate_model.short_name, 't')
         updater = SourceIdUpdate(self.test_file, self.desired_source_id)
         updater.update()
@@ -269,6 +278,120 @@ class TestSourceIdUpdate(TestCase):
         mock_symlink.assert_not_called()
 
 
+class TestInstitutionIdUpdate(TestCase):
+    """Test scripts.attribute_update.InstitutionIdUpdate"""
+    def setUp(self):
+        make_example_files(self)
+        self.test_file = DataFile.objects.get(name='test1')
+        _make_files_realistic()
+        self.test_file.refresh_from_db()
+        self.desired_institution_id = 'NERC'
+        inst = Institute.objects.create(short_name=self.desired_institution_id,
+                                        full_name='NERC')
+        self.dreq1.id = None
+        self.dreq1.institute = inst
+        self.dreq1.save()
+
+        patch = mock.patch('pdata_app.utils.common.run_command')
+        self.mock_run_cmd = patch.start()
+        self.addCleanup(patch.stop)
+
+    @mock.patch('pdata_app.utils.attribute_update.DmtUpdate._check_available')
+    @mock.patch('pdata_app.utils.attribute_update.DmtUpdate._rename_file')
+    @mock.patch('pdata_app.utils.attribute_update.DmtUpdate._update_checksum')
+    def test_variant_label_updated(self, mock_checksum, mock_rename,
+                                   mock_available):
+        updater = InstitutionIdUpdate(self.test_file,
+                                      self.desired_institution_id)
+        updater.update()
+        self.test_file.refresh_from_db()
+        self.assertEqual(self.test_file.institute.short_name,
+                         self.desired_institution_id)
+
+    @mock.patch('pdata_app.utils.attribute_update.DmtUpdate._check_available')
+    @mock.patch('pdata_app.utils.attribute_update.DmtUpdate._rename_file')
+    @mock.patch('pdata_app.utils.attribute_update.DmtUpdate._update_checksum')
+    def test_filename_not_changed(self, mock_checksum, mock_rename,
+                                  mock_available):
+        updater = InstitutionIdUpdate(self.test_file,
+                                      self.desired_institution_id)
+        updater.update()
+        self.test_file.refresh_from_db()
+        desired_filename = 'var1_Amon_t_t_r1i1p1_gn_1950-1960.nc'
+        self.assertEqual(self.test_file.name, desired_filename)
+
+    @mock.patch('pdata_app.utils.attribute_update.DmtUpdate._check_available')
+    @mock.patch('pdata_app.utils.attribute_update.DmtUpdate._rename_file')
+    @mock.patch('pdata_app.utils.attribute_update.DmtUpdate._update_checksum')
+    def test_directory_updated(self, mock_checksum, mock_rename,
+                               mock_available):
+        updater = InstitutionIdUpdate(self.test_file,
+                                      self.desired_institution_id)
+        updater.update()
+        self.test_file.refresh_from_db()
+        desired_dir = ('/gws/nopw/j04/primavera9/stream1/t/'
+                       'HighResMIP/NERC/t/t/r1i1p1/Amon/var1/gn/v12345678')
+        self.assertEqual(self.test_file.directory, desired_dir)
+
+    @mock.patch('pdata_app.utils.attribute_update.DmtUpdate._check_available')
+    @mock.patch('pdata_app.utils.attribute_update.DmtUpdate._rename_file')
+    @mock.patch('pdata_app.utils.attribute_update.DmtUpdate._update_checksum')
+    def test_move_dreq(self, mock_checksum, mock_rename,
+                       mock_available):
+        df = DataFile.objects.get(
+            name='var1_table_model_expt_varlab_gn_1-2.nc'
+        )
+        self.assertEqual(df.data_request.institute.short_name, 'MOHC')
+        updater = InstitutionIdUpdate(self.test_file,
+                                      self.desired_institution_id)
+        updater.update()
+        df.refresh_from_db()
+        self.assertEqual(df.data_request.institute.short_name, 'NERC')
+
+    @mock.patch('pdata_app.utils.attribute_update.DmtUpdate._check_available')
+    @mock.patch('pdata_app.utils.attribute_update.DmtUpdate._rename_file')
+    @mock.patch('pdata_app.utils.attribute_update.DmtUpdate._update_checksum')
+    def test_update_attributes(self, mock_checksum, mock_rename,
+                               mock_available):
+        updater = InstitutionIdUpdate(self.test_file,
+                                      self.desired_institution_id)
+        updater.update()
+        calls = [
+            mock.call("ncatted -a institution_id,global,o,c,'NERC' "
+                      "/gws/nopw/j04/primavera9/stream1/path/"
+                      "var1_table_model_expt_varlab_gn_1-2.nc"),
+            mock.call("ncatted -h -a institution,global,o,c,"
+                      "'Natural Environment Research Council, STFC-RAL, "
+                      "Harwell, Oxford, OX11 0QX, UK' "
+                      "/gws/nopw/j04/primavera9/stream1/path/"
+                      "var1_table_model_expt_varlab_gn_1-2.nc"),
+            mock.call("ncatted -h -a further_info_url,global,o,c,"
+                      "'https://furtherinfo.es-doc.org/t.NERC.t.t.none."
+                      "r1i1p1' /gws/nopw/j04/primavera9/stream1/path/"
+                      "var1_table_model_expt_varlab_gn_1-2.nc"),
+            mock.call("ncatted -h -a license,global,o,c,"
+                      "'CMIP6 model data produced by NERC is licensed under a "
+                      "Creative Commons Attribution-ShareAlike 4.0 "
+                      "International License (https://creativecommons.org/"
+                      "licenses). Consult https://pcmdi.llnl.gov/CMIP6/"
+                      "TermsOfUse for terms of use governing CMIP6 output, "
+                      "including citation requirements and proper "
+                      "acknowledgment. Further information about this data, "
+                      "including some limitations, can be found via the "
+                      "further_info_url (recorded as a global attribute in "
+                      "this file). The data producers and data providers make "
+                      "no warranty, either express or implied, including, but "
+                      "not limited to, warranties of merchantability and "
+                      "fitness for a particular purpose. All liabilities "
+                      "arising from the supply of the information (including "
+                      "any liability arising in negligence) are excluded to "
+                      "the fullest extent permitted by law.' "
+                      "/gws/nopw/j04/primavera9/stream1/path/"
+                      "var1_table_model_expt_varlab_gn_1-2.nc"),
+        ]
+        self.mock_run_cmd.assert_has_calls(calls)
+
+
 class TestVariantLabelUpdate(TestCase):
     """Test scripts.attribute_update.VariantLabelUpdate"""
     def setUp(self):
@@ -287,7 +410,8 @@ class TestVariantLabelUpdate(TestCase):
     @mock.patch('pdata_app.utils.attribute_update.DmtUpdate._update_checksum')
     def test_variant_label_updated(self, mock_checksum, mock_rename,
                                    mock_available):
-        updater = VariantLabelUpdate(self.test_file, self.desired_variant_label)
+        updater = VariantLabelUpdate(self.test_file,
+                                     self.desired_variant_label)
         updater.update()
         self.test_file.refresh_from_db()
         self.assertEqual(self.test_file.rip_code, self.desired_variant_label)
@@ -297,7 +421,8 @@ class TestVariantLabelUpdate(TestCase):
     @mock.patch('pdata_app.utils.attribute_update.DmtUpdate._update_checksum')
     def test_filename_updated(self, mock_checksum, mock_rename,
                               mock_available):
-        updater = VariantLabelUpdate(self.test_file, self.desired_variant_label)
+        updater = VariantLabelUpdate(self.test_file,
+                                     self.desired_variant_label)
         updater.update()
         self.test_file.refresh_from_db()
         desired_filename = 'var1_Amon_t_t_r1i2p3f4_gn_1950-1960.nc'
@@ -308,7 +433,8 @@ class TestVariantLabelUpdate(TestCase):
     @mock.patch('pdata_app.utils.attribute_update.DmtUpdate._update_checksum')
     def test_directory_updated(self, mock_checksum, mock_rename,
                                mock_available):
-        updater = VariantLabelUpdate(self.test_file, self.desired_variant_label)
+        updater = VariantLabelUpdate(self.test_file,
+                                     self.desired_variant_label)
         updater.update()
         self.test_file.refresh_from_db()
         desired_dir = ('/gws/nopw/j04/primavera9/stream1/t/'
@@ -320,9 +446,12 @@ class TestVariantLabelUpdate(TestCase):
     @mock.patch('pdata_app.utils.attribute_update.DmtUpdate._update_checksum')
     def test_move_dreq(self, mock_checksum, mock_rename,
                        mock_available):
-        df = DataFile.objects.get(name='var1_table_model_expt_varlab_gn_1-2.nc')
+        df = DataFile.objects.get(
+            name='var1_table_model_expt_varlab_gn_1-2.nc'
+        )
         self.assertEqual(df.data_request.rip_code, 'r1i1p1f1')
-        updater = VariantLabelUpdate(self.test_file, self.desired_variant_label)
+        updater = VariantLabelUpdate(self.test_file,
+                                     self.desired_variant_label)
         updater.update()
         df.refresh_from_db()
         self.assertEqual(df.data_request.rip_code, 'r1i2p3f4')
@@ -332,7 +461,8 @@ class TestVariantLabelUpdate(TestCase):
     @mock.patch('pdata_app.utils.attribute_update.DmtUpdate._update_checksum')
     def test_update_attributes(self, mock_checksum, mock_rename,
                                mock_available):
-        updater = VariantLabelUpdate(self.test_file, self.desired_variant_label)
+        updater = VariantLabelUpdate(self.test_file,
+                                     self.desired_variant_label)
         updater.update()
         calls = [
             mock.call("ncatted -a variant_label,global,o,c,'r1i2p3f4' "
