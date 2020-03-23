@@ -6,8 +6,6 @@ ESGF AttributeUpdate
 Called from a Rose suite to update the institution_id in HadGEM3-GC31-HH
 files. Coped from update_dreqs_0181.py
 """
-from __future__ import (unicode_literals, division, absolute_import,
-                        print_function)
 import argparse
 import logging.config
 

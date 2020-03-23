@@ -2,7 +2,6 @@
 attribute_update.py - classes to update the values of files' attributes and
 keep the files, directory structure and DMT consistent.
 """
-from __future__ import unicode_literals, division, absolute_import
 from abc import ABCMeta, abstractmethod
 import logging
 import os
