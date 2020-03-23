@@ -354,16 +354,16 @@ class TestInstitutionIdUpdate(TestCase):
             mock.call("ncatted -a institution_id,global,o,c,'NERC' "
                       "/gws/nopw/j04/primavera9/stream1/path/"
                       "var1_table_model_expt_varlab_gn_1-2.nc"),
-            mock.call("ncatted -a institution,global,o,c,"
+            mock.call("ncatted -h -a institution,global,o,c,"
                       "'Natural Environment Research Council, STFC-RAL, "
                       "Harwell, Oxford, OX11 0QX, UK' "
                       "/gws/nopw/j04/primavera9/stream1/path/"
                       "var1_table_model_expt_varlab_gn_1-2.nc"),
-            mock.call("ncatted -a further_info_url,global,o,c,"
+            mock.call("ncatted -h -a further_info_url,global,o,c,"
                       "'https://furtherinfo.es-doc.org/t.NERC.t.t.none."
                       "r1i1p1' /gws/nopw/j04/primavera9/stream1/path/"
                       "var1_table_model_expt_varlab_gn_1-2.nc"),
-            mock.call("ncatted -a license,global,o,c,"
+            mock.call("ncatted -h -a license,global,o,c,"
                       "'CMIP6 model data produced by NERC is licensed under a "
                       "Creative Commons Attribution-ShareAlike 4.0 "
                       "International License (https://creativecommons.org/"

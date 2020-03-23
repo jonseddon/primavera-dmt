@@ -392,7 +392,7 @@ class InstitutionIdUpdate(DataRequestUpdate):
         }
         inst = new_insts[self.new_value]
         run_ncatted(self.old_directory, self.old_filename,
-                    'institution', 'global', 'c', inst, False)
+                    'institution', 'global', 'c', inst)
 
         # further_info_url
         further_info_url = (
@@ -403,8 +403,7 @@ class InstitutionIdUpdate(DataRequestUpdate):
                    self.datafile.experiment.short_name,
                    self.datafile.rip_code))
         run_ncatted(self.old_directory, self.old_filename,
-                    'further_info_url', 'global', 'c', further_info_url,
-                    False)
+                    'further_info_url', 'global', 'c', further_info_url)
 
         # license
         license_txt = (
@@ -424,7 +423,7 @@ class InstitutionIdUpdate(DataRequestUpdate):
             f'the fullest extent permitted by law.'
         )
         run_ncatted(self.old_directory, self.old_filename,
-                    'license', 'global', 'c', license_txt, False)
+                    'license', 'global', 'c', license_txt)
 
 
 class VariantLabelUpdate(DataRequestUpdate):
