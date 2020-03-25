@@ -28,7 +28,7 @@ def _remove_hh_dreq(dreq):
     then remove any replaced files and finally delete the data request.
     """
     if dreq.datafile_set.count() != 0:
-        logger.error(f'Data request {dreq} has files associated with it.')
+        logger.error('Data request %s has files associated with it.', dreq)
     else:
         dreq.replacedfile_set.all().delete()
         dreq.delete()
@@ -42,7 +42,7 @@ def parse_args():
     parser.add_argument('-l', '--log-level',
                         help='set logging level (default: %(default)s)',
                         choices=['debug', 'info', 'warning', 'error'],
-                        default='warning')
+                        default='info')
     parser.add_argument('--version', action='version',
                         version='%(prog)s {}'.format(__version__))
     args = parser.parse_args()
@@ -63,6 +63,8 @@ def main():
     )
 
     dreqs = (hist_mon_day)
+
+    logger.info('%s data requests found', dreqs.count())
 
     for dreq in dreqs:
         _remove_hh_dreq(dreq)
