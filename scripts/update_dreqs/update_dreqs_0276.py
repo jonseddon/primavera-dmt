@@ -75,7 +75,8 @@ def main(args):
                                              construct_drs_path(db_file),
                                              db_file.name)
                 try:
-                    os.remove(sym_link_path)
+                    if os.path.exists(sym_link_path):
+                        os.remove(sym_link_path)
                 except OSError:
                     logger.error('Unable to delete sym link %s', sym_link_path)
 
