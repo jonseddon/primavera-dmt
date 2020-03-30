@@ -117,6 +117,10 @@ def scan_file_structure(directory):
                 db_file.directory = actual_dir
                 db_file.save()
 
+            if db_file.directory is None:
+                db_file.directory = actual_dir
+                db_file.save()
+
             if db_file.directory != actual_dir:
                 if db_file.directory.startswith(CEDA_BASE):
                     # This file is believed to be in the archive
