@@ -11,8 +11,6 @@ online flag and directory.
 2. it scans through the specified directory structure and checks that each
 netCDF file found is marked as online and has the correct directory.
 """
-from __future__ import unicode_literals, division, absolute_import
-
 import argparse
 import logging.config
 import os
@@ -21,9 +19,9 @@ import sys
 import django
 django.setup()
 
-from pdata_app.models import DataFile, Settings
+from pdata_app.models import DataFile, Settings  # nopep8
 from pdata_app.utils.common import (ilist_files, construct_drs_path,
-                                    is_same_gws)
+                                    is_same_gws)  # nopep8
 
 DEFAULT_LOG_LEVEL = logging.WARNING
 DEFAULT_LOG_FORMAT = '%(levelname)s: %(message)s'
@@ -35,6 +33,7 @@ BASE_OUTPUT_DIR = Settings.get_solo().base_output_dir
 
 
 CEDA_BASE = '/badc/cmip6/data'
+
 
 def scan_database():
     """
@@ -54,7 +53,7 @@ def scan_database():
 
         if not is_same_gws(data_file.directory, BASE_OUTPUT_DIR):
             sym_link_dir = os.path.join(BASE_OUTPUT_DIR,
-                                         construct_drs_path(data_file))
+                                        construct_drs_path(data_file))
             sym_link_path = os.path.join(sym_link_dir,
                                          data_file.name)
             if not os.path.exists(sym_link_path):
@@ -107,24 +106,27 @@ def scan_file_structure(directory):
                         db_file.save()
                     continue
 
+            actual_path = os.path.realpath(nc_file)
+            actual_dir = os.path.dirname(actual_path)
+
             db_file.refresh_from_db()
             if not db_file.online:
                 logger.warning('File status changed to online: {}'.
                                format(nc_file))
                 db_file.online = True
+                db_file.directory = actual_dir
                 db_file.save()
 
-            actual_path = os.path.realpath(nc_file)
-            actual_dir = os.path.dirname(actual_path)
             if db_file.directory != actual_dir:
                 if db_file.directory.startswith(CEDA_BASE):
                     # This file is believed to be in the archive
                     logger.warning('File {} is in the CEDA archive according '
                                    'to the database.'.format(nc_file))
                 else:
-                    logger.warning('Directory for file {} changed from {} to {}'.
-                                   format(nc_file_name, db_file.directory,
-                                          actual_dir))
+                    logger.warning('Directory for file {} changed from {} '
+                                   'to {}'.format(nc_file_name,
+                                                  db_file.directory,
+                                                  actual_dir))
                     db_file.directory = actual_dir
                     db_file.save()
 
@@ -138,13 +140,15 @@ def parse_args():
     parser = argparse.ArgumentParser(description="Scan the database and file "
                                                  "structure to make sure that "
                                                  "the two are synchronised.")
-    parser.add_argument('-d', '--no-database', help='Do not scan the database.',
+    parser.add_argument('-d', '--no-database', help='Do not scan the '
+                                                    'database.',
                         action='store_true')
     parser.add_argument('-f', '--no-file-structure', help='Do not scan the '
                                                           'file structure.',
                         action='store_true')
     parser.add_argument('-t', '--top-level', help='The top-level directory to '
-                                                  'scan (default: %(default)s)',
+                                                  'scan (default: '
+                                                  '%(default)s)',
                         default=BASE_OUTPUT_DIR)
     parser.add_argument('-l', '--log-level', help='set logging level to one '
                                                   'of debug, info, warn (the '
@@ -182,7 +186,8 @@ if __name__ == '__main__':
             log_level = getattr(logging, cmd_args.log_level.upper())
         except AttributeError:
             logger.setLevel(logging.WARNING)
-            logger.error('log-level must be one of: debug, info, warn or error')
+            logger.error('log-level must be one of: debug, info, warn or '
+                         'error')
             sys.exit(1)
     else:
         log_level = DEFAULT_LOG_LEVEL
