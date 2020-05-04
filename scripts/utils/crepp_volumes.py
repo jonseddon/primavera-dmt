@@ -17,15 +17,45 @@ from apiclient.discovery import build
 from httplib2 import Http
 from oauth2client import file, client, tools
 
-
 import django
 django.setup()
-from pdata_app.models import (DataRequest, Institute, Project, Settings,
-                              ClimateModel, Experiment, VariableRequest)  # NOPEP8
-from pdata_app.utils.dbapi import match_one, get_or_create  # NOPEP8
+from django.db.models import Sum  # NOPEP8
+from pdata_app.models import DataRequest, DataFile  # NOPEP8
+
 
 # The ID of the Google Speadsheet (taken from the sheet's URL)
 SPREADSHEET_ID = '1fKslvfeXiKcUYpis4BK3z2ceHzF6cO_ivf5FmjfvBWw'
+
+LAST_LINE = 673
+
+
+def calc_item_size(path):
+    """
+    Calculate the size in bytes of all datasets below the specified `path`.
+
+    :param str path: the path to the item
+    :returns: the size in bytes
+    """
+    filter_terms = {
+        'datafile__isnull': False,
+        'project__short_name': 'CMIP6'
+    }
+    components = path.split('/')
+    index_to_str = {
+        0: 'climate_model__short_name',
+        1: 'experiment__short_name',
+        2: 'rip_code',
+        3: 'variable_request__table_name',
+        4: 'variable_request__cmor_name'
+    }
+    for index, cmpn in enumerate(components[7:]):
+        filter_terms[index_to_str[index]] = cmpn
+
+    data_reqs = DataRequest.objects.filter(**filter_terms).distinct()
+    total_file_size = (DataFile.objects.filter(data_request__in=data_reqs).
+                       distinct().aggregate(Sum('size'))['size__sum'])
+
+    return total_file_size
 
 
 def main():
@@ -38,35 +68,40 @@ def main():
     if not creds or creds.invalid:
         flow = client.flow_from_clientsecrets('credentials.json', scopes)
         creds = tools.run_flow(flow, store)
-    service = build('sheets', 'v4', http=creds.authorize(Http()))
 
-    # Loop through each sheet
-    range_name = 'HighResMIP!A2:P'
-    result = service.spreadsheets().values().get(
-        spreadsheetId=SPREADSHEET_ID, range=range_name).execute()
-    values = result.get('values', [])
+    for row_index in range(2, LAST_LINE + 1):
+        try:
+            range_name = f'HighResMIP!{row_index}:{row_index}'
+            service = build('sheets', 'v4', http=creds.authorize(Http()))
+            result = service.spreadsheets().values().get(
+                spreadsheetId=SPREADSHEET_ID, range=range_name).execute()
+            values = result.get('values', [])
 
-    if not values:
-        print('No data found.')
-    else:
-        for row_index, row in enumerate(values):
-            # Print columns A and I, which correspond to indices 0 and 8.
-            print('%s, %s, %s' % (row[0], row[8], len(row)))
-            new_column_index = 15
-            num_blanks_required = new_column_index + 1 - len(row)
-            for blank_num in range(num_blanks_required):
-                row.append('')
-            row[15] = row[8]
-            # if row_index > 10:
-            #     break
+            if not values:
+                print(f'No data found for row_index {row_index}.')
+            else:
+                # We're only getting one row, but the API's returning a 2D set
+                # and so we need to loop over this to get each row
+                for row in values:
+                    # Add extra columns if required so that we can add an
+                    # item later
+                    new_column_index = 15
+                    num_blanks_required = new_column_index + 1 - len(row)
+                    for blank_num in range(num_blanks_required):
+                        row.append('')
+                    item_size = calc_item_size(row[0])
+                    row[15] = item_size / 1024**4
 
-    body = {
-        'values': values
-    }
-    result = service.spreadsheets().values().update(
-        spreadsheetId=SPREADSHEET_ID, range=range_name,
-        valueInputOption='USER_ENTERED', body=body).execute()
-    print('{0} cells updated.'.format(result.get('updatedCells')))
+                body = {
+                    'values': values
+                }
+                result = service.spreadsheets().values().update(
+                    spreadsheetId=SPREADSHEET_ID, range=range_name,
+                    valueInputOption='USER_ENTERED', body=body).execute()
+        except Exception:
+            print(f'Exception on line {row_index}')
+        # if row_index > 10:
+        #     break
 
 
 if __name__ == '__main__':
