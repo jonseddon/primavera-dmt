@@ -21,6 +21,7 @@ import django
 django.setup()
 from django.db.models import Sum  # NOPEP8
 from pdata_app.models import DataRequest, DataFile  # NOPEP8
+from pdata_app.utils.common import filter_hadgem_stream2
 
 
 # The ID of the Google Speadsheet (taken from the sheet's URL)
@@ -48,10 +49,34 @@ def calc_item_size(path):
         3: 'variable_request__table_name',
         4: 'variable_request__cmor_name'
     }
-    for index, cmpn in enumerate(components[7:]):
-        filter_terms[index_to_str[index]] = cmpn
+    for index, cmpnt in enumerate(components[7:]):
+        filter_terms[index_to_str[index]] = cmpnt
 
+    # Handle the EC-Earth AMIP special cases
+    if (components[7] == 'EC-Earth3P' and
+        components[8] == 'highresSST-present'):
+        print(f'Special case: {path}')
+        del filter_terms['climate_model__short_name']
+        filter_terms['climate_model__short_name__in'] = ['EC-Earth3P',
+                                                         'EC-Earth3']
+    if (components[7] == 'EC-Earth3P-HR' and
+        components[8] == 'highresSST-present'):
+        print(f'Special case: {path}')
+        del filter_terms['climate_model__short_name']
+        filter_terms['climate_model__short_name__in'] = ['EC-Earth3P-HR',
+                                                         'EC-Earth3-HR']
+
+    # Find the data requests
     data_reqs = DataRequest.objects.filter(**filter_terms).distinct()
+
+    # Handle HadGEM special cases
+    if components[7].startswith('HadGEM'):
+        print(f'Special case: {path}')
+        stream1 = data_reqs.filter(rip_code='r1i1p1f1')
+        stream2 = data_reqs.exclude(rip_code='r1i1p1f1')
+        data_reqs = stream1 | filter_hadgem_stream2(stream2)
+
+    # Calculate the volumes
     total_file_size = (DataFile.objects.filter(data_request__in=data_reqs).
                        distinct().aggregate(Sum('size'))['size__sum'])
 
@@ -81,7 +106,7 @@ def main():
                 print(f'No data found for row_index {row_index}.')
             else:
                 # We're only getting one row, but the API's returning a 2D set
-                # and so we need to loop over this to get each row
+                # and so we still loop over this to get each row
                 for row in values:
                     # Add extra columns if required so that we can add an
                     # item later
@@ -100,8 +125,6 @@ def main():
                     valueInputOption='USER_ENTERED', body=body).execute()
         except Exception:
             print(f'Exception on line {row_index}')
-        # if row_index > 10:
-        #     break
 
 
 if __name__ == '__main__':
