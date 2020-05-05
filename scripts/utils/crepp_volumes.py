@@ -25,7 +25,7 @@ from pdata_app.utils.common import filter_hadgem_stream2
 
 
 # The ID of the Google Speadsheet (taken from the sheet's URL)
-SPREADSHEET_ID = '1fKslvfeXiKcUYpis4BK3z2ceHzF6cO_ivf5FmjfvBWw'
+SPREADSHEET_ID = '19qMEeZMRo-IeHnz3Er0stq_0DVZLiNXfXwMmRTsMC0A'
 
 LAST_LINE = 673
 
@@ -55,13 +55,11 @@ def calc_item_size(path):
     # Handle the EC-Earth AMIP special cases
     if (components[7] == 'EC-Earth3P' and
         components[8] == 'highresSST-present'):
-        print(f'Special case: {path}')
         del filter_terms['climate_model__short_name']
         filter_terms['climate_model__short_name__in'] = ['EC-Earth3P',
                                                          'EC-Earth3']
     if (components[7] == 'EC-Earth3P-HR' and
         components[8] == 'highresSST-present'):
-        print(f'Special case: {path}')
         del filter_terms['climate_model__short_name']
         filter_terms['climate_model__short_name__in'] = ['EC-Earth3P-HR',
                                                          'EC-Earth3-HR']
@@ -71,7 +69,6 @@ def calc_item_size(path):
 
     # Handle HadGEM special cases
     if components[7].startswith('HadGEM'):
-        print(f'Special case: {path}')
         stream1 = data_reqs.filter(rip_code='r1i1p1f1')
         stream2 = data_reqs.exclude(rip_code='r1i1p1f1')
         data_reqs = stream1 | filter_hadgem_stream2(stream2)
