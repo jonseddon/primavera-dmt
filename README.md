@@ -13,6 +13,14 @@ PRIMAVERA Data Management Tool
     django-tables2  
     iris  
     ```  
+   
+    For example in Conda:
+    ```
+    conda create -n primavera-dmt -c conda-forge python=3.6 django django-filter iris
+    source activate primavera-dmt
+    pip install django-solo django-tables2
+    ```
+   
 2. Create local settings:    
    ```  
    $ cp pdata_site/settings_local.py.tmpl pdata_site/settings_local.py  
