@@ -51,7 +51,7 @@ PRIMAVERA Data Management Tool
    ```
    
 5. View the website in a local development server:
-   In `pdata_site/settings.py` enable debug line by changing line 19 to:
+   In `pdata_site/settings.py` enable debug mode by changing line 19 to:
    ```
    DEBUG = True
    ```
@@ -59,4 +59,4 @@ PRIMAVERA Data Management Tool
    ```
    $ python manage.py runserver
    ```
-   Point your browser at `http://localhost:8000/`.
+   Point your browser at `http://localhost:8000/` to view the site.
