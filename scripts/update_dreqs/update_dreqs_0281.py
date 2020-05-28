@@ -1,8 +1,8 @@
 #!/usr/bin/env python
 """
-update_dreqs_0280.py
+update_dreqs_0281.py
 
-This file creates data requests for a few more variables from MOHC -MH
+This file creates data requests for one more variable from MOHC -MH
 hist-1950, control-1950 and highres-future.
 """
 import argparse
@@ -46,7 +46,7 @@ def main(args):
 
     vars = [
         {'variable_request__table_name': 'day',
-         'variable_request__cmor_name__in': ['ua', 'va', 'wap']}
+         'variable_request__cmor_name__in': ['ta']}
     ]
 
     expts = ['hist-1950', 'control-1950', 'highres-future']
