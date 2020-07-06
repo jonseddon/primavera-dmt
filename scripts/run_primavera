@@ -19,10 +19,7 @@
 #   Any additional options or arguments are passed through as-is to the specified
 #   processing application.
 
-# get the directory that this script is run from
-DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
-# get the directory that the DMT is therefore from
-DMT_DIR=$(readlink -f "$DIR"/..)
+DMT_DIR=~jseddon/primavera/LIVE-prima-dm
 VAL_DIR=~jseddon/primavera/primavera-val
 
 # Remove the following environment variable on LOTUS that breaks conda
@@ -39,7 +36,7 @@ export PATH=$PATH:/gws/nopw/j04/primavera1/tools/adler32
 PYTHON_SCRIPT=$1
 shift
 
-"$PYTHON_INTERP" "$DIR/$PYTHON_SCRIPT" "$@"
+"$PYTHON_INTERP" "$DMT_DIR/scripts/$PYTHON_SCRIPT" "$@"
 
 exit_code=$?
 
@@ -50,7 +47,7 @@ if [ "$PYTHON_SCRIPT" != "send_emails.py" ] && \
 [ "$PYTHON_SCRIPT" != "auto_validate.py" ]  && \
 [ "$PYTHON_SCRIPT" != "utils/esgf_timeseries.py" ]; then
     echo "$PYTHON_SCRIPT complete. Sending email."
-    "$PYTHON_INTERP" "$DIR/create_email.py" "[PRIMAVERA] $LSB_JOBID finished" "$LSB_JOBNAME has finished"
+    "$PYTHON_INTERP" "$DMT_DIR/scripts/create_email.py" "[PRIMAVERA] $LSB_JOBID finished" "$LSB_JOBNAME has finished"
 fi
 
 exit "$exit_code"
