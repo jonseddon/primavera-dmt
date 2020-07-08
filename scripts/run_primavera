@@ -1,9 +1,4 @@
 #!/bin/bash -l
-#BSUB -o /home/users/jseddon/lotus/%J.o
-#BSUB -e /home/users/jseddon/lotus/%J.e
-#BSUB -q short-serial
-#BSUB -W 01:00
-#
 # SYNOPSIS
 #
 #   run_primavera <python_script.py> <options>
@@ -26,8 +21,8 @@ VAL_DIR=~jseddon/primavera/primavera-val
 unset LSB_ECHKPNT_RSH_CMD
 
 export PATH=/home/users/jseddon/software/miniconda3/bin:$PATH
-. activate py3-6
-export PYTHON_INTERP=/home/users/jseddon/software/miniconda3/envs/py3-6/bin/python
+. activate py3-6_iris2-3_nco
+export PYTHON_INTERP=/home/users/jseddon/software/miniconda3/envs/py3-6_iris2-3_nco/bin/python
 
 export DJANGO_SETTINGS_MODULE=pdata_site.settings
 export PYTHONPATH=$DMT_DIR:$VAL_DIR:$PYTHONPATH
