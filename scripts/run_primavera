@@ -35,14 +35,18 @@ shift
 
 exit_code=$?
 
-# send an email to indicate completion
+# Send an email to indicate completion
 if [ "$PYTHON_SCRIPT" != "send_emails.py" ] && \
 [ "$PYTHON_SCRIPT" != "create_root_chown_list.py" ] && \
 [ "$PYTHON_SCRIPT" != "split_retrieve_request.py" ] && \
 [ "$PYTHON_SCRIPT" != "auto_validate.py" ]  && \
 [ "$PYTHON_SCRIPT" != "utils/esgf_timeseries.py" ]; then
     echo "$PYTHON_SCRIPT complete. Sending email."
-    "$PYTHON_INTERP" "$DMT_DIR/scripts/create_email.py" "[PRIMAVERA] $LSB_JOBID finished" "$LSB_JOBNAME has finished"
+    "$PYTHON_INTERP" "$DMT_DIR/scripts/create_email.py" "[PRIMAVERA] $SLURM_JOB_ID finished" "$SLURM_JOB_NAME has finished with status $exit_code"
 fi
+
+# Include job details on stdout, which will be logged
+export SACCT_FORMAT=jobname%50,jobid%9,submit,start,timelimit,elapsed,totalcpu,reqcpus%7,ncpus%5,reqmem,maxrss,nodelist%15,state
+sacct -j $SLURM_JOB_ID
 
 exit "$exit_code"
