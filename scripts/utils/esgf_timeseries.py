@@ -158,7 +158,7 @@ def generate_plots(time_series_file, output_image):
     ax.set_ylabel('Volume submitted (TiB)')
     ax.right_ax.set_ylabel('Rate of submission (TiB/day)')
     # Move the legend
-    ax.get_legend().set_bbox_to_anchor((0.4, 0.95))
+    ax.get_legend().set_bbox_to_anchor((0.4, 0.9))
     # Estimate publication rate required
     to_publish = df['Total'][-1] - df['Submitted'][-1]
     prim_end = datetime.datetime(2020, 7, 31, 0, 0)
