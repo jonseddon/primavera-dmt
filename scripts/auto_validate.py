@@ -41,18 +41,18 @@ logger = logging.getLogger(__name__)
 STATUS_TO_PROCESS = STATUS_VALUES['PENDING_PROCESSING']
 ADMIN_USER = Settings.get_solo().contact_user_id
 PARALLEL_SCRIPT = ('/home/users/jseddon/primavera/LIVE-prima-dm/scripts/'
-                   'parallel_primavera')
+                   'run_primavera')
 VALIDATE_SCRIPT = 'validate_data_submission.py'
 MAX_VALIDATE_SCRIPTS = 6
 NUM_PROCS_USE_LOTUS = 4
-LOTUS_OPTIONS = ('-o ~/lotus/%J.o -q par-single -n {} -R "span[hosts=1]" '
-                 '-W 12:00 -R "rusage[mem=98304.0]" -M 98304'.
+LOTUS_OPTIONS = ('-o ~/lotus/%J.out -e ~/lotus/%J.err -p par-single --ntaks={} '
+        '--time=12:00:00 --mem=98304'.
                  format(NUM_PROCS_USE_LOTUS))
 VERSION_STRING = 'v00000000'
 
 # Don't run PrePARE as part of the validation if the following strings
 # are in the submission's dierctory name
-SKIP_PREPARE = ['ECMWF', 'spinup-bsc', 'primWP5', 'DCPP', 'WP5', 'MPI-M']
+SKIP_PREPARE = ['ECMWF', 'spinup-bsc', 'primWP5', 'DCPP', 'WP5', 'MPI-M', 'dcpp']
 
 
 def is_max_jobs_reached(job_name, max_num_jobs):
@@ -124,7 +124,7 @@ def submit_validation(submission_directory):
             prepare_option = '--no-prepare'
 
     cmd_cmpts = [
-        'bsub',
+        'sbatch',
         LOTUS_OPTIONS,
         PARALLEL_SCRIPT,
         VALIDATE_SCRIPT,
