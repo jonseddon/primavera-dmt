@@ -73,7 +73,7 @@ def main(args):
     logger.debug(f'{num_files} affected files found')
 
     for df in affected_files:
-        if not df.directory.startsswith(ARCHIVE_BASE):
+        if not df.directory.startswith(ARCHIVE_BASE):
             logger.error(f'{df.name} not in {ARCHIVE_BASE}')
             continue
         new_dir = os.path.join(BASE_GWS, construct_drs_path(df))
