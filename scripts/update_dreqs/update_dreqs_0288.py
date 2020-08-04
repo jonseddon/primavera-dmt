@@ -79,6 +79,8 @@ def main(args):
         new_dir = os.path.join(BASE_GWS, construct_drs_path(df))
         new_path = os.path.join(new_dir, df.name)
         old_path = os.path.join(df.directory, df.name)
+        if not os.path.exists(new_path):
+            os.makedirs(new_path)
         shutil.copy(old_path, new_path)
         df.directory = new_dir
         df.save()
