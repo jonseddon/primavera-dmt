@@ -12,7 +12,7 @@ from pdata_app.models import DataRequest, DataFile  # NOPEP8
 from pdata_app.utils.common import filter_hadgem_stream2  # NOPEP8
 
 
-FILENAME = 'crepp_prim_volumes.csv'
+FILENAME = 'crepp_prim_volumes_ensembles.csv'
 
 
 def main():
@@ -71,18 +71,21 @@ def main():
 
     unique_expts = (prim_reqs.values_list('institute__short_name',
                                           'climate_model__short_name',
-                                          'experiment__short_name').
+                                          'experiment__short_name',
+                                          'rip_code').
                     distinct().order_by('institute__short_name',
                                         'climate_model__short_name',
-                                        'experiment__short_name'))
+                                        'experiment__short_name',
+                                        'rip_code'))
 
     with open(FILENAME, 'w') as fh:
         fh.write('drs_id, Volume (TB)\n')
-        for inst_name, model_name, expt_name in unique_expts:
+        for inst_name, model_name, expt_name, rip_code in unique_expts:
             dreqs = prim_reqs.filter(
                 institute__short_name=inst_name,
                 climate_model__short_name=model_name,
-                experiment__short_name=expt_name
+                experiment__short_name=expt_name,
+                rip_code=rip_code
             )
             if dreqs:
                 dreq_size = (
@@ -95,7 +98,8 @@ def main():
                     f'{df.activity_id.short_name}.'
                     f'{df.institute.short_name}.'
                     f'{df.climate_model.short_name}.'
-                    f'{df.experiment.short_name}'
+                    f'{df.experiment.short_name}.'
+                    f'{df.rip_code}'
                 )
                 if 'MPI' in drs_id and 'DCPP' in drs_id:
                     drs_id = (drs_id.replace('DCPP', 'primWP5').
