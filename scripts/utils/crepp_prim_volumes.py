@@ -30,7 +30,7 @@ def main():
 
     other_models = DataRequest.objects.filter(
         project__short_name='PRIMAVERA',
-        climate_model__short_name='HadGEM3-GC31-HH',
+        climate_model__short_name='HadGEM3-GC31-HM',
         experiment__short_name__in=stream1_2_expts,
         variable_request__table_name__startswith='Prim',
         datafile__isnull=False
@@ -47,7 +47,7 @@ def main():
 
     hadgem_s2 = filter_hadgem_stream2(DataRequest.objects.filter(
         project__short_name='PRIMAVERA',
-        climate_model__short_name='HadGEM3-GC31-HH',
+        climate_model__short_name='HadGEM3-GC31-HM',
         experiment__short_name__in=stream1_2_expts,
         variable_request__table_name__startswith='Prim',
         climate_model__short_name__startswith='HadeGEM',
@@ -57,7 +57,7 @@ def main():
 
     ec_earth_s1 = DataRequest.objects.filter(
         project__short_name='PRIMAVERA',
-        climate_model__short_name='HadGEM3-GC31-HH',
+        climate_model__short_name='HadGEM3-GC31-HM',
         institute__short_name='EC-Earth-Consortium',
         experiment__short_name__in=coupled_expts,
         rip_code='r1i1p1f1',
@@ -65,7 +65,7 @@ def main():
     ).distinct()
 
     wp5 = DataRequest.objects.filter(
-        climate_model__short_name='HadGEM3-GC31-HH',
+        climate_model__short_name='HadGEM3-GC31-HM',
         experiment__short_name__in=['primWP5-amv-neg', 'primWP5-amv-pos',
                         'dcppc-amv-neg', 'dcppc-amv-pos'],
         datafile__isnull = False
