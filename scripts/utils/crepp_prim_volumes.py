@@ -76,20 +76,23 @@ def main():
     unique_expts = (prim_reqs.values_list('institute__short_name',
                                           'climate_model__short_name',
                                           'experiment__short_name',
-                                          'rip_code').
+                                          'rip_code',
+                                          'variable_request__table_name').
                     distinct().order_by('institute__short_name',
                                         'climate_model__short_name',
                                         'experiment__short_name',
-                                        'rip_code'))
+                                        'rip_code',
+                                        'variable_request__table_name'))
 
     with open(FILENAME, 'w') as fh:
         fh.write('drs_id, Volume (TB)\n')
-        for inst_name, model_name, expt_name, rip_code in unique_expts:
+        for inst_name, model_name, expt_name, rip_code, table_name in unique_expts:
             dreqs = prim_reqs.filter(
                 institute__short_name=inst_name,
                 climate_model__short_name=model_name,
                 experiment__short_name=expt_name,
-                rip_code=rip_code
+                rip_code=rip_code,
+                variable_request__table_name=table_name
             )
             if dreqs:
                 dreq_size = (
@@ -103,7 +106,8 @@ def main():
                     f'{df.institute.short_name}.'
                     f'{df.climate_model.short_name}.'
                     f'{df.experiment.short_name}.'
-                    f'{df.rip_code}'
+                    f'{df.rip_code}.'
+                    f'{df.variable_request.table_name}'
                 )
                 if 'MPI' in drs_id and 'DCPP' in drs_id:
                     drs_id = (drs_id.replace('DCPP', 'primWP5').
