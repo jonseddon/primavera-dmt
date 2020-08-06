@@ -12,7 +12,7 @@ from pdata_app.models import DataRequest, DataFile  # NOPEP8
 from pdata_app.utils.common import filter_hadgem_stream2  # NOPEP8
 
 
-FILENAME = 'crepp_prim_volumes_ensembles_hh.csv'
+FILENAME = 'crepp_prim_volumes_ensembles_hm.csv'
 
 
 def main():
