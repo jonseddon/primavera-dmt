@@ -114,6 +114,11 @@ def main():
                               replace('dcppc', 'primWP5'))
                 if 'NCAS' in drs_id:
                     drs_id = drs_id.replace('NCAS', 'NERC')
+                if 'HadGEM3-GC31-HH' in drs_id:
+                    drs_id = drs_id.replace('NERC.HadGEM3-GC31-HH.control-1950',
+                                            'MOHC.HadGEM3-GC31-HH.control-1950')
+                    drs_id = drs_id.replace('MOHC.HadGEM3-GC31-HH.hist-1950',
+                                            'NERC.HadGEM3-GC31-HH.hist-1950')
                 fh.write(
                     f'{drs_id}, {dreq_size / 1024**4}\n'
                 )
