@@ -72,9 +72,9 @@ def main(args):
     num_files = affected_files.count()
     logger.debug(f'{num_files} affected files found')
 
-    # delete_files(affected_files, '/gws/nopw/j04/primavera5/stream1',
-    #              skip_badc=True)
-    # replace_files(affected_files)
+    delete_files(affected_files, '/gws/nopw/j04/primavera5/stream1',
+                 skip_badc=True)
+    replace_files(affected_files)
 
 
 if __name__ == "__main__":
