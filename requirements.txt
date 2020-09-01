@@ -1,0 +1,11 @@
+Cython
+django==2.2
+django-filter
+django-solo
+django-tables2
+mock
+numpy
+netcdftime
+cf-units
+partial-date-time
+psycopg2
