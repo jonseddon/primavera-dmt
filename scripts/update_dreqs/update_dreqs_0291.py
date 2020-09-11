@@ -66,7 +66,7 @@ def main(args):
                       'end_date': datetime(2015, 1, 1)},
     }
 
-    variant_labels = ['r1i1p2f1']
+    variant_labels = ['r1i1p1f1']
 
     # activity_id
     ActivityId.objects.get(short_name=activity_id)
