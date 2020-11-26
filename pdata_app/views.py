@@ -251,7 +251,7 @@ def view_register(request):
                 'subject_template_name':
                     'pdata_app/register_user_email_subject.html',
                 'request': request,
-                'from_email': 'no-reply@prima-dm.ceda.ac.uk'
+                'from_email': 'no-reply@prima-dm1.jasmin.ac.uk'
             }
             # This form sends the email on save()
             reset_form.save(**opts)
