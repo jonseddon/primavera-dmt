@@ -32,7 +32,7 @@ EMAIL_HOST = 'exchsmtp.stfc.ac.uk'
 EMAIL_PORT = 587
 EMAIL_USE_TLS = True
 
-FROM_ADDRESS = 'no-reply@prima-dm.ceda.ac.uk'
+FROM_ADDRESS = 'no-reply@prima-dm1.jasmin.ac.uk'
 REPLY_TO_ADDRESS = 'jon.seddon@metoffice.gov.uk'
 
 
