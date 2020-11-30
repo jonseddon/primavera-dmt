@@ -1,9 +1,9 @@
 #!/usr/bin/env python
 """
-update_dreqs_0299.py
+update_dreqs_0302.py
 
 Create a retrieval request for data that's required for ESGF publication for 
-CERFACS PRIMAVERA specific.
+EC-Earth PRIMAVERA specific.
 """
 import argparse
 import datetime
@@ -51,32 +51,12 @@ def main(args):
     Main entry point
     """
     start_year = 1948
-    end_year = 2051
-
-    # data_reqs = DataRequest.objects.filter(
-    #     institute__short_name='CNRM-CERFACS',
-    #     experiment__short_name__startswith='highresSST',
-    #     variable_request__table_name__startswith='Prim',
-    #     datafile__isnull=False
-    # ).distinct()
-
-    # data_reqs = DataRequest.objects.filter(
-    #     institute__short_name='CNRM-CERFACS',
-    #     experiment__short_name='hist-1950',
-    #     variable_request__table_name__startswith='Prim',
-    #     datafile__isnull=False
-    # ).distinct()
-
-    # data_reqs = DataRequest.objects.filter(
-    #     institute__short_name='CNRM-CERFACS',
-    #     experiment__short_name='control-1950',
-    #     variable_request__table_name__startswith='Prim',
-    #     datafile__isnull=False
-    # ).distinct()
+    end_year = 2101
 
     data_reqs = DataRequest.objects.filter(
-        institute__short_name='CNRM-CERFACS',
+        institute__short_name='EC-Earth-Consortium',
         experiment__short_name='highres-future',
+        rip_code='r1i1p2f1',
         variable_request__table_name__startswith='Prim',
         datafile__isnull=False
     ).distinct()
