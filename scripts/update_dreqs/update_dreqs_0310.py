@@ -1,20 +1,19 @@
 #!/usr/bin/env python
 """
-update_dreqs_0301.py
+update_dreqs_0310.py
 
-Copy the EC-Earth3P highresSST-present r1i1p1f1 r[ls]u[ts]* data from the
-DRS structure in the archive to a central directory to allow editing.
+Replace the current EC-Earth3P highresSST-present r1i1p1f1 r[ls]u[ts]*
+data so that the edited files can be submitted.
 """
 import argparse
 import logging.config
-import os
-import shutil
 import sys
 
 import django
 django.setup()
-from pdata_app.models import DataRequest  # nopep8
-from pdata_app.utils.common import construct_drs_path  # nopep8
+from pdata_app.models import DataRequest, Settings  # nopep8
+from pdata_app.utils.common import delete_files  # nopep8
+from pdata_app.utils.replace_file import replace_files  # nopep8
 
 __version__ = '0.1.0b1'
 
@@ -23,8 +22,8 @@ DEFAULT_LOG_FORMAT = '%(levelname)s: %(message)s'
 
 logger = logging.getLogger(__name__)
 
-BASE_GWS = ('/gws/nopw/j04/primavera2/upload/EC-Earth-Consortium/'
-            'highresSST-present_upwelling')
+# The top-level directory to write output data to
+BASE_OUTPUT_DIR = Settings.get_solo().base_output_dir
 
 
 def parse_args():
@@ -42,11 +41,11 @@ def parse_args():
     return args
 
 
-def main(args):
+def main():
     """
     Main entry point
     """
-    dreqs = DataRequest.objects.filter(
+    fixable = DataRequest.objects.filter(
         climate_model__short_name__contains='EC-Earth3P',
         experiment__short_name='highresSST-present',
         variable_request__cmor_name__regex='r[ls]u[ts]*',
@@ -54,19 +53,24 @@ def main(args):
         datafile__isnull=False
     ).distinct()
 
-    num_dreqs = dreqs.count()
-    if num_dreqs != 41:
+    broken = DataRequest.objects.filter(
+        climate_model__short_name__contains='EC-Earth3P',
+        experiment__short_name='highresSST-present',
+        variable_request__cmor_name__in=['rsdscs', 'rsuscs'],
+        rip_code='r1i1p1f1',
+        datafile__isnull=False
+    ).distinct()
+
+    dreqs = broken | fixable
+
+    num_dreqs = dreqs.distinct().count()
+    if num_dreqs != 47:
         logger.error(f'{num_dreqs} affected data requests found')
         sys.exit(1)
 
     for dreq in dreqs:
-        for df in dreq.datafile_set.all():
-            new_dir = os.path.join(BASE_GWS, construct_drs_path(df))
-            new_path = os.path.join(new_dir, df.name)
-            old_path = os.path.join(df.directory, df.name)
-            if not os.path.exists(new_dir):
-                os.makedirs(new_dir)
-            shutil.copy(old_path, new_path)
+        delete_files(dreq.datafile_set.all(), BASE_OUTPUT_DIR, skip_badc=True)
+        replace_files(dreq.datafile_set.all())
 
 
 if __name__ == "__main__":
@@ -109,4 +113,4 @@ if __name__ == "__main__":
     })
 
     # run the code
-    main(cmd_args)
+    main()
