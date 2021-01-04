@@ -61,6 +61,7 @@ def main(args):
             variable_request__table_name=dreq_cmpt[0],
             variable_request__cmor_name=dreq_cmpt[1],
         )
+        logger.info(current_dreq)
         new_dreq = DataRequest.objects.get(
             institute__short_name='MPI-M',
             climate_model__short_name='MPIESM-1-2-HR',
