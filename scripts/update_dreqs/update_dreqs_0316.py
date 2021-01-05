@@ -43,7 +43,7 @@ def main(args):
     """
     Main entry point
     """
-    data_files = glob.glob(args.fix_dir)
+    data_files = glob.glob(os.path.join(args.fix_dir, '*'))
 
     prepare_script = os.path.join(
         os.path.dirname(os.path.realpath(__file__)),
