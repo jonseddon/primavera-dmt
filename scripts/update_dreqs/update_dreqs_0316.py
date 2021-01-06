@@ -51,12 +51,29 @@ def main(args):
         'run_prepare.sh'
     )
 
+    file_failed = False
     for df in data_files:
-        cmd = [prepare_script, df]
+        cmd = f'{prepare_script} {df}'
         cmd_out = subprocess.run(cmd, shell=True, stdout=subprocess.PIPE,
                                  stderr=subprocess.PIPE)
         if cmd_out.returncode != 0:
-            print(f'Need to fix {df}')
+            if b'CV requires "https://furtherinfo.es-doc.org/PRIMAVERA' in cmd_out.stderr:
+                logger.info(f'Need to fix {df}i\n\n')
+                cmd = (
+                    f'/home/users/jseddon/primavera/pre-proc/bin/run_force_fix.sh '
+                    f'-l debug --file {df} FurtherInfoUrlToPrim'
+                )
+                cmd_out = subprocess.run(cmd, shell=True, stdout=subprocess.PIPE,
+                                         stderr=subprocess.PIPE)
+                if cmd_out.returncode != 0:
+                    msg = f'Fixing {df} failed.\n{cmd_out.stdout}\n{cmd_out.stderr}\n'
+                    logger.error(msg)
+                    file_failed = True
+
+    if file_failed:
+        sys.exit(1)
+    else:
+        sys.exit(0)
 
 
 if __name__ == "__main__":
@@ -68,7 +85,8 @@ if __name__ == "__main__":
             log_level = getattr(logging, cmd_args.log_level.upper())
         except AttributeError:
             logger.setLevel(logging.WARNING)
-            logger.error('log-level must be one of: debug, info, warn or error')
+            logger.error('log-level must be one of: debug, info, warn or '
+                         'error')
             sys.exit(1)
     else:
         log_level = DEFAULT_LOG_LEVEL
