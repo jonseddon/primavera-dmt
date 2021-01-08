@@ -1,0 +1,41 @@
+name: django_tests
+
+on: [pull_request, push]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: [3.7, ]
+
+    steps:
+    - uses: actions/checkout@v2
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v2
+      with:
+        python-version: ${{ matrix.python-version }}
+    - name: Install dependencies
+      run: |
+        sudo apt-get install libudunits2-dev
+        python -m pip install --upgrade pip
+        pip install Cython
+        pip install -r requirements.txt
+    - name: Configure Django
+      run: |
+        which python
+        python --version
+        export DJANGO_SETTINGS_MODULE=pdata_site.settings
+        cp pdata_site/settings_local.py.github pdata_site/settings_local.py
+        mkdir db
+        rm pdata_app/migrations/*
+        touch pdata_app/migrations/__init__.py
+        python manage.py makemigrations pdata_app
+        python manage.py migrate
+    - name: Run Django tests
+      run: |
+        python manage.py test --exclude-tag=validation
+    - name: Check debug is disabled
+      run: |
+        export PYTHONPATH=$GITHUB_WORKSPACE
+        python scripts/utils/check_debug.py
