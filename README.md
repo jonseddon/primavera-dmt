@@ -1,4 +1,4 @@
-[![DOI](https://zenodo.org/badge/139697569.svg)](https://zenodo.org/badge/latestdoi/139697569)
+![django_tests](https://github.com/PRIMAVERA-H2020/primavera-dmt/workflows/django_tests/badge.svg) [![DOI](https://zenodo.org/badge/139697569.svg)](https://zenodo.org/badge/latestdoi/139697569)
 
 # primavera-dmt
 PRIMAVERA Data Management Tool
