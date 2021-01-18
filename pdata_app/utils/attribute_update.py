@@ -549,7 +549,8 @@ class VarNameToOutNameUpdate(DmtUpdate):
     """
     Update a file's name and contents from cmor_name to out_name.
     """
-    def __init__(self, datafile, update_file_only=False):
+    def __init__(self, datafile, update_file_only=False,
+                 temp_dir=None):
         """
         Initialise the class
 
@@ -571,6 +572,7 @@ class VarNameToOutNameUpdate(DmtUpdate):
             if not self.datafile.name.startswith(expected_file_start):
                 raise ValueError(f'File {self.datafile.name} does not start '
                                  f'with {expected_file_start}')
+        self.temp_dir = temp_dir
 
     def update(self):
         """
@@ -601,9 +603,25 @@ class VarNameToOutNameUpdate(DmtUpdate):
         Renamr the variable inside the file. Assume the file has its original
         path and name.
         """
-        run_ncrename(self.old_directory, self.old_filename,
+        if self.temp_dir:
+            orig_path = os.path.join(self.old_directory, self.old_filename)
+            temp_dir = tempfile.mkdtemp(dir=self.temp_dir)
+            temp_path = os.path.join(temp_dir, self.old_filename)
+            shutil.copyfile(orig_path, temp_path)
+            working_dir = temp_dir
+        else:
+            working_dir = self.old_directory
+
+        run_ncrename(working_dir, self.old_filename,
                      self.datafile.variable_request.cmor_name,
                      self.datafile.variable_request.out_name, False)
-        run_ncatted(self.old_directory, self.old_filename,
+        run_ncatted(working_dir, self.old_filename,
                     'variable_id', 'global', 'c',
                     self.datafile.variable_request.out_name, True)
+
+        if self.temp_dir:
+            os.rename(orig_path, orig_path + '.old')
+            shutil.copyfile(temp_path, orig_path)
+            os.remove(orig_path + '.old')
+            os.remove(temp_path)
+            os.rmdir(temp_dir)
