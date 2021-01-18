@@ -25,6 +25,8 @@ DEFAULT_LOG_FORMAT = '%(levelname)s: %(message)s'
 
 logger = logging.getLogger(__name__)
 
+SCRATCH_DIR = '/work/scratch-nopw/jseddon/temp'
+
 
 def parse_args():
     """
@@ -63,7 +65,8 @@ def main(args):
         logger.debug('Processing {}'.format(data_file.name))
 
         updater = VarNameToOutNameUpdate(data_file,
-                                         update_file_only=args.incoming)
+                                         update_file_only=args.incoming,
+                                         temp_dir=SCRATCH_DIR)
         updater.update()
 
 

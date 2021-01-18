@@ -844,6 +844,49 @@ class TestVarNameToOutNameUpdate(TestCase):
         ]
         self.mock_run_cmd.assert_has_calls(calls)
 
+    @mock.patch('pdata_app.utils.attribute_update.DmtUpdate._check_available')
+    @mock.patch('pdata_app.utils.attribute_update.DmtUpdate._rename_file')
+    @mock.patch('pdata_app.utils.attribute_update.DmtUpdate._update_checksum')
+    @mock.patch('pdata_app.utils.attribute_update.os.rename')
+    @mock.patch('pdata_app.utils.attribute_update.os.remove')
+    @mock.patch('pdata_app.utils.attribute_update.os.rmdir')
+    @mock.patch('pdata_app.utils.attribute_update.shutil.copyfile')
+    @mock.patch('pdata_app.utils.attribute_update.tempfile.mkdtemp')
+    def test_update_attributes_temp_dir(self, mock_temp, mock_copy, mock_rmdir,
+                                        mock_remove, mock_osrename,
+                                        mock_checksum, mock_rename,
+                                        mock_available):
+        mock_temp.return_value = '/tmp'
+        updater = VarNameToOutNameUpdate(self.test_file, temp_dir='/tmp')
+        updater.update()
+        calls = [
+            mock.call("ncrename -v var1,var "
+                      "/tmp/var1_table_model_expt_varlab_gn_1-2.nc"),
+            mock.call("ncatted -h -a variable_id,global,o,c,'var' "
+                      "/tmp/var1_table_model_expt_varlab_gn_1-2.nc")
+        ]
+        self.mock_run_cmd.assert_has_calls(calls)
+        mock_copy.assert_has_calls([
+            mock.call("/gws/nopw/j04/primavera9/stream1/path/"
+                      "var1_table_model_expt_varlab_gn_1-2.nc",
+                      "/tmp/var1_table_model_expt_varlab_gn_1-2.nc"),
+            mock.call("/tmp/var1_table_model_expt_varlab_gn_1-2.nc",
+                      "/gws/nopw/j04/primavera9/stream1/path/"
+                      "var1_table_model_expt_varlab_gn_1-2.nc"),
+        ])
+        mock_osrename.assert_called_with(
+            "/gws/nopw/j04/primavera9/stream1/path/"
+            "var1_table_model_expt_varlab_gn_1-2.nc",
+            "/gws/nopw/j04/primavera9/stream1/path/"
+            "var1_table_model_expt_varlab_gn_1-2.nc.old"
+        )
+        mock_remove.assert_has_calls([
+            mock.call("/gws/nopw/j04/primavera9/stream1/path/"
+            "var1_table_model_expt_varlab_gn_1-2.nc.old"),
+            mock.call("/tmp/var1_table_model_expt_varlab_gn_1-2.nc")
+        ])
+
+
 
 def _make_files_realistic():
     """
