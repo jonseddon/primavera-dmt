@@ -7,12 +7,15 @@ Called from a Rose suite to update the mip_era in EC-Earth r1i1p1f1 datasets.
 """
 import argparse
 import logging.config
+import os
+import sys
 
 import django
 django.setup()
 
-from pdata_app.models import DataRequest, Project  # nopep8
+from pdata_app.models import DataFile, DataRequest, Project, Settings  # nopep8
 from pdata_app.utils.attribute_update import MipEraUpdate  # nopep8
+from pdata_app.utils.common import adler32, delete_files  # nopep8
 
 
 __version__ = '0.1.0b1'
@@ -21,6 +24,8 @@ logger = logging.getLogger(__name__)
 
 # Directory to copy the file to, to run the attribute edits
 SCRATCH_DIR = "/work/scratch-nopw/jseddon/temp"
+# The top-level directory to write output data to
+BASE_OUTPUT_DIR = Settings.get_solo().base_output_dir
 
 
 def parse_args():
@@ -59,6 +64,28 @@ def main(args):
     )
     logger.debug('DataRequest is {}'.format(dreq))
 
+    logger.debug('Checking checksums')
+    checksum_mismatch = 0
+    for data_file in dreq.datafile_set.order_by('name'):
+        logger.debug('Processing {}'.format(data_file.name))
+        full_path = os.path.join(data_file.directory, data_file.name)
+        actual = adler32(full_path)
+        expected = data_file.checksum_set.first().checksum_value
+        if actual != expected:
+            logger.error(f'Checksum mismatch for {full_path}')
+            checksum_mismatch += 1
+            dfs = DataFile.objects.filter(name=data_file.name)
+            if dfs.count() != 1:
+                logger.error(f'Unable to select file for deletion {full_path}')
+            else:
+                delete_files(dfs.all(), BASE_OUTPUT_DIR)
+    if checksum_mismatch:
+        logger.error(f'Exiting due to {checksum_mismatch} checksum failures.')
+        logger.error(f'Data request is in {dreq.directories()}')
+        sys.exit(1)
+
+
+    logger.debug('Processing files')
     for data_file in dreq.datafile_set.order_by('name'):
         logger.debug('Processing {}'.format(data_file.name))
 
@@ -85,7 +112,7 @@ def main(args):
         updater.update()
 
         if dreq.datafile_set.count() == 0:
-            logger.debug('DataRequest has no files so deleting CMIP6 {dreq}')
+            logger.debug(f'DataRequest has no files so deleting CMIP6 {dreq}')
             dreq.delete()
 
 
