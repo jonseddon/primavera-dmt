@@ -545,6 +545,42 @@ class VariantLabelUpdate(DataRequestUpdate):
                     'further_info_url', 'global', 'c', further_info_url, False)
 
 
+class CorrectFileNameUpdate(DmtUpdate):
+    """
+    Generate the correct filename for a file. This is useful when the date
+    string in the filename is incorrect.
+    """
+    def __init__(self, datafile, update_file_only=False):
+        """
+        Initialise the class
+
+        :param pdata_apps.models.DataFile datafile: the file to update
+        :param str new_value: the new value to apply
+        :param bool update_file_only: if true then update just the file and
+            don't make any changes to the database.
+        """
+        super(CorrectFileNameUpdate, self).__init__(datafile, None,
+                                                    update_file_only)
+
+    def update(self):
+        """
+        Update everything.
+        """
+        self._check_available()
+        self._construct_filename()
+        self.new_directory = self.old_directory
+        self._update_filename_in_db()
+        self._rename_file()
+
+    def _update_file_attribute(self):
+        """
+        This method is required due to the abstract parent class' design but
+        no changes need to be made to the file other than renaming it and so
+        this method is empty.
+        """
+        pass
+
+
 class VarNameToOutNameUpdate(DmtUpdate):
     """
     Update a file's name and contents from cmor_name to out_name.
