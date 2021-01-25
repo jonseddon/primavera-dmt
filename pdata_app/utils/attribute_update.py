@@ -555,11 +555,10 @@ class CorrectFileNameUpdate(DmtUpdate):
         Initialise the class
 
         :param pdata_apps.models.DataFile datafile: the file to update
-        :param str new_value: the new value to apply
         :param bool update_file_only: if true then update just the file and
             don't make any changes to the database.
         """
-        super(CorrectFileNameUpdate, self).__init__(datafile, None,
+        super(CorrectFileNameUpdate, self).__init__(datafile, '',
                                                     update_file_only)
 
     def update(self):
@@ -591,11 +590,10 @@ class VarNameToOutNameUpdate(DmtUpdate):
         Initialise the class
 
         :param pdata_apps.models.DataFile datafile: the file to update
-        :param str new_value: the new value to apply
         :param bool update_file_only: if true then update just the file and
             don't make any changes to the database.
         """
-        super(VarNameToOutNameUpdate, self).__init__(datafile, None,
+        super(VarNameToOutNameUpdate, self).__init__(datafile, '',
                                                      update_file_only)
         # Lets do some checks to make sure that this is a sensible change to
         # make.
