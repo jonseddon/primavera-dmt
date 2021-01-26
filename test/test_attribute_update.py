@@ -24,6 +24,7 @@ from pdata_app.utils.attribute_update import (InstitutionIdUpdate,
                                               SourceIdUpdate,
                                               MipEraUpdate,
                                               VariantLabelUpdate,
+                                              CorrectFileNameUpdate,
                                               VarNameToOutNameUpdate,
                                               FileOfflineError,
                                               FileNotOnDiskError)  # nopep8
@@ -789,6 +790,28 @@ class TestVariantLabelUpdate(TestCase):
         self.mock_run_cmd.assert_has_calls(calls)
 
 
+class TestCorrectFileNameUpdate(TestCase):
+    """Test scripts.attribute_update.CorrectFileNameUpdate"""
+    def setUp(self):
+        make_example_files(self)
+        self.test_file = DataFile.objects.get(name='test1')
+        _make_files_realistic()
+        self.test_file.refresh_from_db()
+
+        patch = mock.patch('pdata_app.utils.common.run_command')
+        self.mock_run_cmd = patch.start()
+        self.addCleanup(patch.stop)
+
+    @mock.patch('pdata_app.utils.attribute_update.DmtUpdate._check_available')
+    @mock.patch('pdata_app.utils.attribute_update.DmtUpdate._rename_file')
+    def test_filename_updated(self, mock_rename, mock_available):
+        updater = CorrectFileNameUpdate(self.test_file)
+        updater.update()
+        self.test_file.refresh_from_db()
+        desired_filename = 'var1_Amon_t_t_r1i1p1_gn_1950-1960.nc'
+        self.assertEqual(self.test_file.name, desired_filename)
+
+
 class TestVarNameToOutNameUpdate(TestCase):
     """Test scripts.attribute_update.VarNameToOutNameUpdate"""
     def setUp(self):
@@ -885,7 +908,6 @@ class TestVarNameToOutNameUpdate(TestCase):
             "var1_table_model_expt_varlab_gn_1-2.nc.old"),
             mock.call("/tmp/var1_table_model_expt_varlab_gn_1-2.nc")
         ])
-
 
 
 def _make_files_realistic():
