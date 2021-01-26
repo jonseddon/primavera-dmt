@@ -630,10 +630,13 @@ def delete_files(query_set, base_output_dir, skip_badc=False):
         df.directory = None
         df.save()
 
+    directories_deleted = []
     for directory in directories_found:
         if not os.listdir(directory):
             delete_drs_dir(directory)
-    logger.debug('{} directories removed'.format(len(directories_found)))
+            directories_deleted.append(directory)
+    if directories_deleted:
+        logger.debug('{} directories removed'.format(len(directories_deleted)))
 
 
 def grouper(iterable, n):
