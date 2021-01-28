@@ -25,6 +25,7 @@ from pdata_app.utils.attribute_update import (InstitutionIdUpdate,
                                               MipEraUpdate,
                                               VariantLabelUpdate,
                                               CorrectFileNameUpdate,
+                                              CorrectDirectoryUpdate,
                                               VarNameToOutNameUpdate,
                                               FileOfflineError,
                                               FileNotOnDiskError)  # nopep8
@@ -788,6 +789,38 @@ class TestVariantLabelUpdate(TestCase):
                       "var1_table_model_expt_varlab_gn_1-2.nc"),
         ]
         self.mock_run_cmd.assert_has_calls(calls)
+
+
+class TestCorrectDirectoryUpdate(TestCase):
+    """Test scripts.attribute_update.CorrectDirectoryUpdate"""
+    def setUp(self):
+        make_example_files(self)
+        self.test_file = DataFile.objects.get(name='test1')
+        _make_files_realistic()
+        self.test_file.refresh_from_db()
+
+        patch = mock.patch('pdata_app.utils.common.run_command')
+        self.mock_run_cmd = patch.start()
+        self.addCleanup(patch.stop)
+
+    @mock.patch('pdata_app.utils.attribute_update.DmtUpdate._check_available')
+    @mock.patch('pdata_app.utils.attribute_update.DmtUpdate._rename_file')
+    def test_directory_updated(self, mock_rename, mock_available):
+        updater = CorrectDirectoryUpdate(self.test_file)
+        updater.update()
+        self.test_file.refresh_from_db()
+        desired_dir = ('/gws/nopw/j04/primavera9/stream1/t/'
+                       'HighResMIP/MOHC/t/t/r1i1p1/Amon/var1/gn/v12345678')
+        self.assertEqual(self.test_file.directory, desired_dir)
+
+    @mock.patch('pdata_app.utils.attribute_update.DmtUpdate._check_available')
+    @mock.patch('pdata_app.utils.attribute_update.DmtUpdate._rename_file')
+    def test_filename_not_updated(self, mock_rename, mock_available):
+        updater = CorrectDirectoryUpdate(self.test_file)
+        updater.update()
+        self.test_file.refresh_from_db()
+        desired_filename = 'var1_table_model_expt_varlab_gn_1-2.nc'
+        self.assertEqual(self.test_file.name, desired_filename)
 
 
 class TestCorrectFileNameUpdate(TestCase):
