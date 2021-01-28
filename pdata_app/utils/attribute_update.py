@@ -545,6 +545,42 @@ class VariantLabelUpdate(DataRequestUpdate):
                     'further_info_url', 'global', 'c', further_info_url, False)
 
 
+class CorrectDirectoryUpdate(DmtUpdate):
+    """
+    Move the files into the correct directory. This is useful as some older
+    data uses the cmor name rather than out name in its current directory
+    structure.
+    """
+    def __init__(self, datafile, update_file_only=False):
+        """
+        Initialise the class
+
+        :param pdata_apps.models.DataFile datafile: the file to update
+        :param bool update_file_only: if true then update just the file and
+            don't make any changes to the database.
+        """
+        super(CorrectDirectoryUpdate, self).__init__(datafile, '',
+                                                    update_file_only)
+
+    def update(self):
+        """
+        Update everything.
+        """
+        self._check_available()
+        self.new_filename = self.old_filename
+        self._construct_directory()
+        self._update_directory_in_db()
+        self._rename_file()
+
+    def _update_file_attribute(self):
+        """
+        This method is required due to the abstract parent class' design but
+        no changes need to be made to the file other than renaming it and so
+        this method is empty.
+        """
+        pass
+
+
 class CorrectFileNameUpdate(DmtUpdate):
     """
     Generate the correct filename for a file. This is useful when the date
